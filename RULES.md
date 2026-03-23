@@ -33,6 +33,10 @@ TESTING
 [ ] tests after
 [ ] block commit if failing
 
+LINTING
+[ ] fix errors before committing
+[ ] warnings require judgment: if the pattern is intentional (e.g. narrowed dep array), add eslint-disable-next-line with a comment if the reason isn't obvious; if the pattern is a real bug or bad code, fix the code instead — never mass-suppress warnings without reading them
+
 DEPENDENCIES
 [ ] lockfile required
 [ ] no new deps without approval
