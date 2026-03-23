@@ -550,6 +550,8 @@ function MatchView() {
     reconnectCountdown,
     players,
     myPlayerId,
+    scores,
+    roomConfig,
     send,
     incomingEmote,
   } = useGameStore()
@@ -557,16 +559,30 @@ function MatchView() {
   const cfg = currentMinigame ? MINIGAME_CONFIGS[currentMinigame] : null
 
   const [showTransition, setShowTransition] = useState(false)
-  const [transitionData, setTransitionData] = useState<{ round: number; cfg: typeof cfg } | null>(
-    null
-  )
+  const [transitionData, setTransitionData] = useState<{
+    round: number
+    cfg: typeof cfg
+    matchPointFor: string | null // playerId if someone is on match point, else null
+    isFinalRound: boolean
+  } | null>(null)
   const [countNum, setCountNum] = useState<number | null>(null)
   const prevRound = useRef(0)
 
   useEffect(() => {
     if (currentRound !== prevRound.current && currentMinigame && cfg) {
       prevRound.current = currentRound
-      setTransitionData({ round: currentRound, cfg })
+      const winsNeeded = Math.ceil(roomConfig.bestOf / 2)
+      const opponent = players.find((p) => p.id !== myPlayerId)
+      const myWins = scores[myPlayerId] ?? 0
+      const oppWins = opponent ? (scores[opponent.id] ?? 0) : 0
+      const matchPointFor =
+        myWins === winsNeeded - 1
+          ? myPlayerId
+          : oppWins === winsNeeded - 1
+            ? (opponent?.id ?? null)
+            : null
+      const isFinalRound = currentRound === roomConfig.bestOf
+      setTransitionData({ round: currentRound, cfg, matchPointFor, isFinalRound })
       setShowTransition(true)
       setCountNum(null)
       const t1 = setTimeout(() => {
@@ -765,6 +781,34 @@ function MatchView() {
           }}
         >
           <div className="anim-pop" style={{ textAlign: 'center' }}>
+            {/* Match point / final round label */}
+            {(transitionData.matchPointFor || transitionData.isFinalRound) && (
+              <div
+                className="badge anim-pulse"
+                style={{
+                  background:
+                    transitionData.matchPointFor === myPlayerId
+                      ? 'var(--green)'
+                      : transitionData.isFinalRound
+                        ? 'var(--yellow)'
+                        : 'var(--red)',
+                  color:
+                    transitionData.isFinalRound && !transitionData.matchPointFor
+                      ? 'var(--black)'
+                      : 'var(--white)',
+                  fontSize: 13,
+                  letterSpacing: 2,
+                  marginBottom: 12,
+                  display: 'inline-block',
+                }}
+              >
+                {transitionData.matchPointFor === myPlayerId
+                  ? '🏆 MATCH POINT'
+                  : transitionData.matchPointFor
+                    ? '⚠️ THEIR MATCH POINT'
+                    : '⚡ FINAL ROUND'}
+              </div>
+            )}
             <div
               style={{
                 fontFamily: 'var(--font-title)',
@@ -775,7 +819,7 @@ function MatchView() {
                 marginBottom: 8,
               }}
             >
-              Round {transitionData.round} of 5
+              Round {transitionData.round} of {roomConfig.bestOf}
             </div>
             <div
               style={{
