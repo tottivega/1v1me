@@ -1,7 +1,6 @@
 REPO SAFETY
 [ ] git required
 [ ] commit after each task
-[ ] branch per task
 [ ] no force push
 [ ] no rm -rf
 
