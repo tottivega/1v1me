@@ -92,6 +92,12 @@
 - [x] **ESLint** — `typescript-eslint` v8 + flat config in both packages; `no-unused-vars` (error), `no-explicit-any` (warn), `react-hooks/rules-of-hooks` (error); server passes at 0 warnings
 - [x] **Prettier** — `.prettierrc` at root; `format` / `format:check` scripts in root and both packages
 - [x] **lint-staged + husky** — pre-commit hook runs Prettier + ESLint on staged files; blocks commit on errors
+- [x] **React error boundary** — class component wraps `<App />`; styled 💥 recovery screen with reload button; logs in dev, comment for prod log service
+- [x] **WS rate limiting** — 60 msg/s sliding 1s window per connection; `RATE_LIMITED` error sent on breach
+- [x] **WS origin check** — production-only; rejects upgrades from origins other than `ALLOWED_ORIGIN` env var with HTTP 403
+- [x] **Room settings** — creator sets Best of 3/5/7/9 + enabled categories before readying; `SET_ROOM_CONFIG`/`ROOM_CONFIG` message pair; queue and win condition respect config
+- [x] **Router integration tests (10)** — real WS server per test; covers join, ROOM_FULL, empty nickname, config change, ready flow, rate limiting, unknown type
+- [x] **RoomPage smoke tests (12)** — lobby render, copy button, Copied! flash, spectator badge, MATCH SETTINGS panel, bestOf selector, category chips, creator/non-creator disabled state
 
 ---
 
