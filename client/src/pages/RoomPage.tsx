@@ -25,7 +25,8 @@ function getSavedSession(): { roomId: string; playerId: string } | null {
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>()
-  const { roomStatus, myNickname, wsStatus, connect, reconnectSaved } = useGameStore()
+  const { roomStatus, myNickname, wsStatus, roomNotFound, connect, reconnectSaved } = useGameStore()
+  const navigate = useNavigate()
 
   // Connect (or reconnect) whenever roomId changes
   useEffect(() => {
@@ -38,6 +39,32 @@ export default function RoomPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId])
+
+  // Room not found
+  if (roomNotFound) {
+    return (
+      <div className="page" style={{ textAlign: 'center', gap: 24 }}>
+        <div style={{ fontSize: 72 }}>🚪</div>
+        <div
+          style={{
+            fontFamily: 'var(--font-title)',
+            fontSize: 36,
+            color: 'var(--red)',
+            WebkitTextStroke: '2px var(--black)',
+            textShadow: '3px 3px 0 var(--black)',
+          }}
+        >
+          Room Not Found
+        </div>
+        <p className="subtitle" style={{ opacity: 0.6, maxWidth: 320 }}>
+          The room <strong>{roomId}</strong> doesn't exist or has already ended.
+        </p>
+        <button className="btn btn-orange btn-lg" onClick={() => navigate('/')}>
+          ← Back to Home
+        </button>
+      </div>
+    )
+  }
 
   // No nickname yet (direct URL visit) → show a quick name gate
   if (!myNickname) return <NicknameGate roomId={roomId!} />
@@ -254,7 +281,7 @@ function LobbyView({ roomId }: { roomId: string }) {
 
       {/* Player slots */}
       <div style={{ display: 'flex', gap: 16, width: '100%', maxWidth: 460 }}>
-        <PlayerSlot player={me ?? null} isMe />
+        <PlayerSlot player={me ?? null} />
         <PlayerSlot player={opponent ?? null} />
       </div>
 
@@ -498,10 +525,8 @@ function LobbyGamePreview() {
 
 function PlayerSlot({
   player,
-  isMe,
 }: {
-  player: { nickname: string; ready: boolean; connected: boolean } | null
-  isMe?: boolean
+  player: { nickname: string; avatar: string; ready: boolean; connected: boolean } | null
 }) {
   return (
     <div
@@ -519,15 +544,30 @@ function PlayerSlot({
         transition: 'all 0.2s',
       }}
     >
-      <div style={{ fontSize: 40 }}>{player ? (isMe ? '😤' : '😈') : '❓'}</div>
-      <div
-        style={{
-          fontWeight: 900,
-          fontSize: 16,
-          color: player ? 'var(--black)' : 'rgba(0,0,0,0.3)',
-        }}
-      >
-        {player ? player.nickname : 'Waiting…'}
+      <div style={{ fontSize: 44 }}>{player ? player.avatar : '❓'}</div>
+      {/* Nickname + live dot */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {player && (
+          <span
+            className={player.connected ? 'anim-pulse' : ''}
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: player.connected ? 'var(--green)' : 'rgba(0,0,0,0.2)',
+              flexShrink: 0,
+            }}
+          />
+        )}
+        <span
+          style={{
+            fontWeight: 900,
+            fontSize: 16,
+            color: player ? 'var(--black)' : 'rgba(0,0,0,0.3)',
+          }}
+        >
+          {player ? player.nickname : 'Waiting…'}
+        </span>
       </div>
       {player && (
         <div className={`badge ${player.ready ? 'badge-green' : 'badge-orange'}`}>

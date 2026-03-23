@@ -83,8 +83,20 @@ function recordMatchResult(
 }
 
 // ── Mock players (dev / disconnected mode) ────────────────────────────────────
-const MOCK_ME: PlayerInfo = { id: 'player-1', nickname: 'You', ready: false, connected: true }
-const MOCK_OPP: PlayerInfo = { id: 'player-2', nickname: 'Opponent', ready: false, connected: true }
+const MOCK_ME: PlayerInfo = {
+  id: 'player-1',
+  nickname: 'You',
+  avatar: '😤',
+  ready: false,
+  connected: true,
+}
+const MOCK_OPP: PlayerInfo = {
+  id: 'player-2',
+  nickname: 'Opponent',
+  avatar: '😈',
+  ready: false,
+  connected: true,
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type WsStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
@@ -123,6 +135,9 @@ interface GameState {
 
   // Error toast
   errorMessage: string | null
+
+  // Room not found (server returned ROOM_NOT_FOUND error)
+  roomNotFound: boolean
 
   // Spectator
   isSpectator: boolean
@@ -189,6 +204,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   minigameState: null,
   reconnectCountdown: null,
   errorMessage: null,
+  roomNotFound: false,
   isSpectator: false,
   spectatorCount: 0,
   incomingEmote: null,
@@ -205,7 +221,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const wsUrl = import.meta.env.VITE_WS_URL ?? 'ws://localhost:3001'
     const ws = new WebSocket(wsUrl)
-    set({ ws, wsStatus: 'connecting', myNickname: nickname, roomId })
+    set({ ws, wsStatus: 'connecting', myNickname: nickname, roomId, roomNotFound: false })
 
     ws.onopen = () => {
       set({ wsStatus: 'connected' })
@@ -510,8 +526,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       case 'ERROR': {
         const { code, message } = msg.payload as { code: string; message: string }
         console.error(`[Server error] ${code}: ${message}`)
-        set({ errorMessage: message })
-        setTimeout(() => set({ errorMessage: null }), 4000)
+        if (code === 'ROOM_NOT_FOUND') {
+          set({ roomNotFound: true })
+        } else {
+          set({ errorMessage: message })
+          setTimeout(() => set({ errorMessage: null }), 4000)
+        }
         break
       }
     }

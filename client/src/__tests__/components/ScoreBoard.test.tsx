@@ -3,8 +3,8 @@ import { render, screen } from '@testing-library/react'
 import ScoreBoard from '../../components/ScoreBoard'
 import { useGameStore } from '../../store/gameStore'
 
-const ME = { id: 'p1', nickname: 'Alice', ready: true, connected: true }
-const OPP = { id: 'p2', nickname: 'Bob', ready: true, connected: true }
+const ME = { id: 'p1', nickname: 'Alice', avatar: '🐺', ready: true, connected: true }
+const OPP = { id: 'p2', nickname: 'Bob', avatar: '🦊', ready: true, connected: true }
 
 beforeEach(() => {
   useGameStore.setState({
@@ -22,8 +22,8 @@ beforeEach(() => {
 describe('ScoreBoard', () => {
   it('renders both player nicknames', () => {
     render(<ScoreBoard />)
-    expect(screen.getByText('Alice')).toBeInTheDocument()
-    expect(screen.getByText('Bob')).toBeInTheDocument()
+    expect(screen.getByText(/Alice/)).toBeInTheDocument()
+    expect(screen.getByText(/Bob/)).toBeInTheDocument()
   })
 
   it('renders correct round display using bestOf from config', () => {

@@ -35,7 +35,9 @@ describe('ROOM_JOINED', () => {
       payload: {
         roomId: 'abc123',
         playerId: 'uuid-me',
-        players: [{ id: 'uuid-me', nickname: 'Alice', ready: false, connected: true }],
+        players: [
+          { id: 'uuid-me', nickname: 'Alice', avatar: '🐺', ready: false, connected: true },
+        ],
         spectatorCount: 0,
       },
     })
@@ -68,14 +70,14 @@ describe('PLAYER_READY', () => {
   it('marks the specified player as ready', () => {
     useGameStore.setState({
       players: [
-        { id: 'p1', nickname: 'Alice', ready: false, connected: true },
-        { id: 'p2', nickname: 'Bob', ready: false, connected: true },
+        { id: 'p1', nickname: 'Alice', avatar: '🐺', ready: false, connected: true },
+        { id: 'p2', nickname: 'Bob', avatar: '🦊', ready: false, connected: true },
       ],
     })
     dispatch({ type: 'PLAYER_READY', payload: { playerId: 'p1', bothReady: false } })
     const { players } = useGameStore.getState()
-    expect(players.find(p => p.id === 'p1')!.ready).toBe(true)
-    expect(players.find(p => p.id === 'p2')!.ready).toBe(false)
+    expect(players.find((p) => p.id === 'p1')!.ready).toBe(true)
+    expect(players.find((p) => p.id === 'p2')!.ready).toBe(false)
   })
 })
 

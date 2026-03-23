@@ -4,6 +4,7 @@ import type { RoomStatus, MinigameId, MinigameResult, RoundRecord, RoomConfig } 
 export interface Player {
   id: string
   nickname: string
+  avatar: string
   ws: WebSocket
   ready: boolean
   connected: boolean

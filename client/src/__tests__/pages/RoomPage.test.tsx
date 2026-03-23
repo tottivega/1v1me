@@ -11,8 +11,8 @@ Object.defineProperty(navigator, 'clipboard', {
   configurable: true,
 })
 
-const ME = { id: 'p1', nickname: 'Alice', ready: false, connected: true }
-const OPP = { id: 'p2', nickname: 'Bob', ready: false, connected: true }
+const ME = { id: 'p1', nickname: 'Alice', avatar: '🐺', ready: false, connected: true }
+const OPP = { id: 'p2', nickname: 'Bob', avatar: '🦊', ready: false, connected: true }
 
 function renderLobby(roomId = 'TEST-42') {
   return render(

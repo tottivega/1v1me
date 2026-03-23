@@ -60,9 +60,12 @@ export default function ScoreBoard() {
             textTransform: 'uppercase',
             letterSpacing: 1,
             opacity: 0.7,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
           }}
         >
-          {me?.nickname ?? 'You'}
+          {me?.avatar} {me?.nickname ?? 'You'}
         </span>
         <span
           key={myPopKey}
@@ -133,9 +136,12 @@ export default function ScoreBoard() {
             textTransform: 'uppercase',
             letterSpacing: 1,
             opacity: 0.7,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
           }}
         >
-          {opponent?.nickname ?? '???'}
+          {opponent?.nickname ?? '???'} {opponent?.avatar}
         </span>
         <span
           key={oppPopKey}

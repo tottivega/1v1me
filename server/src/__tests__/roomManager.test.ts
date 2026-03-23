@@ -15,10 +15,19 @@ vi.mock('../sync/broadcast', () => ({
   broadcastAll: vi.fn(),
   send: vi.fn(),
   toPlayerInfos: vi.fn(
-    (players: { id: string; nickname: string; ready: boolean; connected: boolean }[]) =>
+    (
+      players: {
+        id: string
+        nickname: string
+        avatar: string
+        ready: boolean
+        connected: boolean
+      }[]
+    ) =>
       players.map((p) => ({
         id: p.id,
         nickname: p.nickname,
+        avatar: p.avatar,
         ready: p.ready,
         connected: p.connected,
       }))

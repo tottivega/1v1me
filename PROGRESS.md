@@ -69,6 +69,10 @@
 
 ### Game Feel
 - [x] Animated score pop — `anim-score-pop` keyframe; `key` trick replays on each point; uses `myColor`/`oppColor`
+- [x] **Player animal avatars** — server assigns random emoji from pool of 12 on join; stored on `Player` + `PlayerInfo`; shown in lobby `PlayerSlot` (replaces hardcoded 😤/😈), ScoreBoard next to nicknames; mock players use 😤/😈
+- [x] **Connected player pulse dot** — pulsing green dot next to nickname in `PlayerSlot`; turns grey when `connected: false`
+- [x] **404 / room-not-found screen** — `ROOM_NOT_FOUND` error code sets `roomNotFound` state; `RoomPage` renders friendly 🚪 screen with back button; resets on next `connect()` call
+- [x] Match win confetti burst — CSS-only confetti on `MATCH_END` when local player wins; auto-cleans after animation
 - [x] Player color assignment — `myColor`/`oppColor` set at `MATCH_START` based on join order; stored in Zustand
 - [x] Round transition count-in — 1.9s overlay: emoji + name pops in, then 3→2→1 with `playTick()`; "1" distinct tone; blocks interaction
 - [x] Timer bar color shift — green >33%, yellow 15–33%, red <15%

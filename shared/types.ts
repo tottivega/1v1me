@@ -141,6 +141,7 @@ export const DEFAULT_ROOM_CONFIG: RoomConfig = {
 export interface PlayerInfo {
   id: string
   nickname: string
+  avatar: string
   ready: boolean
   connected: boolean
 }

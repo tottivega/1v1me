@@ -31,9 +31,10 @@ export function broadcastAll(room: Room, type: ServerMessageType, payload: unkno
 }
 
 export function toPlayerInfos(players: Player[]) {
-  return players.map(p => ({
+  return players.map((p) => ({
     id: p.id,
     nickname: p.nickname,
+    avatar: p.avatar,
     ready: p.ready,
     connected: p.connected,
   }))

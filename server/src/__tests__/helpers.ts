@@ -10,7 +10,15 @@ export function makeWs() {
 }
 
 export function makePlayer(id: string, nickname = 'Player') {
-  return { id, nickname, ws: makeWs(), ready: false, connected: true, reconnectTimer: null }
+  return {
+    id,
+    nickname,
+    avatar: '🐺',
+    ws: makeWs(),
+    ready: false,
+    connected: true,
+    reconnectTimer: null,
+  }
 }
 
 export function makeRoom(roomId = 'test-room'): Room {
