@@ -28,6 +28,7 @@ import { useGameStore } from '../store/gameStore'
 // ── Server state shape ────────────────────────────────────────────────────────
 // Mirror the `State` interface from the server module.
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface ServerState {
   // TODO: match the server module's State fields
 }
@@ -35,7 +36,7 @@ interface ServerState {
 export default function Template() {
   const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
   const isLive = wsStatus === 'connected'
-  const opponent = players.find(p => p.id !== myPlayerId)
+  const opponent = players.find((p) => p.id !== myPlayerId)
 
   // ── Live mode ─────────────────────────────────────────────────────────────
   const serverState = isLive ? (minigameState as ServerState | null) : null
@@ -63,20 +64,32 @@ export default function Template() {
   }
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', gap: 28, flex: 1, padding: 32,
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 28,
+        flex: 1,
+        padding: 32,
+      }}
+    >
       {/* Title */}
-      <div style={{ fontFamily: 'var(--font-title)', fontSize: 32, color: 'var(--orange)', textAlign: 'center' }}>
+      <div
+        style={{
+          fontFamily: 'var(--font-title)',
+          fontSize: 32,
+          color: 'var(--orange)',
+          textAlign: 'center',
+        }}
+      >
         GAME NAME 🎮 {/* TODO: replace */}
       </div>
 
       {/* TODO: main game UI */}
       <div className="card" style={{ textAlign: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-title)', fontSize: 48 }}>
-          {mockValue}
-        </div>
+        <div style={{ fontFamily: 'var(--font-title)', fontSize: 48 }}>{mockValue}</div>
       </div>
 
       {/* Action button */}
@@ -84,7 +97,9 @@ export default function Template() {
         Do thing {/* TODO: replace */}
       </button>
 
-      <div className="label" style={{ opacity: 0.45 }}>Instruction text here</div>
+      <div className="label" style={{ opacity: 0.45 }}>
+        Instruction text here
+      </div>
     </div>
   )
 }

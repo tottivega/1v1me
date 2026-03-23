@@ -20,6 +20,7 @@ import { broadcast } from '../sync/broadcast'
 // This is the object stored in room.match.minigameState and broadcast to clients
 // via GAME_UPDATE. Clients read it as `minigameState` in the Zustand store.
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface State {
   // TODO: add your game's live state fields
   // example: answers: Record<string, string>

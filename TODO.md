@@ -52,11 +52,6 @@ These are required before the April deploy.
 - [ ] **router integration tests** — simulate message sequences (join → ready → game input) on a real WS server instance
 - [ ] **RoomPage smoke tests** — lobby renders with correct copy button, spectator count badge visible when count > 0
 
-### Linters
-
-- [ ] **ESLint** — add `eslint` + `@typescript-eslint/eslint-plugin` to both `client/` and `server/`; enable `no-unused-vars`, `no-explicit-any`, strict null checks config
-- [ ] **Prettier** — single `.prettierrc` at root shared by both packages; add `format` script
-- [ ] **lint-staged + husky** — run ESLint + Prettier on staged files before commit (hooks match RULES.md "block commit if failing")
 
 ---
 

@@ -87,6 +87,9 @@
 - [x] **Server unit tests (28)** — wordscramble (5), rockpaperscissors (4), matchController (6), roomManager (13)
 - [x] **Client unit tests (20)** — gameStore (11), ScoreBoard (5), TimerBar (4)
 - [x] Test factories in `server/src/__tests__/helpers.ts` — `makeWs()`, `makePlayer()`, `makeRoom()`, `makeMatch()`
+- [x] **ESLint** — `typescript-eslint` v8 + flat config in both packages; `no-unused-vars` (error), `no-explicit-any` (warn), `react-hooks/rules-of-hooks` (error); server passes at 0 warnings
+- [x] **Prettier** — `.prettierrc` at root; `format` / `format:check` scripts in root and both packages
+- [x] **lint-staged + husky** — pre-commit hook runs Prettier + ESLint on staged files; blocks commit on errors
 
 ---
 

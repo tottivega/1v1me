@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
-import { playCorrect, playWrong, playClick } from '../utils/sounds'
+import { playCorrect, playWrong } from '../utils/sounds'
 
 interface ServerState {
   scrambled: string
-  attempts:  Record<string, number>
-  resolved:  boolean
-  winnerId:  string | null
-  answer?:   string  // only present when resolved or timed out
+  attempts: Record<string, number>
+  resolved: boolean
+  winnerId: string | null
+  answer?: string // only present when resolved or timed out
 }
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
@@ -23,20 +23,20 @@ function scramble(word: string): string {
   return result === word ? scramble(word) : result
 }
 
-const mockWord     = MOCK_WORDS[Math.floor(Math.random() * MOCK_WORDS.length)]
+const mockWord = MOCK_WORDS[Math.floor(Math.random() * MOCK_WORDS.length)]
 const mockScramble = scramble(mockWord)
 
 export default function WordScramble() {
   const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
   const isLive = wsStatus === 'connected'
-  const opponent = players.find(p => p.id !== myPlayerId)
+  const opponent = players.find((p) => p.id !== myPlayerId)
 
   const serverState = isLive ? (minigameState as ServerState | null) : null
   const scrambled = serverState?.scrambled ?? mockScramble
 
-  const [typed,    setTyped]    = useState('')
-  const [shaking,  setShaking]  = useState(false)  // wrong-guess shake on input
-  const [solved,   setSolved]   = useState(false)
+  const [typed, setTyped] = useState('')
+  const [shaking, setShaking] = useState(false) // wrong-guess shake on input
+  const [solved, setSolved] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Track prev attempts count to detect wrong guess in live mode
@@ -44,7 +44,7 @@ export default function WordScramble() {
 
   // ── Mock opponent — guesses correctly after a random delay ─────────────────
   const [mockOppSolved, setMockOppSolved] = useState(false)
-  const [mockAnswer,    setMockAnswer]    = useState<string | null>(null)
+  const [mockAnswer, setMockAnswer] = useState<string | null>(null)
   useEffect(() => {
     if (isLive) return
     setMockOppSolved(false)
@@ -115,13 +115,19 @@ export default function WordScramble() {
   }
 
   // ── Derived display ────────────────────────────────────────────────────────
-  const isResolved  = isLive ? (serverState?.resolved ?? false)       : (solved || mockOppSolved)
-  const winnerId    = isLive ? (serverState?.winnerId ?? null)         : (solved ? myPlayerId : mockOppSolved ? (opponent?.id ?? 'opp') : null)
-  const revealWord  = isLive ? (serverState?.answer ?? null)           : mockAnswer
-  const myAttempts  = isLive ? (serverState?.attempts[myPlayerId] ?? 0) : 0
+  const isResolved = isLive ? (serverState?.resolved ?? false) : solved || mockOppSolved
+  const winnerId = isLive
+    ? (serverState?.winnerId ?? null)
+    : solved
+      ? myPlayerId
+      : mockOppSolved
+        ? (opponent?.id ?? 'opp')
+        : null
+  const revealWord = isLive ? (serverState?.answer ?? null) : mockAnswer
+  const myAttempts = isLive ? (serverState?.attempts[myPlayerId] ?? 0) : 0
   const oppAttempts = isLive ? (serverState?.attempts[opponent?.id ?? ''] ?? 0) : 0
-  const iWon        = winnerId === myPlayerId
-  const oppName     = opponent?.nickname ?? '???'
+  const iWon = winnerId === myPlayerId
+  const oppName = opponent?.nickname ?? '???'
 
   // Play correct sound when live resolution happens in my favour
   useEffect(() => {
@@ -135,24 +141,50 @@ export default function WordScramble() {
   }, [serverState?.resolved])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28, flex: 1, padding: 28 }}>
-      <div style={{ fontFamily: 'var(--font-title)', fontSize: 32, color: 'var(--purple)', textAlign: 'center' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 28,
+        flex: 1,
+        padding: 28,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: 'var(--font-title)',
+          fontSize: 32,
+          color: 'var(--purple)',
+          textAlign: 'center',
+        }}
+      >
         WORD SCRAMBLE 🔤
       </div>
 
       {/* Scrambled letters */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
         {scrambled.split('').map((letter, i) => (
-          <div key={i} style={{
-            width: 52, height: 58,
-            background: 'var(--white)',
-            border: '3px solid var(--black)',
-            borderRadius: 12,
-            boxShadow: '4px 4px 0 var(--black)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'var(--font-title)', fontSize: 28, color: 'var(--black)',
-            textTransform: 'uppercase', letterSpacing: 0,
-          }}>
+          <div
+            key={i}
+            style={{
+              width: 52,
+              height: 58,
+              background: 'var(--white)',
+              border: '3px solid var(--black)',
+              borderRadius: 12,
+              boxShadow: '4px 4px 0 var(--black)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: 'var(--font-title)',
+              fontSize: 28,
+              color: 'var(--black)',
+              textTransform: 'uppercase',
+              letterSpacing: 0,
+            }}
+          >
             {letter}
           </div>
         ))}
@@ -161,10 +193,27 @@ export default function WordScramble() {
       {/* Answer reveal */}
       {revealWord && (
         <div className="anim-pop" style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, opacity: 0.5, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              opacity: 0.5,
+              letterSpacing: 2,
+              textTransform: 'uppercase',
+              marginBottom: 4,
+            }}
+          >
             The word was
           </div>
-          <div style={{ fontFamily: 'var(--font-title)', fontSize: 42, color: 'var(--purple)', textTransform: 'uppercase', letterSpacing: 4 }}>
+          <div
+            style={{
+              fontFamily: 'var(--font-title)',
+              fontSize: 42,
+              color: 'var(--purple)',
+              textTransform: 'uppercase',
+              letterSpacing: 4,
+            }}
+          >
             {revealWord}
           </div>
         </div>
@@ -173,11 +222,15 @@ export default function WordScramble() {
       {/* Result banner */}
       {isResolved && winnerId && (
         <div className="anim-bounce" style={{ textAlign: 'center' }}>
-          <div style={{
-            fontFamily: 'var(--font-title)', fontSize: 48,
-            color: iWon ? 'var(--green)' : 'var(--red)',
-            WebkitTextStroke: '2px var(--black)', textShadow: '3px 3px 0 var(--black)',
-          }}>
+          <div
+            style={{
+              fontFamily: 'var(--font-title)',
+              fontSize: 48,
+              color: iWon ? 'var(--green)' : 'var(--red)',
+              WebkitTextStroke: '2px var(--black)',
+              textShadow: '3px 3px 0 var(--black)',
+            }}
+          >
             {iWon ? '🏆 YOU GOT IT!' : `${oppName} got it first!`}
           </div>
         </div>
@@ -185,7 +238,16 @@ export default function WordScramble() {
 
       {/* Input area */}
       {!isResolved && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, width: '100%', maxWidth: 380 }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 12,
+            width: '100%',
+            maxWidth: 380,
+          }}
+        >
           <input
             ref={inputRef}
             type="text"
@@ -200,11 +262,17 @@ export default function WordScramble() {
             spellCheck={false}
             style={{
               width: '100%',
-              fontFamily: 'var(--font-title)', fontSize: 22, textTransform: 'uppercase', letterSpacing: 3,
+              fontFamily: 'var(--font-title)',
+              fontSize: 22,
+              textTransform: 'uppercase',
+              letterSpacing: 3,
               border: `3px solid ${shaking ? 'var(--red)' : 'var(--black)'}`,
-              borderRadius: 12, padding: '12px 18px', background: 'var(--white)',
+              borderRadius: 12,
+              padding: '12px 18px',
+              background: 'var(--white)',
               boxShadow: shaking ? '0 0 0 3px rgba(255,51,51,0.3)' : 'var(--shadow-sm)',
-              outline: 'none', textAlign: 'center',
+              outline: 'none',
+              textAlign: 'center',
               animation: shaking ? 'anim-shake 0.35s ease' : 'none',
               transition: 'border-color 0.15s, box-shadow 0.15s',
             }}
@@ -213,7 +281,13 @@ export default function WordScramble() {
             className="btn btn-lg"
             onClick={handleSubmit}
             disabled={!typed.trim()}
-            style={{ background: 'var(--purple)', color: 'var(--white)', padding: '12px 40px', borderRadius: 12, fontSize: 18 }}
+            style={{
+              background: 'var(--purple)',
+              color: 'var(--white)',
+              padding: '12px 40px',
+              borderRadius: 12,
+              fontSize: 18,
+            }}
           >
             Submit ↵
           </button>
@@ -224,8 +298,16 @@ export default function WordScramble() {
       {/* Attempt counts — shows tension */}
       {(myAttempts > 0 || oppAttempts > 0) && (
         <div style={{ display: 'flex', gap: 24, fontSize: 13, fontWeight: 700, opacity: 0.55 }}>
-          {myAttempts  > 0 && <span>You: {myAttempts} wrong guess{myAttempts !== 1 ? 'es' : ''}</span>}
-          {oppAttempts > 0 && <span>{oppName}: {oppAttempts} wrong guess{oppAttempts !== 1 ? 'es' : ''}</span>}
+          {myAttempts > 0 && (
+            <span>
+              You: {myAttempts} wrong guess{myAttempts !== 1 ? 'es' : ''}
+            </span>
+          )}
+          {oppAttempts > 0 && (
+            <span>
+              {oppName}: {oppAttempts} wrong guess{oppAttempts !== 1 ? 'es' : ''}
+            </span>
+          )}
         </div>
       )}
     </div>

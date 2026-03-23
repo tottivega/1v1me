@@ -1,4 +1,4 @@
-import type { MinigameModule, Room } from '../types'
+import type { MinigameModule } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 
@@ -22,7 +22,7 @@ const PHRASES = [
 
 interface State {
   phrase: string
-  progress: Record<string, number>  // chars correct from start
+  progress: Record<string, number> // chars correct from start
   resolved: boolean
   winnerId: string | null
 }

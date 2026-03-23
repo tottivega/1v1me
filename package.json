@@ -5,9 +5,29 @@
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",
-    "install:all": "npm install && npm install --prefix server && npm install --prefix client"
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client",
+    "prepare": "husky",
+    "format": "prettier --write \"server/src/**/*.ts\" \"client/src/**/*.{ts,tsx}\" \"shared/**/*.ts\"",
+    "format:check": "prettier --check \"server/src/**/*.ts\" \"client/src/**/*.{ts,tsx}\" \"shared/**/*.ts\""
+  },
+  "lint-staged": {
+    "server/src/**/*.ts": [
+      "prettier --write",
+      "eslint --fix --max-warnings=0 --config server/eslint.config.mjs"
+    ],
+    "client/src/**/*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix --config client/eslint.config.js"
+    ],
+    "shared/**/*.ts": [
+      "prettier --write"
+    ]
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "eslint": "^9.39.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.1"
   }
 }

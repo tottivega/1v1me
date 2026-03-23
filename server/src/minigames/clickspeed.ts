@@ -1,4 +1,4 @@
-import type { MinigameModule, Room } from '../types'
+import type { MinigameModule } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 
@@ -34,7 +34,7 @@ const clickspeed: MinigameModule = {
     const now = Date.now()
 
     // CPS cap
-    state.timestamps[playerId] = state.timestamps[playerId].filter(t => now - t < WINDOW_MS)
+    state.timestamps[playerId] = state.timestamps[playerId].filter((t) => now - t < WINDOW_MS)
     if (state.timestamps[playerId].length >= CPS_CAP) return
 
     state.timestamps[playerId].push(now)

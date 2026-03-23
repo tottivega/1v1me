@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   joinOrCreateRoom,
-  setPlayerReady,
   handleDisconnect,
   handleReconnect,
   handleRematchVote,
@@ -15,8 +14,14 @@ vi.mock('../sync/broadcast', () => ({
   broadcast: vi.fn(),
   broadcastAll: vi.fn(),
   send: vi.fn(),
-  toPlayerInfos: vi.fn((players: { id: string; nickname: string; ready: boolean; connected: boolean }[]) =>
-    players.map(p => ({ id: p.id, nickname: p.nickname, ready: p.ready, connected: p.connected }))
+  toPlayerInfos: vi.fn(
+    (players: { id: string; nickname: string; ready: boolean; connected: boolean }[]) =>
+      players.map((p) => ({
+        id: p.id,
+        nickname: p.nickname,
+        ready: p.ready,
+        connected: p.connected,
+      }))
   ),
 }))
 vi.mock('../match/matchController', () => ({ startMatch: vi.fn(), forfeitMatch: vi.fn() }))
@@ -27,7 +32,7 @@ vi.mock('../timer/timerController', () => ({
   startTimer: vi.fn(),
 }))
 
-import { send, broadcast } from '../sync/broadcast'
+import { send } from '../sync/broadcast'
 
 const ROOM_ID = 'room-abc'
 
@@ -89,7 +94,7 @@ describe('handleDisconnect()', () => {
 
     handleDisconnect(ROOM_ID, 'p1')
 
-    const player = room.players.find(p => p.id === 'p1')!
+    const player = room.players.find((p) => p.id === 'p1')!
     expect(player.connected).toBe(false)
     expect(player.reconnectTimer).not.toBeNull()
   })
@@ -115,7 +120,7 @@ describe('handleReconnect()', () => {
     const result = handleReconnect(ROOM_ID, 'p1', newWs)
 
     expect('room' in result).toBe(true)
-    const player = room.players.find(p => p.id === 'p1')!
+    const player = room.players.find((p) => p.id === 'p1')!
     expect(player.connected).toBe(true)
     expect(player.ws).toBe(newWs)
     expect(player.reconnectTimer).toBeNull()
@@ -131,11 +136,7 @@ describe('handleRematchVote()', () => {
 
     handleRematchVote(room, 'p1')
 
-    expect(send).toHaveBeenCalledWith(
-      expect.anything(),
-      'REMATCH_VOTE',
-      { waiting: true },
-    )
+    expect(send).toHaveBeenCalledWith(expect.anything(), 'REMATCH_VOTE', { waiting: true })
   })
 
   it('fires rematch (sends ROOM_JOINED to both) when both vote', () => {

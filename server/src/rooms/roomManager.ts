@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from 'uuid'
 import { WebSocket } from 'ws'
 import type { Room, Player } from '../types'
 import { getRoom, setRoom, deleteRoom } from './roomStore'
@@ -6,7 +5,7 @@ import { broadcast, send, toPlayerInfos } from '../sync/broadcast'
 import { startMatch, forfeitMatch } from '../match/matchController'
 import { stopTimer, pauseTimer, resumeTimer } from '../timer/timerController'
 
-const CLEANUP_IDLE_MS   = 60_000
+const CLEANUP_IDLE_MS = 60_000
 const RECONNECT_TIMEOUT = 15_000
 
 function touch(room: Room): void {
@@ -29,7 +28,7 @@ export function joinOrCreateRoom(
   roomId: string,
   playerId: string,
   nickname: string,
-  ws: WebSocket,
+  ws: WebSocket
 ): { room: Room } | { error: { code: string; message: string } } {
   let room = getRoom(roomId)
 
@@ -55,7 +54,7 @@ export function joinOrCreateRoom(
   }
 
   // Check for duplicate player
-  if (room.players.some(p => p.id === playerId)) {
+  if (room.players.some((p) => p.id === playerId)) {
     return { error: { code: 'ALREADY_JOINED', message: 'Already in this room' } }
   }
 
@@ -78,13 +77,13 @@ export function joinOrCreateRoom(
 // ── Ready ────────────────────────────────────────────────────────────────────
 
 export function setPlayerReady(room: Room, playerId: string): void {
-  const player = room.players.find(p => p.id === playerId)
+  const player = room.players.find((p) => p.id === playerId)
   if (!player) return
 
   player.ready = true
   touch(room)
 
-  const bothReady = room.players.length === 2 && room.players.every(p => p.ready)
+  const bothReady = room.players.length === 2 && room.players.every((p) => p.ready)
   broadcast(room, 'PLAYER_READY', { playerId, bothReady })
 
   if (bothReady) {
@@ -99,7 +98,7 @@ export function handleDisconnect(roomId: string, playerId: string): void {
   const room = getRoom(roomId)
   if (!room) return
 
-  const player = room.players.find(p => p.id === playerId)
+  const player = room.players.find((p) => p.id === playerId)
   if (!player) return
 
   player.connected = false
@@ -107,7 +106,7 @@ export function handleDisconnect(roomId: string, playerId: string): void {
 
   if (room.status === 'lobby' || room.status === 'ready') {
     // Just remove the player; no reconnect window needed pre-match
-    room.players = room.players.filter(p => p.id !== playerId)
+    room.players = room.players.filter((p) => p.id !== playerId)
     broadcast(room, 'PLAYER_DISCONNECTED', { playerId, reconnectWindowMs: 0 })
     return
   }
@@ -126,12 +125,12 @@ export function handleDisconnect(roomId: string, playerId: string): void {
 export function handleReconnect(
   roomId: string,
   playerId: string,
-  ws: WebSocket,
+  ws: WebSocket
 ): { room: Room } | { error: { code: string; message: string } } {
   const room = getRoom(roomId)
   if (!room) return { error: { code: 'ROOM_NOT_FOUND', message: 'Room not found' } }
 
-  const player = room.players.find(p => p.id === playerId)
+  const player = room.players.find((p) => p.id === playerId)
   if (!player) return { error: { code: 'PLAYER_NOT_FOUND', message: 'Player not found in room' } }
 
   if (player.reconnectTimer) {
@@ -172,7 +171,7 @@ export function handleReconnect(
 
 export function joinAsSpectator(
   roomId: string,
-  ws: WebSocket,
+  ws: WebSocket
 ): { room: Room } | { error: { code: string; message: string } } {
   const room = getRoom(roomId)
   if (!room) return { error: { code: 'ROOM_NOT_FOUND', message: 'Room not found' } }
@@ -186,14 +185,16 @@ export function joinAsSpectator(
     players: toPlayerInfos(room.players),
     status: room.status,
     spectatorCount: room.spectators.length,
-    match: room.match ? {
-      scores: room.match.scores,
-      currentRound: room.match.currentRound,
-      currentMinigame: room.match.currentMinigame,
-      remainingMs: room.match.remainingMs,
-      timeoutMs: room.match.timeoutMs,
-      minigameState: room.match.minigameState,
-    } : null,
+    match: room.match
+      ? {
+          scores: room.match.scores,
+          currentRound: room.match.currentRound,
+          currentMinigame: room.match.currentMinigame,
+          remainingMs: room.match.remainingMs,
+          timeoutMs: room.match.timeoutMs,
+          minigameState: room.match.minigameState,
+        }
+      : null,
   })
 
   // Let players know the spectator count changed
@@ -208,7 +209,7 @@ export function joinAsSpectator(
 export function removeSpectator(roomId: string, ws: WebSocket): void {
   const room = getRoom(roomId)
   if (!room) return
-  room.spectators = room.spectators.filter(s => s !== ws)
+  room.spectators = room.spectators.filter((s) => s !== ws)
   // Let players know the spectator count changed
   for (const player of room.players) {
     if (player.connected) send(player.ws, 'SPECTATOR_COUNT', { count: room.spectators.length })
@@ -243,12 +244,12 @@ function doRematch(room: Room): void {
 
 export function handleRematchVote(room: Room, playerId: string): void {
   room.rematchVotes.add(playerId)
-  const allVoted = room.players.every(p => room.rematchVotes.has(p.id))
+  const allVoted = room.players.every((p) => room.rematchVotes.has(p.id))
   if (allVoted) {
     doRematch(room)
   } else {
     // Tell the voter to wait
-    const voter = room.players.find(p => p.id === playerId)
+    const voter = room.players.find((p) => p.id === playerId)
     if (voter) send(voter.ws, 'REMATCH_VOTE', { waiting: true })
   }
 }

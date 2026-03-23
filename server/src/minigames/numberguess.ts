@@ -1,4 +1,4 @@
-import type { MinigameModule, Room } from '../types'
+import type { MinigameModule } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 
@@ -39,7 +39,7 @@ const numberguess: MinigameModule = {
     })
 
     // If all players guessed, resolve early
-    const allGuessed = room.players.every(p => state.guesses[p.id] !== undefined)
+    const allGuessed = room.players.every((p) => state.guesses[p.id] !== undefined)
     if (allGuessed) {
       room.match!.onRoundDone?.(this.getResult(room))
     }
