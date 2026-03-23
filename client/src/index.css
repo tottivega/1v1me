@@ -1,0 +1,290 @@
+/* ── Variables ─────────────────────────────────────────────────────────────── */
+:root {
+  --orange:   #ff6600;
+  --orange-d: #cc4400;
+  --yellow:   #ffdd00;
+  --green:    #44cc44;
+  --green-d:  #229922;
+  --blue:     #0099ff;
+  --blue-d:   #0066cc;
+  --red:      #ff3333;
+  --red-d:    #cc0000;
+  --pink:     #ff66cc;
+  --purple:   #9933ff;
+  --bg:       #fff5e1;
+  --white:    #ffffff;
+  --black:    #1a1a1a;
+  --border:   3px solid #1a1a1a;
+  --shadow:   4px 4px 0px #1a1a1a;
+  --shadow-sm:2px 2px 0px #1a1a1a;
+  --radius:   12px;
+  --radius-lg:20px;
+  --font-title:'Fredoka One', cursive;
+  --font-body: 'Nunito', sans-serif;
+}
+
+/* ── Reset ─────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle, #e8d5b0 1px, transparent 1px);
+  background-size: 28px 28px;
+  color: var(--black);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Layout helpers ─────────────────────────────────────────────────────────── */
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 24px;
+}
+
+.card {
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 28px 32px;
+}
+
+/* ── Typography ─────────────────────────────────────────────────────────────── */
+.title {
+  font-family: var(--font-title);
+  font-size: 72px;
+  line-height: 1;
+  color: var(--orange);
+  -webkit-text-stroke: 3px var(--black);
+  text-shadow: 5px 5px 0px var(--black);
+  letter-spacing: 2px;
+}
+
+.subtitle {
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--black);
+  letter-spacing: 0.5px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--black);
+  opacity: 0.6;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────────── */
+.btn {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: var(--border);
+  border-radius: var(--radius);
+  padding: 12px 28px;
+  box-shadow: var(--shadow);
+  transition: transform 80ms, box-shadow 80ms;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn:hover { filter: brightness(1.05); }
+.btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0px var(--black);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: var(--shadow);
+}
+
+.btn-orange { background: var(--orange); color: var(--white); }
+.btn-orange:hover { background: var(--orange-d); }
+
+.btn-yellow { background: var(--yellow); color: var(--black); }
+
+.btn-green  { background: var(--green);  color: var(--white); }
+.btn-green:hover { background: var(--green-d); }
+
+.btn-blue   { background: var(--blue);   color: var(--white); }
+.btn-blue:hover { background: var(--blue-d); }
+
+.btn-red    { background: var(--red);    color: var(--white); }
+.btn-red:hover { background: var(--red-d); }
+
+.btn-white  { background: var(--white);  color: var(--black); }
+
+.btn-lg { font-size: 20px; padding: 18px 44px; border-radius: 16px; }
+.btn-sm { font-size: 13px; padding: 8px 16px; border-radius: 8px; border-width: 2px; box-shadow: var(--shadow-sm); }
+
+/* ── Input ──────────────────────────────────────────────────────────────────── */
+.input {
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 700;
+  border: var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-sm);
+  outline: none;
+  background: var(--white);
+  width: 100%;
+  transition: box-shadow 100ms;
+}
+.input:focus {
+  box-shadow: 4px 4px 0px var(--orange);
+  border-color: var(--orange);
+}
+.input::placeholder { opacity: 0.4; }
+
+/* ── Badge / tag ────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 2px solid var(--black);
+  border-radius: 8px;
+  padding: 4px 10px;
+  box-shadow: var(--shadow-sm);
+}
+.badge-orange { background: var(--orange); color: var(--white); }
+.badge-green  { background: var(--green);  color: var(--white); }
+.badge-blue   { background: var(--blue);   color: var(--white); }
+.badge-yellow { background: var(--yellow); color: var(--black); }
+.badge-red    { background: var(--red);    color: var(--white); }
+
+/* ── Divider ────────────────────────────────────────────────────────────────── */
+.divider {
+  height: 3px;
+  background: var(--black);
+  border-radius: 2px;
+  width: 100%;
+  opacity: 0.12;
+}
+
+/* ── Animations ─────────────────────────────────────────────────────────────── */
+@keyframes pop-in {
+  0%   { transform: scale(0.7); opacity: 0; }
+  70%  { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  40%       { transform: translateX(6px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.05); }
+}
+@keyframes spin {
+  from { transform: rotateY(0deg); }
+  to   { transform: rotateY(360deg); }
+}
+@keyframes flash-green {
+  0%, 100% { background: var(--green); }
+  50%       { background: #aaffaa; }
+}
+@keyframes countdown-shrink {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+@keyframes confetti-fall {
+  0%   { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(120vh) rotate(720deg); opacity: 0; }
+}
+@keyframes bounce-in {
+  0%   { transform: scale(0) rotate(-10deg); opacity: 0; }
+  60%  { transform: scale(1.15) rotate(3deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes score-pop {
+  0%   { transform: scale(1); }
+  25%  { transform: scale(1.75); filter: brightness(1.5); }
+  65%  { transform: scale(1.2); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+@keyframes ripple {
+  0%   { transform: scale(0); opacity: 0.5; }
+  100% { transform: scale(5); opacity: 0; }
+}
+@keyframes coin-flip-3d {
+  0%   { transform: perspective(220px) rotateY(0deg); }
+  100% { transform: perspective(220px) rotateY(360deg); }
+}
+@keyframes count-in {
+  0%   { transform: scale(2.2); opacity: 0; }
+  40%  { transform: scale(0.9); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.anim-pop      { animation: pop-in 0.3s cubic-bezier(.36,.07,.19,.97) both; }
+.anim-bounce   { animation: bounce-in 0.45s cubic-bezier(.36,.07,.19,.97) both; }
+.anim-shake    { animation: shake 0.4s ease; }
+.anim-pulse    { animation: pulse 1.2s ease infinite; }
+.anim-score-pop { animation: score-pop 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+.anim-count-in  { animation: count-in 0.28s cubic-bezier(.36,.07,.19,.97) both; }
+
+/* ── Mobile ──────────────────────────────────────────────────────────────────── */
+
+/* Use dynamic viewport height so the address bar doesn't eat space on mobile */
+@supports (min-height: 100dvh) {
+  .page { min-height: 100dvh; }
+}
+
+@media (max-width: 600px) {
+  /* Tighter page padding */
+  .page { padding: 16px; gap: 16px; }
+
+  /* Shrink card padding */
+  .card { padding: 20px 18px; }
+
+  /* Title sizes — keep impactful but prevent overflow */
+  .title { font-size: 48px; }
+
+  /* Large buttons stack full-width and stay thumb-friendly */
+  .btn-lg {
+    font-size: 17px;
+    padding: 16px 28px;
+  }
+
+  /* Lobby: stack action buttons vertically */
+  .lobby-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .lobby-actions .btn { width: 100%; }
+
+  /* Match end: wrap action buttons */
+  .match-end-actions {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
