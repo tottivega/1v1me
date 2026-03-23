@@ -138,6 +138,16 @@ export default function HomePage() {
             >
               🔗 Join with code
             </button>
+            <button
+              className="btn btn-white"
+              style={{ width: '100%' }}
+              onClick={() => {
+                playClick()
+                navigate('/rooms')
+              }}
+            >
+              🌐 Browse open rooms
+            </button>
           </div>
         )}
 

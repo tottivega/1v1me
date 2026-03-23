@@ -21,8 +21,6 @@
 
 These are required before the April deploy.
 
-- [ ] **Server health endpoint** — `GET /health` returns `{ status: 'ok', rooms: activeRoomCount, uptime: process.uptime() }`. Needed for Fly.io health checks.
-
 ---
 
 ## 🚀 Deploy (not until April)

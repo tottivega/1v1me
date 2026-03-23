@@ -54,7 +54,7 @@
 - [x] Win streak tracker — `localStorage`-persisted counter (`1v1me_streak`); increments on win, resets on loss; `🔥 X win streak` badge on HomePage when streak ≥ 2
 - [x] Match history on home page — last 5 results in `localStorage` (`1v1me_history`); compact Recent Matches section below game gallery
 
-### Minigames (9 total)
+### Minigames (11 total)
 - [x] **Click Speed** — 5s, 20 CPS cap, optimistic clicks, simulated opponent in mock mode
 - [x] **Coin Flip** — instant server RNG, 2s spin animation, mock simulation
 - [x] **Reaction Test** — random delay 1.5–4s, early-click penalty, server-driven phases, full mock mode
@@ -64,6 +64,8 @@
 - [x] **Fastest Typer** — server picks phrase from pool of 15; per-keystroke server tracking; mock opponent advances via interval
 - [x] **Rock Paper Scissors** — best-of-3 throws; simultaneous picks; server hides picks until both submit; per-throw 8s timeout; throw history dots; full mock mode with staged opponent pick
 - [x] **Word Scramble** — server picks from pool of 32 words, shuffles letters; first correct guess wins; wrong-guess counter broadcast to both; answer revealed on resolve; mock opponent solves at 30–75% of timer
+- [x] **Color Word** — server picks word + different ink color (6 colors); click the ink color button, not the spelled word; first correct click wins; 10s timeout; full mock mode
+- [x] **Higher or Lower** — server picks target + clue offset by 1–20; both players pick Higher/Lower simultaneously; correct picker wins; 10s timeout; full mock mode
 
 ### Game Feel
 - [x] Animated score pop — `anim-score-pop` keyframe; `key` trick replays on each point; uses `myColor`/`oppColor`
@@ -98,6 +100,11 @@
 - [x] **Room settings** — creator sets Best of 3/5/7/9 + enabled categories before readying; `SET_ROOM_CONFIG`/`ROOM_CONFIG` message pair; queue and win condition respect config
 - [x] **Router integration tests (10)** — real WS server per test; covers join, ROOM_FULL, empty nickname, config change, ready flow, rate limiting, unknown type
 - [x] **RoomPage smoke tests (12)** — lobby render, copy button, Copied! flash, spectator badge, MATCH SETTINGS panel, bestOf selector, category chips, creator/non-creator disabled state
+- [x] **ScoreBoard bestOf fix** — `roomConfig.bestOf` from store replaces hardcoded 5 and 3; `winsNeeded` derived dynamically; ScoreBoard tests updated with bestOf=7 case
+- [x] **Match point + Final Round banner** — round transition overlay shows 🏆 MATCH POINT / ⚠️ THEIR MATCH POINT / ⚡ FINAL ROUND badge with correct color; `transitionData` snapshot captures `matchPointFor` and `isFinalRound` at round-start
+- [x] **Server health endpoint** — `GET /health` returns `{ status: 'ok', rooms: N, uptime: N }`; URL routing added to `createServer` callback
+- [x] **Public room browser** — `GET /rooms` returns open rooms (1 player, lobby status); `createdAt` on `Room`; `getOpenRooms()` in roomStore; `/rooms` React page with 5s auto-refresh; "Browse open rooms" button on HomePage
+- [x] **PWA manifest** — `client/public/manifest.json` with `standalone` display, cream background, orange theme; `<link rel="manifest">` + `<meta name="theme-color">` in `index.html`
 
 ---
 

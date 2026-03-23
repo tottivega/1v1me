@@ -1,0 +1,18 @@
+{
+  "name": "1v1 ME",
+  "short_name": "1v1 ME",
+  "description": "Fast 1v1 minigame battles with friends",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f0e8",
+  "theme_color": "#ff6b2b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}

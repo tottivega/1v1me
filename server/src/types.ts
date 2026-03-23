@@ -35,6 +35,7 @@ export interface Room {
   status: RoomStatus
   match: MatchState | null
   config: RoomConfig
+  createdAt: number
   lastActivityAt: number
   cleanupTimer: ReturnType<typeof setTimeout> | null
   rematchVotes: Set<string>

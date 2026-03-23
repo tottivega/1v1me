@@ -96,6 +96,22 @@ export const MINIGAME_CONFIGS = {
     description: 'Unscramble the letters and type the word before your opponent does.',
     difficulty: 2,
   },
+  colorword: {
+    label: 'Color Word',
+    emoji: '🎨',
+    timeoutMs: 10000,
+    category: 'reflex',
+    description: 'Ignore the text — click the button matching the INK color of the word.',
+    difficulty: 2,
+  },
+  higherorlower: {
+    label: 'Higher or Lower',
+    emoji: '📊',
+    timeoutMs: 10000,
+    category: 'luck',
+    description: 'A secret number is near the clue. Is it Higher or Lower?',
+    difficulty: 1,
+  },
 } as const satisfies Record<
   string,
   {

@@ -1,6 +1,7 @@
 import { createServer } from 'http'
 import { WebSocketServer } from 'ws'
 import { onConnection } from './src/sync/router'
+import { getRoomCount, getOpenRooms } from './src/rooms/roomStore'
 
 // ── Env validation ────────────────────────────────────────────────────────────
 const isProd = process.env.NODE_ENV === 'production'
@@ -21,7 +22,24 @@ const PORT = Number(process.env.PORT) || 3001
 
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN // e.g. https://1v1me.vercel.app
 
-const server = createServer((_req, res) => {
+const server = createServer((req, res) => {
+  const url = req.url?.split('?')[0]
+
+  if (url === '/health') {
+    const body = JSON.stringify({ status: 'ok', rooms: getRoomCount(), uptime: process.uptime() })
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(body)
+    return
+  }
+
+  if (url === '/rooms') {
+    const cors = isProd && ALLOWED_ORIGIN ? ALLOWED_ORIGIN : '*'
+    const body = JSON.stringify(getOpenRooms())
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': cors })
+    res.end(body)
+    return
+  }
+
   res.writeHead(200, { 'Content-Type': 'text/plain' })
   res.end('1v1 ME server running\n')
 })

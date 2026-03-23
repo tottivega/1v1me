@@ -9,6 +9,8 @@ import memorymatch from './memorymatch'
 import fastesttyper from './fastesttyper'
 import rockpaperscissors from './rockpaperscissors'
 import wordscramble from './wordscramble'
+import colorword from './colorword'
+import higherorlower from './higherorlower'
 
 // TypeScript will error here if a MinigameId is missing a module.
 // When you add a new game: create the module file and add it here.
@@ -22,6 +24,8 @@ const MODULES: Record<MinigameId, MinigameModule> = {
   fastesttyper,
   rockpaperscissors,
   wordscramble,
+  colorword,
+  higherorlower,
 }
 
 export function getMinigame(id: MinigameId): MinigameModule {

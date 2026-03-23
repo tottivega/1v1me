@@ -42,6 +42,7 @@ export function joinOrCreateRoom(
       status: 'lobby',
       match: null,
       config: { ...DEFAULT_ROOM_CONFIG },
+      createdAt: Date.now(),
       lastActivityAt: Date.now(),
       cleanupTimer: null,
       rematchVotes: new Set(),

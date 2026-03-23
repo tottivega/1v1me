@@ -23,6 +23,7 @@ export function makeRoom(roomId = 'test-room'): Room {
     status: 'lobby',
     match: null,
     config: { ...DEFAULT_ROOM_CONFIG },
+    createdAt: Date.now(),
     lastActivityAt: Date.now(),
     cleanupTimer: null,
     rematchVotes: new Set(),
