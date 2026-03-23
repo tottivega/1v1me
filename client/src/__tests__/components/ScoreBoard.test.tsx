@@ -15,6 +15,7 @@ beforeEach(() => {
     myColor: 'var(--blue)',
     oppColor: 'var(--orange)',
     spectatorCount: 0,
+    roomConfig: { bestOf: 5, enabledCategories: ['reflex', 'math', 'luck', 'strategy', 'trivia'] },
   })
 })
 
@@ -25,13 +26,23 @@ describe('ScoreBoard', () => {
     expect(screen.getByText('Bob')).toBeInTheDocument()
   })
 
-  it('renders correct round display', () => {
+  it('renders correct round display using bestOf from config', () => {
     useGameStore.setState({ currentRound: 3 })
     render(<ScoreBoard />)
     expect(screen.getByText('3/5')).toBeInTheDocument()
   })
 
-  it('shows "First to 3 wins" when no spectators', () => {
+  it('reflects bestOf=7 in round display and wins-needed', () => {
+    useGameStore.setState({
+      currentRound: 2,
+      roomConfig: { bestOf: 7, enabledCategories: ['reflex'] },
+    })
+    render(<ScoreBoard />)
+    expect(screen.getByText('2/7')).toBeInTheDocument()
+    expect(screen.getByText('First to 4 wins')).toBeInTheDocument()
+  })
+
+  it('shows "First to 3 wins" for default bestOf=5 when no spectators', () => {
     render(<ScoreBoard />)
     expect(screen.getByText('First to 3 wins')).toBeInTheDocument()
   })
