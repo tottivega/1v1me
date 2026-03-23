@@ -25,7 +25,58 @@ import {
 // Module-level interval handle for the reconnect countdown (not reactive state)
 let _reconnectInterval: ReturnType<typeof setInterval> | null = null
 function clearReconnectInterval() {
-  if (_reconnectInterval) { clearInterval(_reconnectInterval); _reconnectInterval = null }
+  if (_reconnectInterval) {
+    clearInterval(_reconnectInterval)
+    _reconnectInterval = null
+  }
+}
+
+// ── Win streak + match history (localStorage) ─────────────────────────────────
+const STREAK_KEY = '1v1me_streak'
+const HISTORY_KEY = '1v1me_history'
+const HISTORY_MAX = 5
+
+export interface MatchHistoryEntry {
+  opponentNickname: string
+  myScore: number
+  oppScore: number
+  iWon: boolean
+  date: string // ISO string
+}
+
+export function getStreak(): number {
+  try {
+    return parseInt(localStorage.getItem(STREAK_KEY) ?? '0', 10) || 0
+  } catch {
+    return 0
+  }
+}
+export function getMatchHistory(): MatchHistoryEntry[] {
+  try {
+    return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]')
+  } catch {
+    return []
+  }
+}
+function recordMatchResult(
+  iWon: boolean,
+  opponentNickname: string,
+  myScore: number,
+  oppScore: number
+) {
+  try {
+    const streak = iWon ? getStreak() + 1 : 0
+    localStorage.setItem(STREAK_KEY, String(streak))
+    const entry: MatchHistoryEntry = {
+      opponentNickname,
+      myScore,
+      oppScore,
+      iWon,
+      date: new Date().toISOString(),
+    }
+    const prev = getMatchHistory()
+    localStorage.setItem(HISTORY_KEY, JSON.stringify([entry, ...prev].slice(0, HISTORY_MAX)))
+  } catch {}
 }
 
 // ── Mock players (dev / disconnected mode) ────────────────────────────────────
@@ -81,8 +132,8 @@ interface GameState {
   rematchVoting: boolean
 
   // Player color assignment — set at MATCH_START based on join order
-  myColor:  string  // 'var(--blue)' or 'var(--orange)'
-  oppColor: string  // opposite of myColor
+  myColor: string // 'var(--blue)' or 'var(--orange)'
+  oppColor: string // opposite of myColor
 
   // ── Real actions ─────────────────────────────────────────────────────────
   connect: (roomId: string, nickname: string) => void
@@ -151,12 +202,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     ws.onopen = () => {
       set({ wsStatus: 'connected' })
       // Server assigns our playerId; send empty string for now
-      ws.send(JSON.stringify({
-        type: 'SET_NICKNAME',
-        roomId,
-        playerId: '',
-        payload: { nickname },
-      }))
+      ws.send(
+        JSON.stringify({
+          type: 'SET_NICKNAME',
+          roomId,
+          playerId: '',
+          payload: { nickname },
+        })
+      )
     }
 
     ws.onmessage = (event) => {
@@ -178,7 +231,9 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   disconnect: () => {
     get().ws?.close()
-    try { localStorage.removeItem('1v1me_session') } catch {}
+    try {
+      localStorage.removeItem('1v1me_session')
+    } catch {}
     set({ ws: null, wsStatus: 'disconnected' })
   },
 
@@ -222,8 +277,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         console.error('[WS] Bad message:', event.data)
       }
     }
-    ws.onerror  = () => set({ wsStatus: 'error' })
-    ws.onclose  = () => set({ wsStatus: 'disconnected' })
+    ws.onerror = () => set({ wsStatus: 'error' })
+    ws.onclose = () => set({ wsStatus: 'disconnected' })
   },
 
   reconnectSaved: (roomId, playerId) => {
@@ -233,23 +288,29 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ ws, wsStatus: 'connecting', roomId, isSpectator: false })
     ws.onopen = () => {
       set({ wsStatus: 'connected' })
-      ws.send(JSON.stringify({ type: 'RECONNECT', roomId, playerId: '', payload: { playerId, roomId } }))
+      ws.send(
+        JSON.stringify({ type: 'RECONNECT', roomId, playerId: '', payload: { playerId, roomId } })
+      )
     }
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data as string) as ServerMessage
         get().handleServerMessage(msg)
-      } catch { console.error('[WS] Bad message:', event.data) }
+      } catch {
+        console.error('[WS] Bad message:', event.data)
+      }
     }
     ws.onerror = () => set({ wsStatus: 'error' })
-    ws.onclose = () => { set({ wsStatus: 'disconnected' }); console.log('[WS] Connection closed') }
+    ws.onclose = () => {
+      set({ wsStatus: 'disconnected' })
+      console.log('[WS] Connection closed')
+    }
   },
 
   // ── Real: Server message dispatcher ─────────────────────────────────────
 
   handleServerMessage: (msg) => {
     switch (msg.type) {
-
       case 'ROOM_JOINED': {
         const p = msg.payload as RoomJoinedPayload
         set({
@@ -268,16 +329,19 @@ export const useGameStore = create<GameState>((set, get) => ({
           rematchVoting: false,
         })
         // Persist session for auto-reconnect
-        try { localStorage.setItem('1v1me_session', JSON.stringify({ roomId: p.roomId, playerId: p.playerId })) } catch {}
+        try {
+          localStorage.setItem(
+            '1v1me_session',
+            JSON.stringify({ roomId: p.roomId, playerId: p.playerId })
+          )
+        } catch {}
         break
       }
 
       case 'PLAYER_READY': {
         const p = msg.payload as PlayerReadyPayload
-        set(s => ({
-          players: s.players.map(pl =>
-            pl.id === p.playerId ? { ...pl, ready: true } : pl,
-          ),
+        set((s) => ({
+          players: s.players.map((pl) => (pl.id === p.playerId ? { ...pl, ready: true } : pl)),
           roomStatus: p.bothReady ? 'ready' : s.roomStatus,
         }))
         break
@@ -288,7 +352,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         const scores: Record<string, number> = {}
         for (const pl of p.players) scores[pl.id] = 0
         // First player to join (index 0) gets blue; second gets orange
-        const myColor  = p.players[0]?.id === get().myPlayerId ? 'var(--blue)' : 'var(--orange)'
+        const myColor = p.players[0]?.id === get().myPlayerId ? 'var(--blue)' : 'var(--orange)'
         const oppColor = myColor === 'var(--blue)' ? 'var(--orange)' : 'var(--blue)'
         set({ scores, roomStatus: 'round_start', players: p.players, myColor, oppColor })
         break
@@ -332,6 +396,15 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       case 'MATCH_END': {
         const p = msg.payload as MatchEndPayload
+        const s = get()
+        const opponent = s.players.find((pl) => pl.id !== s.myPlayerId)
+        const iWon = p.winnerId === s.myPlayerId
+        recordMatchResult(
+          iWon,
+          opponent?.nickname ?? '???',
+          p.scores[s.myPlayerId] ?? 0,
+          opponent ? (p.scores[opponent.id] ?? 0) : 0
+        )
         set({
           matchWinnerId: p.winnerId,
           scores: p.scores,
@@ -343,12 +416,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       case 'PLAYER_DISCONNECTED': {
         const p = msg.payload as PlayerDisconnectedPayload
-        set(s => ({
-          players: s.players.map(pl =>
-            pl.id === p.playerId ? { ...pl, connected: false } : pl,
-          ),
+        set((s) => ({
+          players: s.players.map((pl) => (pl.id === p.playerId ? { ...pl, connected: false } : pl)),
           roomStatus: 'reconnecting',
-          reconnectCountdown: p.reconnectWindowMs > 0 ? Math.ceil(p.reconnectWindowMs / 1000) : null,
+          reconnectCountdown:
+            p.reconnectWindowMs > 0 ? Math.ceil(p.reconnectWindowMs / 1000) : null,
         }))
         if (p.reconnectWindowMs > 0) {
           clearReconnectInterval()
@@ -368,10 +440,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       case 'PLAYER_RECONNECTED': {
         const { playerId } = msg.payload as { playerId: string }
         clearReconnectInterval()
-        set(s => ({
-          players: s.players.map(pl =>
-            pl.id === playerId ? { ...pl, connected: true } : pl,
-          ),
+        set((s) => ({
+          players: s.players.map((pl) => (pl.id === playerId ? { ...pl, connected: true } : pl)),
           roomStatus: 'playing',
           reconnectCountdown: null,
         }))
@@ -404,11 +474,11 @@ export const useGameStore = create<GameState>((set, get) => ({
           spectatorCount: p.spectatorCount ?? 0,
         }
         if (p.match) {
-          updates.scores        = p.match.scores
-          updates.currentRound  = p.match.currentRound
+          updates.scores = p.match.scores
+          updates.currentRound = p.match.currentRound
           updates.currentMinigame = p.match.currentMinigame as MinigameId | null
-          updates.remainingMs   = p.match.remainingMs
-          updates.timeoutMs     = p.match.timeoutMs
+          updates.remainingMs = p.match.remainingMs
+          updates.timeoutMs = p.match.timeoutMs
           updates.minigameState = p.match.minigameState
         }
         set(updates)
@@ -464,18 +534,24 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   mockSetMinigame: (id) => {
     const { timeoutMs } = MINIGAME_CONFIGS[id]
-    set({ currentMinigame: id, timeoutMs, remainingMs: timeoutMs, roomStatus: 'playing', minigameState: null })
+    set({
+      currentMinigame: id,
+      timeoutMs,
+      remainingMs: timeoutMs,
+      roomStatus: 'playing',
+      minigameState: null,
+    })
   },
 
   mockAddOpponent: () => {
-    if (!get().players.find(p => p.id === 'player-2'))
+    if (!get().players.find((p) => p.id === 'player-2'))
       set({ players: [...get().players, MOCK_OPP] })
   },
 
-  mockRemoveOpponent: () => set({ players: get().players.filter(p => p.id !== 'player-2') }),
+  mockRemoveOpponent: () => set({ players: get().players.filter((p) => p.id !== 'player-2') }),
 
   mockToggleReady: (playerId) =>
-    set({ players: get().players.map(p => p.id === playerId ? { ...p, ready: !p.ready } : p) }),
+    set({ players: get().players.map((p) => (p.id === playerId ? { ...p, ready: !p.ready } : p)) }),
 
   mockSetScore: (playerId, score) => set({ scores: { ...get().scores, [playerId]: score } }),
   mockSetRound: (round) => set({ currentRound: round }),
