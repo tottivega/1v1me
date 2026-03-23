@@ -305,6 +305,15 @@ const CATEGORY_COLORS: Record<MinigameCategory, string> = {
   trivia: 'var(--purple)',
 }
 
+// Dark-tinted backgrounds for the round transition overlay — dark enough to read white text
+const CATEGORY_OVERLAY_BG: Record<MinigameCategory, string> = {
+  reflex: 'rgba(20,  60, 160, 0.92)',
+  math: 'rgba(160, 70,  10, 0.92)',
+  luck: 'rgba(130, 110,  0, 0.92)',
+  strategy: 'rgba(10,  100, 45, 0.92)',
+  trivia: 'rgba(80,  20, 130, 0.92)',
+}
+
 function LobbyGamePreview() {
   return (
     <div style={{ width: '100%', maxWidth: 460 }}>
@@ -628,7 +637,7 @@ function MatchView() {
             position: 'fixed',
             inset: 0,
             zIndex: 110,
-            background: 'rgba(0,0,0,0.88)',
+            background: CATEGORY_OVERLAY_BG[transitionData.cfg!.category],
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',

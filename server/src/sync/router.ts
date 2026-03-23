@@ -59,7 +59,8 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
 
   switch (msg.type) {
     case 'SET_NICKNAME': {
-      const { nickname } = msg.payload as { nickname: string }
+      const raw = (msg.payload as { nickname: string }).nickname
+      const nickname = raw?.trim().replace(/\s+/g, ' ')
       const roomId = msg.roomId
 
       if (!roomId || !nickname) {
