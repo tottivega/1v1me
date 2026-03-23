@@ -16,7 +16,7 @@ type Flash = 'correct' | 'wrong' | null
 export default function QuickMaths() {
   const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
   const isLive = wsStatus === 'connected'
-  const opponent = players.find(p => p.id !== myPlayerId)
+  const opponent = players.find((p) => p.id !== myPlayerId)
 
   const [inputVal, setInputVal] = useState('')
   const [flash, setFlash] = useState<Flash>(null)
@@ -28,9 +28,9 @@ export default function QuickMaths() {
 
   // ── Live mode ─────────────────────────────────────────────────────────────
   const serverState = isLive ? (minigameState as ServerState | null) : null
-  const myEquation  = serverState?.equations[myPlayerId] ?? null
-  const myCorrect   = serverState?.correct[myPlayerId] ?? 0
-  const oppCorrect  = opponent ? (serverState?.correct[opponent.id] ?? 0) : 0
+  const myEquation = serverState?.equations[myPlayerId] ?? null
+  const myCorrect = serverState?.correct[myPlayerId] ?? 0
+  const oppCorrect = opponent ? (serverState?.correct[opponent.id] ?? 0) : 0
 
   // Detect server response (equation changed) → show flash feedback
   useEffect(() => {
@@ -44,10 +44,13 @@ export default function QuickMaths() {
     prevQuestion.current = myEquation.question
     setInputVal('')
     inputRef.current?.focus()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myEquation?.question, isLive, myCorrect])
 
   // Focus input on mount and whenever equation changes
-  useEffect(() => { inputRef.current?.focus() }, [myEquation?.question])
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [myEquation?.question])
 
   // Reset tracking on new round
   useEffect(() => {
@@ -75,16 +78,19 @@ export default function QuickMaths() {
   }
 
   // ── Mock mode ─────────────────────────────────────────────────────────────
-  const [mockEquation, setMockEquation]   = useState<Equation>(mockGenerate)
+  const [mockEquation, setMockEquation] = useState<Equation>(mockGenerate)
   const [mockMyCorrect, setMockMyCorrect] = useState(0)
   const [mockOppCorrect, setMockOppCorrect] = useState(0)
 
   // Simulate opponent answering at random intervals in mock mode
   useEffect(() => {
     if (isLive) return
-    const interval = setInterval(() => {
-      if (Math.random() < 0.65) setMockOppCorrect(c => c + 1)
-    }, 1200 + Math.random() * 800)
+    const interval = setInterval(
+      () => {
+        if (Math.random() < 0.65) setMockOppCorrect((c) => c + 1)
+      },
+      1200 + Math.random() * 800
+    )
     return () => clearInterval(interval)
   }, [isLive])
 
@@ -93,7 +99,7 @@ export default function QuickMaths() {
     if (isNaN(num)) return
     const correct = num === mockEquation.answer
     triggerFlash(correct ? 'correct' : 'wrong')
-    if (correct) setMockMyCorrect(c => c + 1)
+    if (correct) setMockMyCorrect((c) => c + 1)
     setMockEquation(mockGenerate())
     setInputVal('')
     sendInput({ type: 'ANSWER', answer: num })
@@ -101,7 +107,9 @@ export default function QuickMaths() {
   }
 
   const handleSubmit = useCallback(() => {
-    if (isLive) submitLive(); else submitMock()
+    if (isLive) submitLive()
+    else submitMock()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLive, inputVal, myEquation])
 
   function onKey(e: React.KeyboardEvent) {
@@ -109,21 +117,41 @@ export default function QuickMaths() {
   }
 
   // ── Shared render values ──────────────────────────────────────────────────
-  const question   = isLive ? (myEquation?.question ?? '…') : mockEquation.question
-  const myScore    = isLive ? myCorrect   : mockMyCorrect
-  const oppScore   = isLive ? oppCorrect  : mockOppCorrect
-  const oppName    = opponent?.nickname ?? '???'
+  const question = isLive ? (myEquation?.question ?? '…') : mockEquation.question
+  const myScore = isLive ? myCorrect : mockMyCorrect
+  const oppScore = isLive ? oppCorrect : mockOppCorrect
+  const oppName = opponent?.nickname ?? '???'
 
   const flashBg =
-    flash === 'correct' ? 'rgba(68,204,68,0.18)' :
-    flash === 'wrong'   ? 'rgba(255,51,51,0.18)'  :
-    'transparent'
+    flash === 'correct'
+      ? 'rgba(68,204,68,0.18)'
+      : flash === 'wrong'
+        ? 'rgba(255,51,51,0.18)'
+        : 'transparent'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28, flex: 1, padding: 32, transition: 'background 0.15s', background: flashBg }}>
-
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 28,
+        flex: 1,
+        padding: 32,
+        transition: 'background 0.15s',
+        background: flashBg,
+      }}
+    >
       {/* Title */}
-      <div style={{ fontFamily: 'var(--font-title)', fontSize: 32, color: 'var(--blue)', textAlign: 'center' }}>
+      <div
+        style={{
+          fontFamily: 'var(--font-title)',
+          fontSize: 32,
+          color: 'var(--blue)',
+          textAlign: 'center',
+        }}
+      >
         QUICK MATHS 🔢
       </div>
 
@@ -135,30 +163,46 @@ export default function QuickMaths() {
       </div>
 
       {/* Equation */}
-      <div style={{
-        background: 'var(--white)',
-        border: 'var(--border)',
-        borderRadius: 20,
-        boxShadow: flash === 'correct'
-          ? '4px 4px 0 var(--green)'
-          : flash === 'wrong'
-            ? '4px 4px 0 var(--red)'
-            : 'var(--shadow)',
-        padding: '28px 48px',
-        textAlign: 'center',
-        transition: 'box-shadow 0.1s',
-        minWidth: 280,
-      }}>
-        <div style={{ fontFamily: 'var(--font-title)', fontSize: 64, color: 'var(--black)', lineHeight: 1 }}>
+      <div
+        style={{
+          background: 'var(--white)',
+          border: 'var(--border)',
+          borderRadius: 20,
+          boxShadow:
+            flash === 'correct'
+              ? '4px 4px 0 var(--green)'
+              : flash === 'wrong'
+                ? '4px 4px 0 var(--red)'
+                : 'var(--shadow)',
+          padding: '28px 48px',
+          textAlign: 'center',
+          transition: 'box-shadow 0.1s',
+          minWidth: 280,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: 'var(--font-title)',
+            fontSize: 64,
+            color: 'var(--black)',
+            lineHeight: 1,
+          }}
+        >
           {question} = ?
         </div>
         {flash === 'correct' && (
-          <div className="anim-pop" style={{ color: 'var(--green)', fontWeight: 900, fontSize: 18, marginTop: 8 }}>
+          <div
+            className="anim-pop"
+            style={{ color: 'var(--green)', fontWeight: 900, fontSize: 18, marginTop: 8 }}
+          >
             ✅ Correct!
           </div>
         )}
         {flash === 'wrong' && (
-          <div className="anim-shake" style={{ color: 'var(--red)', fontWeight: 900, fontSize: 18, marginTop: 8 }}>
+          <div
+            className="anim-shake"
+            style={{ color: 'var(--red)', fontWeight: 900, fontSize: 18, marginTop: 8 }}
+          >
             ❌ Nope! New one →
           </div>
         )}
@@ -171,7 +215,7 @@ export default function QuickMaths() {
           type="number"
           inputMode="numeric"
           value={inputVal}
-          onChange={e => setInputVal(e.target.value)}
+          onChange={(e) => setInputVal(e.target.value)}
           onKeyDown={onKey}
           placeholder="?"
           style={{
@@ -197,7 +241,9 @@ export default function QuickMaths() {
         </button>
       </div>
 
-      <div className="label" style={{ opacity: 0.45 }}>Press Enter to submit</div>
+      <div className="label" style={{ opacity: 0.45 }}>
+        Press Enter to submit
+      </div>
     </div>
   )
 }
@@ -205,8 +251,12 @@ export default function QuickMaths() {
 function ScorePill({ label, score, color }: { label: string; score: number; color: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-      <div style={{ fontFamily: 'var(--font-title)', fontSize: 52, color, lineHeight: 1 }}>{score}</div>
-      <div className="label" style={{ opacity: 0.6 }}>{label}</div>
+      <div style={{ fontFamily: 'var(--font-title)', fontSize: 52, color, lineHeight: 1 }}>
+        {score}
+      </div>
+      <div className="label" style={{ opacity: 0.6 }}>
+        {label}
+      </div>
     </div>
   )
 }

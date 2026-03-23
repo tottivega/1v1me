@@ -461,6 +461,7 @@ function MatchView() {
       }, 1900)
       return () => [t1, t2, t3, t4].forEach(clearTimeout)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRound, currentMinigame])
 
   // How-to-play tooltip
@@ -766,6 +767,7 @@ function RoundEndOverlay() {
 
   useEffect(() => {
     iWon ? playRoundWin() : playRoundLose()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
@@ -835,6 +837,7 @@ function MatchEndView() {
 
   useEffect(() => {
     iWon ? playMatchWin() : playMatchLose()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const me = players.find((p) => p.id === myPlayerId)
   const opponent = players.find((p) => p.id !== myPlayerId)

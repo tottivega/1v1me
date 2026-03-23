@@ -75,6 +75,7 @@ export default function WordScramble() {
       prevMyAttempts.current = current
       triggerShake()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverState?.attempts[myPlayerId]])
 
   function triggerShake() {
@@ -138,6 +139,7 @@ export default function WordScramble() {
     } else if (serverState.winnerId) {
       playWrong()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverState?.resolved])
 
   return (

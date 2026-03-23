@@ -14,7 +14,7 @@ interface ServerState {
 export default function MemoryMatch() {
   const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
   const isLive = wsStatus === 'connected'
-  const opponent = players.find(p => p.id !== myPlayerId)
+  const opponent = players.find((p) => p.id !== myPlayerId)
 
   // ── Phase tracking ─────────────────────────────────────────────────────────
   const [phase, setPhase] = useState<'memorize' | 'recall' | 'submitted'>('memorize')
@@ -34,10 +34,16 @@ export default function MemoryMatch() {
   useEffect(() => {
     if (isLive) return
     setMockOppSub(null)
-    const t = setTimeout(() => {
-      setMockOppSub(Array.from({ length: SEQ_LEN }, () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]))
-    }, 2500 + Math.random() * 2000)
+    const t = setTimeout(
+      () => {
+        setMockOppSub(
+          Array.from({ length: SEQ_LEN }, () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)])
+        )
+      },
+      2500 + Math.random() * 2000
+    )
     return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLive, sequence.join(',')])
 
   // Reset on new round (minigameState goes null → new state)
@@ -45,6 +51,7 @@ export default function MemoryMatch() {
     setPhase('memorize')
     setCountdown(MEMORIZE_SECS)
     setPicks([])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sequence.join(',')])
 
   // Memorize countdown
@@ -54,7 +61,7 @@ export default function MemoryMatch() {
       setPhase('recall')
       return
     }
-    const t = setTimeout(() => setCountdown(c => c - 1), 1000)
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000)
     return () => clearTimeout(t)
   }, [phase, countdown])
 
@@ -80,7 +87,7 @@ export default function MemoryMatch() {
 
   function removeLast() {
     if (phase !== 'recall' || picks.length === 0) return
-    setPicks(p => p.slice(0, -1))
+    setPicks((p) => p.slice(0, -1))
   }
 
   function scoreOf(sub: string[]) {
@@ -88,34 +95,63 @@ export default function MemoryMatch() {
   }
 
   // In live mode use server submissions; in mock mode use local picks / mock opponent
-  const myScore  = phase === 'submitted'
-    ? (submissions[myPlayerId] ? scoreOf(submissions[myPlayerId]) : scoreOf(picks))
-    : null
-  const effectiveOppSub = opponent ? (submissions[opponent.id] ?? (!isLive ? mockOppSub ?? undefined : undefined)) : undefined
+  const myScore =
+    phase === 'submitted'
+      ? submissions[myPlayerId]
+        ? scoreOf(submissions[myPlayerId])
+        : scoreOf(picks)
+      : null
+  const effectiveOppSub = opponent
+    ? (submissions[opponent.id] ?? (!isLive ? (mockOppSub ?? undefined) : undefined))
+    : undefined
   const oppScore = effectiveOppSub ? scoreOf(effectiveOppSub) : null
   const effectiveOppSubmitted = isLive ? oppSubmitted : !!mockOppSub
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', gap: 28, flex: 1, padding: 24,
-    }}>
-      <div style={{ fontFamily: 'var(--font-title)', fontSize: 32, color: 'var(--green)', textAlign: 'center' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 28,
+        flex: 1,
+        padding: 24,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: 'var(--font-title)',
+          fontSize: 32,
+          color: 'var(--green)',
+          textAlign: 'center',
+        }}
+      >
         MEMORY MATCH 🧠
       </div>
 
       {/* ── Memorize phase ── */}
       {phase === 'memorize' && (
         <>
-          <div style={{ fontFamily: 'var(--font-title)', fontSize: 18, color: 'rgba(0,0,0,0.5)', letterSpacing: 2 }}>
+          <div
+            style={{
+              fontFamily: 'var(--font-title)',
+              fontSize: 18,
+              color: 'rgba(0,0,0,0.5)',
+              letterSpacing: 2,
+            }}
+          >
             MEMORISE THIS SEQUENCE
           </div>
           <SequenceDisplay sequence={sequence} revealed />
-          <div style={{
-            fontFamily: 'var(--font-title)', fontSize: 72,
-            color: countdown <= 1 ? 'var(--red)' : 'var(--orange)',
-            transition: 'color 0.3s',
-          }}>
+          <div
+            style={{
+              fontFamily: 'var(--font-title)',
+              fontSize: 72,
+              color: countdown <= 1 ? 'var(--red)' : 'var(--orange)',
+              transition: 'color 0.3s',
+            }}
+          >
             {countdown}
           </div>
         </>
@@ -124,19 +160,35 @@ export default function MemoryMatch() {
       {/* ── Recall phase ── */}
       {phase === 'recall' && (
         <>
-          <div style={{ fontFamily: 'var(--font-title)', fontSize: 18, color: 'rgba(0,0,0,0.5)', letterSpacing: 2 }}>
+          <div
+            style={{
+              fontFamily: 'var(--font-title)',
+              fontSize: 18,
+              color: 'rgba(0,0,0,0.5)',
+              letterSpacing: 2,
+            }}
+          >
             REPRODUCE THE SEQUENCE
           </div>
           {/* Slots showing current picks */}
           <div style={{ display: 'flex', gap: 10 }}>
             {Array.from({ length: SEQ_LEN }).map((_, i) => (
-              <div key={i} style={{
-                width: 52, height: 52, background: picks[i] ? 'var(--white)' : 'rgba(0,0,0,0.06)',
-                border: picks[i] ? 'var(--border)' : '3px dashed rgba(0,0,0,0.2)',
-                borderRadius: 12, display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontSize: 28, boxShadow: picks[i] ? 'var(--shadow-sm)' : 'none',
-                transition: 'all 0.1s',
-              }}>
+              <div
+                key={i}
+                style={{
+                  width: 52,
+                  height: 52,
+                  background: picks[i] ? 'var(--white)' : 'rgba(0,0,0,0.06)',
+                  border: picks[i] ? 'var(--border)' : '3px dashed rgba(0,0,0,0.2)',
+                  borderRadius: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 28,
+                  boxShadow: picks[i] ? 'var(--shadow-sm)' : 'none',
+                  transition: 'all 0.1s',
+                }}
+              >
                 {picks[i] ?? ''}
               </div>
             ))}
@@ -144,16 +196,24 @@ export default function MemoryMatch() {
 
           {/* Symbol buttons */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-            {SYMBOLS.map(sym => (
+            {SYMBOLS.map((sym) => (
               <button
                 key={sym}
                 onClick={() => addPick(sym)}
                 disabled={picks.length >= SEQ_LEN}
                 style={{
-                  width: 60, height: 60, fontSize: 28, background: 'var(--white)',
-                  border: 'var(--border)', borderRadius: 12, cursor: 'pointer',
-                  boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', padding: 0,
+                  width: 60,
+                  height: 60,
+                  fontSize: 28,
+                  background: 'var(--white)',
+                  border: 'var(--border)',
+                  borderRadius: 12,
+                  cursor: 'pointer',
+                  boxShadow: 'var(--shadow-sm)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 0,
                   opacity: picks.length >= SEQ_LEN ? 0.4 : 1,
                   transition: 'opacity 0.15s',
                 }}
@@ -174,21 +234,41 @@ export default function MemoryMatch() {
       {/* ── Submitted phase ── */}
       {phase === 'submitted' && (
         <>
-          <div className="anim-pop" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div
+            className="anim-pop"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16 }}
+          >
             <SequenceDisplay sequence={sequence} revealed />
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               {(picks.length > 0 ? picks : (submissions[myPlayerId] ?? [])).map((sym, i) => (
-                <div key={i} style={{
-                  width: 52, height: 52, background: sym === sequence[i] ? 'rgba(68,204,68,0.15)' : 'rgba(255,51,51,0.12)',
-                  border: `3px solid ${sym === sequence[i] ? 'var(--green)' : 'var(--red)'}`,
-                  borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28,
-                }}>
+                <div
+                  key={i}
+                  style={{
+                    width: 52,
+                    height: 52,
+                    background:
+                      sym === sequence[i] ? 'rgba(68,204,68,0.15)' : 'rgba(255,51,51,0.12)',
+                    border: `3px solid ${sym === sequence[i] ? 'var(--green)' : 'var(--red)'}`,
+                    borderRadius: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 28,
+                  }}
+                >
                   {sym}
                 </div>
               ))}
             </div>
             {myScore !== null && (
-              <div style={{ fontFamily: 'var(--font-title)', fontSize: 22, color: myScore >= 4 ? 'var(--green)' : myScore >= 2 ? 'var(--orange)' : 'var(--red)' }}>
+              <div
+                style={{
+                  fontFamily: 'var(--font-title)',
+                  fontSize: 22,
+                  color:
+                    myScore >= 4 ? 'var(--green)' : myScore >= 2 ? 'var(--orange)' : 'var(--red)',
+                }}
+              >
                 {myScore}/{SEQ_LEN} correct!
               </div>
             )}
@@ -197,7 +277,10 @@ export default function MemoryMatch() {
                 {opponent?.nickname ?? 'Opponent'}: {oppScore}/{SEQ_LEN}
               </div>
             ) : (
-              <div className="anim-pulse" style={{ fontSize: 14, fontWeight: 700, color: 'rgba(0,0,0,0.4)' }}>
+              <div
+                className="anim-pulse"
+                style={{ fontSize: 14, fontWeight: 700, color: 'rgba(0,0,0,0.4)' }}
+              >
                 Waiting for {opponent?.nickname ?? 'opponent'}…
               </div>
             )}
@@ -212,12 +295,21 @@ function SequenceDisplay({ sequence, revealed }: { sequence: string[]; revealed:
   return (
     <div style={{ display: 'flex', gap: 10 }}>
       {sequence.map((sym, i) => (
-        <div key={i} style={{
-          width: 52, height: 52, background: 'var(--white)',
-          border: 'var(--border)', borderRadius: 12,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 28, boxShadow: 'var(--shadow)',
-        }}>
+        <div
+          key={i}
+          style={{
+            width: 52,
+            height: 52,
+            background: 'var(--white)',
+            border: 'var(--border)',
+            borderRadius: 12,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 28,
+            boxShadow: 'var(--shadow)',
+          }}
+        >
           {revealed ? sym : '?'}
         </div>
       ))}

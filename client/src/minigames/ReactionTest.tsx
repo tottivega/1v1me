@@ -52,6 +52,7 @@ export default function ReactionTest() {
     if (!isLive || !serverState) return
     if (serverState.phase === 'ready' && prevLivePhase.current !== 'ready') playReactionGo()
     prevLivePhase.current = serverState.phase
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverState?.phase, isLive])
 
   const iAmPenalized = serverState?.penalized?.includes(myPlayerId) ?? false

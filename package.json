@@ -17,7 +17,7 @@
     ],
     "client/src/**/*.{ts,tsx}": [
       "prettier --write",
-      "eslint --fix --config client/eslint.config.js"
+      "eslint --fix --max-warnings=0 --config client/eslint.config.js"
     ],
     "shared/**/*.ts": [
       "prettier --write"
