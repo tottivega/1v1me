@@ -14,20 +14,46 @@ import {
 } from '../rooms/roomManager'
 import { handleGameInput } from '../match/matchController'
 
+const RATE_LIMIT = 60 // max messages per window
+const RATE_WINDOW_MS = 1000 // sliding window size
+
 interface ConnState {
   playerId: string
   roomId: string | null
   role: 'player' | 'spectator'
+  msgCount: number
+  windowStart: number
 }
 
 const connections = new Map<WebSocket, ConnState>()
 
 export function onConnection(ws: WebSocket): void {
   const playerId = uuidv4()
-  connections.set(ws, { playerId, roomId: null, role: 'player' })
+  connections.set(ws, {
+    playerId,
+    roomId: null,
+    role: 'player',
+    msgCount: 0,
+    windowStart: Date.now(),
+  })
   console.log(`[WS] Connection opened, assigned playerId=${playerId}`)
 
   ws.on('message', (raw) => {
+    const conn = connections.get(ws)
+    if (!conn) return
+
+    // Sliding-window rate limit
+    const now = Date.now()
+    if (now - conn.windowStart >= RATE_WINDOW_MS) {
+      conn.windowStart = now
+      conn.msgCount = 0
+    }
+    conn.msgCount++
+    if (conn.msgCount > RATE_LIMIT) {
+      send(ws, 'ERROR', { code: 'RATE_LIMITED', message: 'Too many messages — slow down' })
+      return
+    }
+
     let msg: ClientMessage
     try {
       msg = JSON.parse(raw.toString()) as ClientMessage
