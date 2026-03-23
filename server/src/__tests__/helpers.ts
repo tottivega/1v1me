@@ -3,6 +3,7 @@ import type { WebSocket } from 'ws'
 import type { Room } from '../types'
 import type { MatchState } from '../types'
 import type { MinigameId } from '@shared/types'
+import { DEFAULT_ROOM_CONFIG } from '@shared/types'
 
 export function makeWs() {
   return { send: vi.fn(), readyState: 1 } as unknown as WebSocket
@@ -21,17 +22,28 @@ export function makeRoom(roomId = 'test-room'): Room {
     spectators: [],
     status: 'lobby',
     match: null,
+    config: { ...DEFAULT_ROOM_CONFIG },
     lastActivityAt: Date.now(),
     cleanupTimer: null,
     rematchVotes: new Set(),
   }
 }
 
-export function makeMatch(p1Id: string, p2Id: string, overrides: Partial<MatchState> = {}): MatchState {
+export function makeMatch(
+  p1Id: string,
+  p2Id: string,
+  overrides: Partial<MatchState> = {}
+): MatchState {
   return {
     matchId: 'match-1',
     scores: { [p1Id]: 0, [p2Id]: 0 },
-    minigameQueue: ['clickspeed', 'coinflip', 'reactiontest', 'numberguess', 'quickmaths'] as MinigameId[],
+    minigameQueue: [
+      'clickspeed',
+      'coinflip',
+      'reactiontest',
+      'numberguess',
+      'quickmaths',
+    ] as MinigameId[],
     currentRound: 1,
     currentMinigame: 'clickspeed',
     minigameState: null,

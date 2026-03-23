@@ -1,6 +1,6 @@
 import { WebSocket } from 'ws'
 import { v4 as uuidv4 } from 'uuid'
-import type { ClientMessage } from '@shared/types'
+import type { ClientMessage, MinigameCategory, RoomConfig } from '@shared/types'
 import { send, toPlayerInfos } from './broadcast'
 import { getRoom } from '../rooms/roomStore'
 import {
@@ -111,7 +111,35 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
           playerId: player.id,
           players: toPlayerInfos(room.players),
           spectatorCount: room.spectators.length,
+          config: room.config,
         })
+      }
+      break
+    }
+
+    case 'SET_ROOM_CONFIG': {
+      if (!conn.roomId) return
+      const room = getRoom(conn.roomId)
+      if (!room) return
+      // Only the room creator (first player) may change config, and only before anyone readies
+      if (room.players[0]?.id !== conn.playerId) return
+      if (room.status !== 'lobby' || room.players.some((p) => p.ready)) return
+
+      const { bestOf, enabledCategories } = msg.payload as Partial<RoomConfig>
+      const validBestOf = [3, 5, 7, 9]
+      if (!bestOf || !validBestOf.includes(bestOf)) return
+      if (
+        !Array.isArray(enabledCategories) ||
+        enabledCategories.length === 0 ||
+        !enabledCategories.every((c) =>
+          ['reflex', 'math', 'luck', 'strategy', 'trivia'].includes(c as MinigameCategory)
+        )
+      )
+        return
+
+      room.config = { bestOf, enabledCategories }
+      for (const player of room.players) {
+        send(player.ws, 'ROOM_CONFIG', { config: room.config })
       }
       break
     }

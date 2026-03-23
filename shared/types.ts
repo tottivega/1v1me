@@ -7,7 +7,7 @@ export type RoomStatus =
   | 'playing'
   | 'round_end'
   | 'match_end'
-  | 'reconnecting';
+  | 'reconnecting'
 
 // ─── Minigame Registry ───────────────────────────────────────────────────────
 // Single source of truth. Add/remove a game here and TypeScript enforces the
@@ -96,22 +96,37 @@ export const MINIGAME_CONFIGS = {
     description: 'Unscramble the letters and type the word before your opponent does.',
     difficulty: 2,
   },
-} as const satisfies Record<string, {
-  label: string;
-  emoji: string;
-  timeoutMs: number;
-  category: MinigameCategory;
-  description: string;
-  difficulty: 1 | 2 | 3;
-}>;
+} as const satisfies Record<
+  string,
+  {
+    label: string
+    emoji: string
+    timeoutMs: number
+    category: MinigameCategory
+    description: string
+    difficulty: 1 | 2 | 3
+  }
+>
 
-export type MinigameId = keyof typeof MINIGAME_CONFIGS;
+export type MinigameId = keyof typeof MINIGAME_CONFIGS
+
+// ─── Room Config ──────────────────────────────────────────────────────────────
+
+export interface RoomConfig {
+  bestOf: 3 | 5 | 7 | 9
+  enabledCategories: MinigameCategory[]
+}
+
+export const DEFAULT_ROOM_CONFIG: RoomConfig = {
+  bestOf: 5,
+  enabledCategories: ['reflex', 'math', 'luck', 'strategy', 'trivia'],
+}
 
 export interface PlayerInfo {
-  id: string;
-  nickname: string;
-  ready: boolean;
-  connected: boolean;
+  id: string
+  nickname: string
+  ready: boolean
+  connected: boolean
 }
 
 // ─── WebSocket Messages ───────────────────────────────────────────────────────
@@ -133,127 +148,134 @@ export type ServerMessageType =
   | 'SPECTATOR_COUNT'
   | 'EMOTE_RECEIVED'
   | 'REMATCH_VOTE'
-  | 'ERROR';
+  | 'ROOM_CONFIG'
+  | 'ERROR'
 
 // Client → Server
 export type ClientMessageType =
   | 'SET_NICKNAME'
   | 'SET_READY'
+  | 'SET_ROOM_CONFIG'
   | 'GAME_INPUT'
   | 'RECONNECT'
   | 'REMATCH'
   | 'SPECTATE'
-  | 'EMOTE';
+  | 'EMOTE'
 
 export interface ServerMessage {
-  type: ServerMessageType;
-  payload: unknown;
+  type: ServerMessageType
+  payload: unknown
 }
 
 export interface ClientMessage {
-  type: ClientMessageType;
-  roomId: string;
-  playerId: string;
-  payload: unknown;
+  type: ClientMessageType
+  roomId: string
+  playerId: string
+  payload: unknown
 }
 
 // ─── Server Message Payloads ──────────────────────────────────────────────────
 
 export interface RoomJoinedPayload {
-  roomId: string;
-  playerId: string;
-  players: PlayerInfo[];
-  spectatorCount: number;
+  roomId: string
+  playerId: string
+  players: PlayerInfo[]
+  spectatorCount: number
+  config: RoomConfig
+}
+
+export interface RoomConfigPayload {
+  config: RoomConfig
 }
 
 export interface PlayerReadyPayload {
-  playerId: string;
-  bothReady: boolean;
+  playerId: string
+  bothReady: boolean
 }
 
 export interface MatchStartPayload {
-  matchId: string;
-  players: PlayerInfo[];
+  matchId: string
+  players: PlayerInfo[]
 }
 
 export interface RoundStartPayload {
-  round: number;
-  minigameId: MinigameId;
-  timeoutMs: number;
+  round: number
+  minigameId: MinigameId
+  timeoutMs: number
 }
 
 export interface TimerTickPayload {
-  remainingMs: number;
+  remainingMs: number
 }
 
 export interface GameUpdatePayload {
-  state: unknown;
+  state: unknown
 }
 
 export interface RoundEndPayload {
-  winnerId: string | null;
-  scores: Record<string, number>;
-  reason: 'completed' | 'timeout' | 'forfeit';
+  winnerId: string | null
+  scores: Record<string, number>
+  reason: 'completed' | 'timeout' | 'forfeit'
 }
 
 export interface RoundRecord {
-  round: number;
-  minigameId: MinigameId;
-  winnerId: string | null;
+  round: number
+  minigameId: MinigameId
+  winnerId: string | null
 }
 
 export interface MatchEndPayload {
-  winnerId: string;
-  scores: Record<string, number>;
-  roundHistory: RoundRecord[];
+  winnerId: string
+  scores: Record<string, number>
+  roundHistory: RoundRecord[]
 }
 
 export interface PlayerDisconnectedPayload {
-  playerId: string;
-  reconnectWindowMs: number;
+  playerId: string
+  reconnectWindowMs: number
 }
 
 export interface ForfeitPayload {
-  forfeitedPlayerId: string;
-  winnerId: string;
+  forfeitedPlayerId: string
+  winnerId: string
 }
 
 export interface SpectateJoinedPayload {
-  roomId: string;
-  players: PlayerInfo[];
-  status: RoomStatus;
-  spectatorCount: number;
+  roomId: string
+  players: PlayerInfo[]
+  status: RoomStatus
+  spectatorCount: number
   match: {
-    scores: Record<string, number>;
-    currentRound: number;
-    currentMinigame: string | null;
-    remainingMs: number;
-    timeoutMs: number;
-    minigameState: unknown;
-  } | null;
+    scores: Record<string, number>
+    currentRound: number
+    currentMinigame: string | null
+    remainingMs: number
+    timeoutMs: number
+    minigameState: unknown
+  } | null
 }
 
 export interface SpectatorCountPayload {
-  count: number;
+  count: number
 }
 
 export interface RematchVotePayload {
-  waiting: boolean;
+  waiting: boolean
 }
 
 export interface EmotePayload {
-  fromPlayerId: string;
-  emote: string;
+  fromPlayerId: string
+  emote: string
 }
 
 export interface ErrorPayload {
-  code: string;
-  message: string;
+  code: string
+  message: string
 }
 
 // ─── Minigame Result ─────────────────────────────────────────────────────────
 
 export interface MinigameResult {
-  winnerId: string | null;
-  reason: 'completed' | 'timeout' | 'forfeit';
+  winnerId: string | null
+  reason: 'completed' | 'timeout' | 'forfeit'
 }

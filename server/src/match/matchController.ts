@@ -13,10 +13,11 @@ export function startMatch(room: Room): void {
   const [p1, p2] = room.players
   const matchId = uuidv4()
 
+  const { bestOf, enabledCategories } = room.config
   room.match = {
     matchId,
     scores: { [p1.id]: 0, [p2.id]: 0 },
-    minigameQueue: shuffleQueue(),
+    minigameQueue: shuffleQueue(bestOf, enabledCategories),
     currentRound: 0,
     currentMinigame: null,
     minigameState: null,
@@ -97,15 +98,16 @@ export function resolveRound(room: Room, result: MinigameResult): void {
     reason: result.reason,
   })
 
-  // First to 3 wins the match
-  const matchWinner = room.players.find(
-    p => (room.match!.scores[p.id] ?? 0) >= 3,
-  )
+  const { bestOf } = room.config
+  const winsNeeded = Math.ceil(bestOf / 2)
+
+  // First to winsNeeded wins the match
+  const matchWinner = room.players.find((p) => (room.match!.scores[p.id] ?? 0) >= winsNeeded)
 
   if (matchWinner) {
     setTimeout(() => endMatch(room, matchWinner.id, 'completed'), ROUND_TRANSITION_MS)
-  } else if (room.match.currentRound >= 5) {
-    // All 5 rounds played — whoever has more points wins
+  } else if (room.match.currentRound >= bestOf) {
+    // All rounds played — whoever has more points wins
     const [p1, p2] = room.players
     const s1 = room.match.scores[p1.id] ?? 0
     const s2 = room.match.scores[p2.id] ?? 0
@@ -126,18 +128,18 @@ function endMatch(room: Room, winnerId: string, reason: 'completed' | 'forfeit')
     roundHistory: room.match.roundHistory,
   })
 
-  const winner = room.players.find(p => p.id === winnerId)
-  const loser  = room.players.find(p => p.id !== winnerId)
+  const winner = room.players.find((p) => p.id === winnerId)
+  const loser = room.players.find((p) => p.id !== winnerId)
 
   if (winner && loser) {
     persistMatchResult({
       roomId: room.roomId,
       winnerNickname: winner.nickname,
-      loserNickname:  loser.nickname,
+      loserNickname: loser.nickname,
       winnerScore: room.match.scores[winner.id] ?? 0,
-      loserScore:  room.match.scores[loser.id]  ?? 0,
+      loserScore: room.match.scores[loser.id] ?? 0,
       endedReason: reason,
-    }).catch(err => console.error('[DB] Persist error:', err))
+    }).catch((err) => console.error('[DB] Persist error:', err))
   }
 }
 
@@ -146,7 +148,7 @@ export function forfeitMatch(room: Room, forfeitedPlayerId: string): void {
 
   stopTimer(room)
 
-  const winnerId = room.players.find(p => p.id !== forfeitedPlayerId)?.id
+  const winnerId = room.players.find((p) => p.id !== forfeitedPlayerId)?.id
   if (!winnerId) return
 
   broadcast(room, 'FORFEIT', { forfeitedPlayerId, winnerId })

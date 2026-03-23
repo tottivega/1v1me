@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
 import ScoreBoard from '../components/ScoreBoard'
 import TimerBar from '../components/TimerBar'
-import { MINIGAME_CONFIGS, type MinigameCategory } from '@shared/types'
+import { MINIGAME_CONFIGS, type MinigameCategory, type RoomConfig } from '@shared/types'
 import { MINIGAME_COMPONENTS } from '../minigames/registry'
 import {
   playClick,
@@ -118,10 +118,20 @@ function NicknameGate({ roomId }: { roomId: string }) {
 // ── Lobby ─────────────────────────────────────────────────────────────────────
 
 function LobbyView({ roomId }: { roomId: string }) {
-  const { players, myPlayerId, setReady, mockAddOpponent, wsStatus, spectatorCount } =
-    useGameStore()
+  const {
+    players,
+    myPlayerId,
+    setReady,
+    mockAddOpponent,
+    wsStatus,
+    spectatorCount,
+    roomConfig,
+    sendRoomConfig,
+  } = useGameStore()
   const me = players.find((p) => p.id === myPlayerId)
   const opponent = players.find((p) => p.id !== myPlayerId)
+  const isCreator = players[0]?.id === myPlayerId
+  const locked = !!(me?.ready || opponent?.ready)
   const inviteUrl = `${window.location.origin}/room/${roomId}`
 
   // Copy flash
@@ -234,6 +244,14 @@ function LobbyView({ roomId }: { roomId: string }) {
         </div>
       </div>
 
+      {/* Room settings */}
+      <RoomSettings
+        config={roomConfig}
+        isCreator={isCreator}
+        locked={locked}
+        onChange={sendRoomConfig}
+      />
+
       {/* Player slots */}
       <div style={{ display: 'flex', gap: 16, width: '100%', maxWidth: 460 }}>
         <PlayerSlot player={me ?? null} isMe />
@@ -312,6 +330,105 @@ const CATEGORY_OVERLAY_BG: Record<MinigameCategory, string> = {
   luck: 'rgba(130, 110,  0, 0.92)',
   strategy: 'rgba(10,  100, 45, 0.92)',
   trivia: 'rgba(80,  20, 130, 0.92)',
+}
+
+const ALL_CATEGORIES: MinigameCategory[] = ['reflex', 'math', 'luck', 'strategy', 'trivia']
+const BEST_OF_OPTIONS = [3, 5, 7, 9] as const
+
+const CATEGORY_LABEL: Record<MinigameCategory, string> = {
+  reflex: '⚡ Reflex',
+  math: '🔢 Math',
+  luck: '🎲 Luck',
+  strategy: '🧠 Strategy',
+  trivia: '🔤 Trivia',
+}
+
+function RoomSettings({
+  config,
+  isCreator,
+  locked,
+  onChange,
+}: {
+  config: RoomConfig
+  isCreator: boolean
+  locked: boolean
+  onChange: (cfg: RoomConfig) => void
+}) {
+  const interactive = isCreator && !locked
+
+  function setBestOf(n: 3 | 5 | 7 | 9) {
+    if (!interactive) return
+    onChange({ ...config, bestOf: n })
+  }
+
+  function toggleCategory(cat: MinigameCategory) {
+    if (!interactive) return
+    const enabled = config.enabledCategories.includes(cat)
+    // Must keep at least one category
+    if (enabled && config.enabledCategories.length === 1) return
+    const next = enabled
+      ? config.enabledCategories.filter((c) => c !== cat)
+      : [...config.enabledCategories, cat]
+    onChange({ ...config, enabledCategories: next })
+  }
+
+  return (
+    <div
+      className="card"
+      style={{ width: '100%', maxWidth: 460, display: 'flex', flexDirection: 'column', gap: 14 }}
+    >
+      <div className="label" style={{ fontSize: 11, opacity: 0.6 }}>
+        MATCH SETTINGS {!isCreator && <span style={{ fontWeight: 400 }}>(set by host)</span>}
+        {locked && <span style={{ fontWeight: 400 }}> — locked</span>}
+      </div>
+
+      {/* Best-of selector */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--black)' }}>Best of</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {BEST_OF_OPTIONS.map((n) => (
+            <button
+              key={n}
+              className={`btn btn-sm ${config.bestOf === n ? 'btn-orange' : 'btn-white'}`}
+              style={{ flex: 1, opacity: interactive || config.bestOf === n ? 1 : 0.5 }}
+              onClick={() => setBestOf(n)}
+              disabled={!interactive}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Category filter */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--black)' }}>Game types</div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {ALL_CATEGORIES.map((cat) => {
+            const on = config.enabledCategories.includes(cat)
+            return (
+              <button
+                key={cat}
+                className={`btn btn-sm ${on ? 'btn-white' : 'btn-white'}`}
+                style={{
+                  opacity: interactive ? 1 : on ? 1 : 0.35,
+                  background: on ? CATEGORY_COLORS[cat] : 'var(--cream)',
+                  color: on && cat !== 'luck' ? 'var(--white)' : 'var(--black)',
+                  border: '2px solid var(--black)',
+                  fontWeight: 800,
+                  fontSize: 11,
+                }}
+                onClick={() => toggleCategory(cat)}
+                disabled={!interactive}
+              >
+                {CATEGORY_LABEL[cat]}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function LobbyGamePreview() {

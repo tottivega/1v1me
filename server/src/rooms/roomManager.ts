@@ -1,5 +1,6 @@
 import { WebSocket } from 'ws'
 import type { Room, Player } from '../types'
+import { DEFAULT_ROOM_CONFIG } from '@shared/types'
 import { getRoom, setRoom, deleteRoom } from './roomStore'
 import { broadcast, send, toPlayerInfos } from '../sync/broadcast'
 import { startMatch, forfeitMatch } from '../match/matchController'
@@ -40,6 +41,7 @@ export function joinOrCreateRoom(
       spectators: [],
       status: 'lobby',
       match: null,
+      config: { ...DEFAULT_ROOM_CONFIG },
       lastActivityAt: Date.now(),
       cleanupTimer: null,
       rematchVotes: new Set(),
@@ -151,6 +153,7 @@ export function handleReconnect(
     playerId,
     players: toPlayerInfos(room.players),
     spectatorCount: room.spectators.length,
+    config: room.config,
   })
 
   if (room.match) {
@@ -236,6 +239,7 @@ function doRematch(room: Room): void {
         playerId: player.id,
         players: toPlayerInfos(room.players),
         spectatorCount: room.spectators.length,
+        config: room.config,
       })
     }
   }

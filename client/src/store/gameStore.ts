@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import {
   MINIGAME_CONFIGS,
+  DEFAULT_ROOM_CONFIG,
   type RoomStatus,
   type MinigameId,
   type PlayerInfo,
@@ -20,6 +21,8 @@ import {
   type SpectatorCountPayload,
   type RoundRecord,
   type EmotePayload,
+  type RoomConfig,
+  type RoomConfigPayload,
 } from '@shared/types'
 
 // Module-level interval handle for the reconnect countdown (not reactive state)
@@ -135,6 +138,9 @@ interface GameState {
   myColor: string // 'var(--blue)' or 'var(--orange)'
   oppColor: string // opposite of myColor
 
+  // Room configuration (best-of, enabled categories)
+  roomConfig: RoomConfig
+
   // ── Real actions ─────────────────────────────────────────────────────────
   connect: (roomId: string, nickname: string) => void
   disconnect: () => void
@@ -145,6 +151,7 @@ interface GameState {
   setNickname: (nickname: string) => void
   spectate: (roomId: string) => void
   reconnectSaved: (roomId: string, playerId: string) => void
+  sendRoomConfig: (config: RoomConfig) => void
 
   // ── Mock actions (DevPanel / dev mode only) ──────────────────────────────
   mockJoinRoom: (roomId: string, nickname: string) => void
@@ -188,6 +195,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   rematchVoting: false,
   myColor: 'var(--blue)',
   oppColor: 'var(--orange)',
+  roomConfig: { ...DEFAULT_ROOM_CONFIG },
 
   // ── Real: WebSocket connection ───────────────────────────────────────────
 
@@ -327,6 +335,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           minigameState: null,
           spectatorCount: p.spectatorCount ?? 0,
           rematchVoting: false,
+          roomConfig: p.config ?? { ...DEFAULT_ROOM_CONFIG },
         })
         // Persist session for auto-reconnect
         try {
@@ -485,6 +494,12 @@ export const useGameStore = create<GameState>((set, get) => ({
         break
       }
 
+      case 'ROOM_CONFIG': {
+        const p = msg.payload as RoomConfigPayload
+        set({ roomConfig: p.config })
+        break
+      }
+
       case 'EMOTE_RECEIVED': {
         const p = msg.payload as EmotePayload
         set({ incomingEmote: { fromPlayerId: p.fromPlayerId, emote: p.emote } })
@@ -500,6 +515,10 @@ export const useGameStore = create<GameState>((set, get) => ({
         break
       }
     }
+  },
+
+  sendRoomConfig: (config) => {
+    get().send('SET_ROOM_CONFIG', config)
   },
 
   // ── Mock actions ─────────────────────────────────────────────────────────

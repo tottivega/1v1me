@@ -1,5 +1,5 @@
 import type { WebSocket } from 'ws'
-import type { RoomStatus, MinigameId, MinigameResult, RoundRecord } from '@shared/types'
+import type { RoomStatus, MinigameId, MinigameResult, RoundRecord, RoomConfig } from '@shared/types'
 
 export interface Player {
   id: string
@@ -34,6 +34,7 @@ export interface Room {
   spectators: WebSocket[]
   status: RoomStatus
   match: MatchState | null
+  config: RoomConfig
   lastActivityAt: number
   cleanupTimer: ReturnType<typeof setTimeout> | null
   rematchVotes: Set<string>
