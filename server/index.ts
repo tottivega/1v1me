@@ -19,12 +19,30 @@ if (missingEnv.length > 0) {
 
 const PORT = Number(process.env.PORT) || 3001
 
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN // e.g. https://1v1me.vercel.app
+
 const server = createServer((_req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' })
   res.end('1v1 ME server running\n')
 })
 
-const wss = new WebSocketServer({ server })
+const wss = new WebSocketServer({ noServer: true })
+
+// In production, enforce that upgrades come from the allowed origin.
+server.on('upgrade', (req, socket, head) => {
+  if (isProd && ALLOWED_ORIGIN) {
+    const origin = req.headers['origin']
+    if (origin !== ALLOWED_ORIGIN) {
+      console.warn(`[WS] Rejected upgrade from origin: ${origin}`)
+      socket.write('HTTP/1.1 403 Forbidden\r\n\r\n')
+      socket.destroy()
+      return
+    }
+  }
+  wss.handleUpgrade(req, socket, head, (ws) => {
+    wss.emit('connection', ws, req)
+  })
+})
 
 wss.on('connection', onConnection)
 
