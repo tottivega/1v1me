@@ -27,7 +27,7 @@ function clearThrowTimer(roomId: string) {
   if (t) { clearTimeout(t); throwTimers.delete(roomId) }
 }
 
-function throwWinner(c1: Choice, c2: Choice, p1Id: string, p2Id: string): string | null {
+export function throwWinner(c1: Choice, c2: Choice, p1Id: string, p2Id: string): string | null {
   if (c1 === c2) return null
   return BEATS[c1] === c2 ? p1Id : p2Id
 }

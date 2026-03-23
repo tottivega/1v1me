@@ -31,7 +31,7 @@ export default function TimerBar() {
         {secs}
       </span>
       <div style={{ flex: 1, height: 18, background: '#e0e0e0', border: '2px solid var(--black)', borderRadius: 99, overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${pct * 100}%`, background: color, borderRadius: 99, transition: 'width 0.1s linear, background 0.3s' }} />
+        <div data-testid="timer-bar-fill" style={{ height: '100%', width: `${pct * 100}%`, background: color, borderRadius: 99, transition: 'width 0.1s linear, background 0.3s' }} />
       </div>
     </div>
   )

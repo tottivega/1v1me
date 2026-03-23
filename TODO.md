@@ -47,20 +47,9 @@ These are required before the April deploy.
 
 ## 🧪 Tests
 
-### Server (Vitest or Jest)
+### Remaining
 
-- [ ] **Setup** — add `vitest` (or `jest` + `ts-jest`) to `server/package.json`; configure in `server/vitest.config.ts`
-- [ ] **roomManager unit tests** — `joinOrCreateRoom`, `handleDisconnect`, `handleReconnect`, `handleRematchVote`; mock WebSocket with `{ send: vi.fn(), readyState: 1 }`
-- [ ] **matchController unit tests** — round flow, score tracking, match-end detection, forfeit
-- [ ] **minigame module tests** — at minimum: `clickspeed` (CPS cap), `reactiontest` (early-click penalty), `rockpaperscissors` (throw resolution logic), `wordscramble` (scramble function never returns original)
 - [ ] **router integration tests** — simulate message sequences (join → ready → game input) on a real WS server instance
-
-### Client (Vitest + React Testing Library)
-
-- [ ] **Setup** — add `vitest`, `@testing-library/react`, `jsdom` to `client/package.json`; configure in `client/vitest.config.ts`
-- [ ] **gameStore unit tests** — `handleServerMessage` dispatcher: each message type updates state correctly
-- [ ] **ScoreBoard snapshot** — renders correct scores and colors
-- [ ] **TimerBar tests** — color thresholds (green/yellow/red at 33%/15%)
 - [ ] **RoomPage smoke tests** — lobby renders with correct copy button, spectator count badge visible when count > 0
 
 ### Linters

@@ -82,6 +82,12 @@
 - [x] `.gitignore`, initial git commit
 - [x] `ARCHITECTURE.md`, `DESIGN.md`, `README.md`, `TODO.md`, `RULES.md`
 
+### Tests
+- [x] **Vitest setup** — server (node env) and client (happy-dom + React Testing Library); `npm test` works in both packages
+- [x] **Server unit tests (28)** — wordscramble (5), rockpaperscissors (4), matchController (6), roomManager (13)
+- [x] **Client unit tests (20)** — gameStore (11), ScoreBoard (5), TimerBar (4)
+- [x] Test factories in `server/src/__tests__/helpers.ts` — `makeWs()`, `makePlayer()`, `makeRoom()`, `makeMatch()`
+
 ---
 
 ## 🗑️ Removed
