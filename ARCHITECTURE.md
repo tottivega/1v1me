@@ -18,7 +18,7 @@
 | Rounds per match | Best of 5 (first to 3 wins) |
 | Minigame selection | Random, no repeats within a match |
 | Auth | None — nickname picked on join |
-| Target platform | Desktop browser only |
+| Target platform | Desktop + mobile (600px breakpoint) |
 | Backend authority | Server decides all outcomes |
 
 ---
@@ -86,10 +86,13 @@
 ```typescript
 interface Room {
   roomId: string;
-  players: [Player, Player] | [Player];
-  status: RoomStatus; // see state machine
+  players: Player[];           // max 2
+  spectators: WebSocket[];     // read-only observers
+  status: RoomStatus;          // see state machine
   match: MatchState | null;
-  lastActivityAt: number; // Unix timestamp ms
+  lastActivityAt: number;      // Unix timestamp ms
+  cleanupTimer: ReturnType<typeof setTimeout> | null;
+  rematchVotes: Set<string>;   // playerIds who clicked Rematch; fires when both present
 }
 
 interface Player {
@@ -98,6 +101,7 @@ interface Player {
   ws: WebSocket;
   ready: boolean;
   connected: boolean;
+  reconnectTimer: ReturnType<typeof setTimeout> | null;
 }
 ```
 
@@ -175,17 +179,21 @@ interface ServerMessage {
 
 | Type | Trigger | Payload |
 |---|---|---|
-| `ROOM_JOINED` | Player joins | `{ roomId, playerId, players }` |
+| `ROOM_JOINED` | Player joins or rematch resets | `{ roomId, playerId, players, spectatorCount }` |
 | `PLAYER_READY` | A player sets ready | `{ playerId, bothReady }` |
 | `MATCH_START` | Both players ready | `{ matchId, players }` |
 | `ROUND_START` | New round begins | `{ round, minigameId, timeoutMs }` |
 | `TIMER_TICK` | Every second | `{ remainingMs }` |
 | `GAME_UPDATE` | Minigame state change | `{ state }` (minigame-specific) |
 | `ROUND_END` | Round resolves | `{ winnerId, scores, reason }` |
-| `MATCH_END` | Match resolves | `{ winnerId, scores }` |
+| `MATCH_END` | Match resolves | `{ winnerId, scores, roundHistory }` |
 | `PLAYER_DISCONNECTED` | Player drops | `{ playerId, reconnectWindowMs }` |
 | `PLAYER_RECONNECTED` | Player returns | `{ playerId }` |
 | `FORFEIT` | Reconnect window expires | `{ forfeitedPlayerId, winnerId }` |
+| `SPECTATE_JOINED` | Spectator connects | `{ roomId, players, status, spectatorCount, match }` |
+| `SPECTATOR_COUNT` | Spectator joins or leaves | `{ count }` |
+| `EMOTE_RECEIVED` | Player sends emote | `{ fromPlayerId, emote }` |
+| `REMATCH_VOTE` | First player clicks Rematch | `{ waiting: true }` |
 | `ERROR` | Bad input or state | `{ code, message }` |
 
 **Client message types:**
@@ -194,8 +202,11 @@ interface ServerMessage {
 |---|---|
 | `SET_NICKNAME` | `{ nickname }` |
 | `SET_READY` | `{}` |
-| `GAME_INPUT` | `{ input }` (minigame-specific) |
+| `GAME_INPUT` | minigame-specific input object |
 | `RECONNECT` | `{ playerId, roomId }` |
+| `REMATCH` | `{}` |
+| `SPECTATE` | `{ roomId }` |
+| `EMOTE` | `{ emote }` |
 
 ---
 
@@ -264,10 +275,13 @@ Lobby
 
 ## 7. Minigames
 
+**Current pool (9 games):** ClickSpeed, CoinFlip, ReactionTest, NumberGuess, QuickMaths, MemoryMatch, FastestTyper, RockPaperScissors, WordScramble
+
 ### Shared Rules
-- Minigame order is randomized at match start (Fisher-Yates shuffle of all 5 IDs).
+- Minigame order is randomized at match start (Fisher-Yates shuffle, category-balanced: no two consecutive same-category).
 - No minigame repeats within a single match.
 - Server resolves all outcomes. Client input is validated server-side before any state change.
+- Each minigame is a 3-file change: entry in `shared/types.ts` MINIGAME_CONFIGS + server module in `server/src/minigames/` + client component in `client/src/minigames/`. See `ADDING_A_GAME.md`.
 
 ---
 
@@ -289,16 +303,7 @@ Lobby
 
 ---
 
-### 7.3 TicTacToe
-**Type:** Turn-based shared board  
-**Timer:** 10 seconds per turn (server-side). If a player times out on their turn, they forfeit the round.  
-**Rules:** Standard 3×3 Tic-Tac-Toe. Server assigns X/O randomly at round start. Server validates each move (correct turn, cell empty, valid index). First to 3-in-a-row wins. Draw = server re-rolls winner randomly.  
-**Input:** `{ type: 'PLACE', cellIndex: number }` (0–8)  
-**Server tracks:** Board state `string[9]`, whose turn it is.
-
----
-
-### 7.4 ReactionTest
+### 7.3 ReactionTest
 **Type:** Simultaneous reaction  
 **Timer:** Server waits a random delay (1500–4000ms) after `ROUND_START` before emitting `REACT_NOW`. Then a 3-second window for input.  
 **Rules:** Server emits `REACT_NOW`. First player to send `{ type: 'REACT' }` after (not before) the signal wins. Input received before the signal is penalized (player is disqualified for that round, opponent wins). If neither reacts in 3s, both lose the round and it is treated as a draw — server randomly assigns winner.  
@@ -306,7 +311,7 @@ Lobby
 
 ---
 
-### 7.5 NumberGuess
+### 7.4 NumberGuess
 **Type:** Independent simultaneous guess  
 **Timer:** 20 seconds  
 **Rules:** Server secretly generates a number 1–100. Both players independently submit one guess (`{ type: 'GUESS', value: number }`). Player closest to the secret number wins. Ties (equidistant) are broken randomly by the server. Players cannot see each other's guess until round end.  
@@ -324,7 +329,7 @@ Lobby
 | CPS cap | ClickSpeed: max ~20 clicks/second accepted per player |
 | Pre-signal rejection | ReactionTest: input before `REACT_NOW` = disqualification |
 | Single submission | NumberGuess, ReactionTest: only first input accepted |
-| Turn enforcement | TicTacToe: moves from the wrong player are rejected with `ERROR` |
+| Answer hiding | RockPaperScissors/WordScramble: server withholds opponent picks/answers until resolved |
 | Timeout enforcement | All timers are server-side; client cannot extend or skip them |
 
 ---
@@ -349,14 +354,12 @@ Lobby
 
 ---
 
-## 11. Future Features (Out of MVP Scope)
+## 11. Future Features (Post-MVP)
 
-- Spectator mode
-- Mega matches (Best of 7, Best of 9)
+- Mega matches (Best of 3 / 7 / 9 — configurable room settings, partially planned)
 - Poll voting on minigame selection
-- Social share (result card)
 - Player rankings and stats (requires auth layer)
-- Mobile support
+- Redis for horizontal scaling (see Section 9)
 
 ---
 
