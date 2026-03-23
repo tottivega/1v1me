@@ -51,6 +51,8 @@
 - [x] Copy button "Copied!" flash — 1.5s "✅ Copied!" then reverts
 - [x] Room idle timeout warning — "Room expires in Xs" badge after 50s of lobby inactivity
 - [x] Auto-reconnect from localStorage — saves `{ roomId, playerId }` on join; `reconnectSaved()` action skips nickname gate on return visit
+- [x] Win streak tracker — `localStorage`-persisted counter (`1v1me_streak`); increments on win, resets on loss; `🔥 X win streak` badge on HomePage when streak ≥ 2
+- [x] Match history on home page — last 5 results in `localStorage` (`1v1me_history`); compact Recent Matches section below game gallery
 
 ### Minigames (9 total)
 - [x] **Click Speed** — 5s, 20 CPS cap, optimistic clicks, simulated opponent in mock mode
