@@ -22,6 +22,7 @@ export type RoomStatus =
 //   difficulty  — 1 easy / 2 medium / 3 hard (relative to each other)
 
 export type MinigameCategory = 'reflex' | 'math' | 'luck' | 'strategy' | 'trivia'
+export type MinigamePlatform = 'all' | 'desktop-only' | 'mobile-only'
 
 export const MINIGAME_CONFIGS = {
   clickspeed: {
@@ -31,6 +32,7 @@ export const MINIGAME_CONFIGS = {
     category: 'reflex',
     description: 'Click as many times as you can in 5 seconds.',
     difficulty: 1,
+    platforms: 'all',
   },
   coinflip: {
     label: 'Coin Flip',
@@ -39,6 +41,7 @@ export const MINIGAME_CONFIGS = {
     category: 'luck',
     description: '50/50. Pure chaos. No skill required.',
     difficulty: 1,
+    platforms: 'all',
   },
   reactiontest: {
     label: 'Reaction Test',
@@ -47,6 +50,7 @@ export const MINIGAME_CONFIGS = {
     category: 'reflex',
     description: 'Wait for green, then click as fast as humanly possible.',
     difficulty: 2,
+    platforms: 'all',
   },
   numberguess: {
     label: 'Number Guess',
@@ -55,6 +59,7 @@ export const MINIGAME_CONFIGS = {
     category: 'luck',
     description: 'Guess a number 1–100. Closest to the secret wins.',
     difficulty: 1,
+    platforms: 'all',
   },
   quickmaths: {
     label: 'Quick Maths',
@@ -63,6 +68,7 @@ export const MINIGAME_CONFIGS = {
     category: 'math',
     description: 'Solve as many equations as you can in 15 seconds.',
     difficulty: 2,
+    platforms: 'all',
   },
   memorymatch: {
     label: 'Memory Match',
@@ -71,6 +77,7 @@ export const MINIGAME_CONFIGS = {
     category: 'strategy',
     description: 'Memorise a sequence of symbols, then reproduce it perfectly.',
     difficulty: 2,
+    platforms: 'all',
   },
   fastesttyper: {
     label: 'Fastest Typer',
@@ -79,6 +86,7 @@ export const MINIGAME_CONFIGS = {
     category: 'reflex',
     description: 'Type the phrase faster than your opponent.',
     difficulty: 2,
+    platforms: 'desktop-only',
   },
   rockpaperscissors: {
     label: 'Rock Paper Scissors',
@@ -87,6 +95,7 @@ export const MINIGAME_CONFIGS = {
     category: 'luck',
     description: 'Best of 3 throws. Pick simultaneously — may the luckiest hand win.',
     difficulty: 1,
+    platforms: 'all',
   },
   wordscramble: {
     label: 'Word Scramble',
@@ -95,6 +104,7 @@ export const MINIGAME_CONFIGS = {
     category: 'trivia',
     description: 'Unscramble the letters and type the word before your opponent does.',
     difficulty: 2,
+    platforms: 'all',
   },
   colorword: {
     label: 'Color Word',
@@ -103,6 +113,7 @@ export const MINIGAME_CONFIGS = {
     category: 'reflex',
     description: 'Ignore the text — click the button matching the INK color of the word.',
     difficulty: 2,
+    platforms: 'all',
   },
   higherorlower: {
     label: 'Higher or Lower',
@@ -111,6 +122,7 @@ export const MINIGAME_CONFIGS = {
     category: 'luck',
     description: 'A secret number is near the clue. Is it Higher or Lower?',
     difficulty: 1,
+    platforms: 'all',
   },
 } as const satisfies Record<
   string,
@@ -121,6 +133,7 @@ export const MINIGAME_CONFIGS = {
     category: MinigameCategory
     description: string
     difficulty: 1 | 2 | 3
+    platforms: MinigamePlatform
   }
 >
 

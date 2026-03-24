@@ -9,6 +9,7 @@ export interface Player {
   ready: boolean
   connected: boolean
   reconnectTimer: ReturnType<typeof setTimeout> | null
+  isMobile: boolean
 }
 
 export interface MatchState {

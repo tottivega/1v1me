@@ -85,8 +85,9 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
 
   switch (msg.type) {
     case 'SET_NICKNAME': {
-      const raw = (msg.payload as { nickname: string }).nickname
+      const raw = (msg.payload as { nickname: string; isMobile?: boolean }).nickname
       const nickname = raw?.trim().replace(/\s+/g, ' ')
+      const isMobile = !!(msg.payload as { isMobile?: boolean }).isMobile
       const roomId = msg.roomId
 
       if (!roomId || !nickname) {
@@ -94,7 +95,7 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
         return
       }
 
-      const result = joinOrCreateRoom(roomId, conn.playerId, nickname, ws)
+      const result = joinOrCreateRoom(roomId, conn.playerId, nickname, ws, isMobile)
 
       if ('error' in result) {
         send(ws, 'ERROR', result.error)

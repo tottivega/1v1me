@@ -1,4 +1,9 @@
-import { MINIGAME_CONFIGS, type MinigameId, type MinigameCategory } from '@shared/types'
+import {
+  MINIGAME_CONFIGS,
+  type MinigameId,
+  type MinigameCategory,
+  type MinigamePlatform,
+} from '@shared/types'
 import type { MinigameModule } from '../types'
 import clickspeed from './clickspeed'
 import coinflip from './coinflip'
@@ -41,12 +46,23 @@ function fisherYates<T>(arr: T[]): void {
 
 // Build a queue of `size` games that avoids consecutive same-category games.
 // Filters to `categories` when provided (falls back to all if filter yields nothing).
+// Excludes games whose platform tag is in `excludePlatforms` (e.g. 'desktop-only' for mobile players).
 // Works at any pool size: with many games it naturally varies well;
 // with few games it does the best it can before falling back to repeats.
-export function shuffleQueue(size = 5, categories?: MinigameCategory[]): MinigameId[] {
+export function shuffleQueue(
+  size = 5,
+  categories?: MinigameCategory[],
+  excludePlatforms?: MinigamePlatform[]
+): MinigameId[] {
   let allIds = Object.keys(MINIGAME_CONFIGS) as MinigameId[]
   if (categories && categories.length > 0) {
     const filtered = allIds.filter((id) => categories.includes(MINIGAME_CONFIGS[id].category))
+    if (filtered.length > 0) allIds = filtered
+  }
+  if (excludePlatforms && excludePlatforms.length > 0) {
+    const filtered = allIds.filter(
+      (id) => !excludePlatforms.includes(MINIGAME_CONFIGS[id].platforms)
+    )
     if (filtered.length > 0) allIds = filtered
   }
 

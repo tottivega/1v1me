@@ -225,13 +225,13 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     ws.onopen = () => {
       set({ wsStatus: 'connected' })
-      // Server assigns our playerId; send empty string for now
+      const isMobile = window.matchMedia('(pointer: coarse)').matches
       ws.send(
         JSON.stringify({
           type: 'SET_NICKNAME',
           roomId,
           playerId: '',
-          payload: { nickname },
+          payload: { nickname, isMobile },
         })
       )
     }

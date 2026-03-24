@@ -14,10 +14,16 @@ export function startMatch(room: Room): void {
   const matchId = uuidv4()
 
   const { bestOf, enabledCategories } = room.config
+  const anyMobile = room.players.some((p) => p.isMobile)
+  const anyDesktop = room.players.some((p) => !p.isMobile)
+  const excludePlatforms = [
+    ...(anyMobile ? (['desktop-only'] as const) : []),
+    ...(anyDesktop ? (['mobile-only'] as const) : []),
+  ]
   room.match = {
     matchId,
     scores: { [p1.id]: 0, [p2.id]: 0 },
-    minigameQueue: shuffleQueue(bestOf, enabledCategories),
+    minigameQueue: shuffleQueue(bestOf, enabledCategories, excludePlatforms),
     currentRound: 0,
     currentMinigame: null,
     minigameState: null,

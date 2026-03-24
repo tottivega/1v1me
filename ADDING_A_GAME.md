@@ -16,8 +16,11 @@ wordrace: {
   category: 'strategy',    // 'reflex' | 'math' | 'luck' | 'strategy' | 'trivia'
   description: 'Type a word faster than your opponent.', // shown in game gallery
   difficulty: 2,            // 1 easy / 2 medium / 3 hard
+  platforms: 'all',         // 'all' | 'desktop-only' | 'mobile-only'
 },
 ```
+
+Set `platforms` to `'desktop-only'` if the game requires a physical keyboard (like Fastest Typer). Set it to `'mobile-only'` for games that only make sense with touch. Leave as `'all'` for everything else.
 
 `MinigameId` is derived automatically from these keys — no other type changes needed.
 
