@@ -4,8 +4,8 @@ import { broadcast } from '../sync/broadcast'
 
 interface State {
   signalTime: number | null
-  reactions: Record<string, number>   // playerId → ms after signal
-  penalized: Set<string>              // clicked before signal
+  reactions: Record<string, number> // playerId → ms after signal
+  penalized: Set<string> // clicked before signal
   signalTimer: ReturnType<typeof setTimeout> | null
   windowTimer: ReturnType<typeof setTimeout> | null
   resolved: boolean
@@ -47,8 +47,7 @@ const reactiontest: MinigameModule = {
   },
 
   handleInput(room, playerId, input) {
-    const msg = input as { type: string }
-    if (msg.type !== 'REACT') return
+    if (input.type !== 'REACT') return
 
     const state = room.match!.minigameState as State
     if (state.resolved) return
@@ -69,13 +68,16 @@ const reactiontest: MinigameModule = {
     state.reactions[playerId] = Date.now() - state.signalTime
 
     // If all non-penalized players have reacted, resolve
-    const eligible = room.players.filter(p => !state.penalized.has(p.id))
-    const allReacted = eligible.every(p => state.reactions[p.id] !== undefined)
+    const eligible = room.players.filter((p) => !state.penalized.has(p.id))
+    const allReacted = eligible.every((p) => state.reactions[p.id] !== undefined)
     if (allReacted) resolve(room, state)
   },
 
   getResult(room): MinigameResult {
-    return computeResult(room.players.map(p => p.id), room.match!.minigameState as State)
+    return computeResult(
+      room.players.map((p) => p.id),
+      room.match!.minigameState as State
+    )
   },
 }
 
@@ -86,7 +88,7 @@ function resolve(room: Room, state: State): void {
   clearTimeout(state.signalTimer!)
   clearTimeout(state.windowTimer!)
 
-  const playerIds = room.players.map(p => p.id)
+  const playerIds = room.players.map((p) => p.id)
   const result = computeResult(playerIds, state)
 
   broadcast(room, 'GAME_UPDATE', {
@@ -104,7 +106,7 @@ function resolve(room: Room, state: State): void {
 }
 
 function computeResult(playerIds: string[], state: State): MinigameResult {
-  const eligible = playerIds.filter(id => !state.penalized.has(id))
+  const eligible = playerIds.filter((id) => !state.penalized.has(id))
 
   if (eligible.length === 0) {
     // Everyone penalized → random winner
@@ -117,7 +119,7 @@ function computeResult(playerIds: string[], state: State): MinigameResult {
   }
 
   // Compare reaction times — lower is better
-  const withReaction = eligible.filter(id => state.reactions[id] !== undefined)
+  const withReaction = eligible.filter((id) => state.reactions[id] !== undefined)
 
   if (withReaction.length === 0) {
     // Nobody reacted in window → random winner

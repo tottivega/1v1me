@@ -29,14 +29,13 @@ const colorword: MinigameModule = {
   },
 
   handleInput(room, playerId, input) {
-    const msg = input as { type: string; color: string }
-    if (msg.type !== 'PICK') return
+    if (input.type !== 'PICK_COLOR') return
 
     const state = room.match!.minigameState as State
     if (state.resolved) return
     if (room.match!.roundResolved) return
 
-    const correct = msg.color === state.inkColor
+    const correct = input.color === state.inkColor
     if (!correct) return // wrong pick — ignore, let them try again (timer ends it)
 
     state.resolved = true

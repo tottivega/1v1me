@@ -88,7 +88,7 @@ export default function HigherOrLower() {
     setMyAnswer(answer)
     playClick()
     if (isLive) {
-      sendInput({ type: 'ANSWER', answer })
+      sendInput({ type: 'PICK_DIRECTION', answer })
     }
   }
 

@@ -86,13 +86,12 @@ const wordscramble: MinigameModule = {
   },
 
   handleInput(room, playerId, input) {
-    const msg = input as { type: string; word: string }
-    if (msg.type !== 'GUESS') return
+    if (input.type !== 'GUESS_WORD') return
 
     const state = room.match!.minigameState as State
     if (state.resolved) return
 
-    const raw = typeof msg.word === 'string' ? msg.word : ''
+    const raw = typeof input.word === 'string' ? input.word : ''
     if (raw.length > 50) return
     const guess = raw.toLowerCase().trim()
 

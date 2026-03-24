@@ -47,13 +47,12 @@ const fastesttyper: MinigameModule = {
   },
 
   handleInput(room, playerId, input) {
-    const msg = input as { type: string; text: string }
-    if (msg.type !== 'TYPE') return
+    if (input.type !== 'TYPE') return
 
     const state = room.match!.minigameState as State
     if (state.resolved) return
 
-    const typed = typeof msg.text === 'string' ? msg.text.slice(0, 200) : ''
+    const typed = typeof input.text === 'string' ? input.text.slice(0, 200) : ''
     const phrase = state.phrase
 
     // Count correct characters from the start

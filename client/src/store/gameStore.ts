@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import {
   MINIGAME_CONFIGS,
   DEFAULT_ROOM_CONFIG,
+  type MinigameInput,
   type RoomStatus,
   type MinigameId,
   type PlayerInfo,
@@ -149,6 +150,9 @@ interface GameState {
   // Rematch vote — true while waiting for opponent to also click Rematch
   rematchVoting: boolean
 
+  // Timestamp (Date.now()) when the current match started — used for duration display
+  matchStartedAt: number | null
+
   // Player color assignment — set at MATCH_START based on join order
   myColor: string // 'var(--blue)' or 'var(--orange)'
   oppColor: string // opposite of myColor
@@ -161,7 +165,7 @@ interface GameState {
   disconnect: () => void
   send: (type: ClientMessageType, payload?: unknown) => void
   handleServerMessage: (msg: ServerMessage) => void
-  sendInput: (input: unknown) => void
+  sendInput: (input: MinigameInput) => void
   setReady: () => void
   setNickname: (nickname: string) => void
   spectate: (roomId: string) => void
@@ -209,6 +213,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   spectatorCount: 0,
   incomingEmote: null,
   rematchVoting: false,
+  matchStartedAt: null,
   myColor: 'var(--blue)',
   oppColor: 'var(--orange)',
   roomConfig: { ...DEFAULT_ROOM_CONFIG },
@@ -351,6 +356,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           minigameState: null,
           spectatorCount: p.spectatorCount ?? 0,
           rematchVoting: false,
+          matchStartedAt: null,
           roomConfig: p.config ?? { ...DEFAULT_ROOM_CONFIG },
         })
         // Persist session for auto-reconnect
@@ -379,7 +385,14 @@ export const useGameStore = create<GameState>((set, get) => ({
         // First player to join (index 0) gets blue; second gets orange
         const myColor = p.players[0]?.id === get().myPlayerId ? 'var(--blue)' : 'var(--orange)'
         const oppColor = myColor === 'var(--blue)' ? 'var(--orange)' : 'var(--blue)'
-        set({ scores, roomStatus: 'round_start', players: p.players, myColor, oppColor })
+        set({
+          scores,
+          roomStatus: 'round_start',
+          players: p.players,
+          myColor,
+          oppColor,
+          matchStartedAt: Date.now(),
+        })
         break
       }
 

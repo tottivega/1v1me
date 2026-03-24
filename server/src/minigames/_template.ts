@@ -52,10 +52,11 @@ const template: MinigameModule = {
   },
 
   // Called every time a player sends a GAME_INPUT message.
-  // input is the raw payload (cast it to whatever shape your client sends).
+  // MinigameInput is an open interface — no changes to shared/types.ts needed.
+  // Just check input.type and read the other properties (they are `unknown` here,
+  // so validate/cast them before use; see other modules for examples).
   handleInput(room, playerId, input) {
-    const msg = input as { type: string /* TODO: add your fields */ }
-    if (msg.type !== 'YOUR_INPUT_TYPE') return // TODO: replace
+    if (input.type !== 'YOUR_INPUT_TYPE') return
 
     const state = room.match!.minigameState as State
     // TODO: validate and apply input, then broadcast updated state

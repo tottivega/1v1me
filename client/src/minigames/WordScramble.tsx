@@ -99,7 +99,7 @@ export default function WordScramble() {
     const guess = typed.trim().toLowerCase()
 
     if (isLive) {
-      sendInput({ type: 'GUESS', word: guess })
+      sendInput({ type: 'GUESS_WORD', word: guess })
       // Optimistic clear so they can retype quickly; wrong feedback comes from server
       setTyped('')
     } else {

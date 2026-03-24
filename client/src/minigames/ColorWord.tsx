@@ -87,7 +87,7 @@ export default function ColorWord() {
     setPicked(color)
     playClick()
     if (isLive) {
-      sendInput({ type: 'PICK', color })
+      sendInput({ type: 'PICK_COLOR', color })
     } else {
       // In mock mode: check locally
       if (color === inkColor) setMockWinner(myPlayerId)

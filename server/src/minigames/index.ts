@@ -1,3 +1,4 @@
+import { readdirSync } from 'fs'
 import {
   MINIGAME_CONFIGS,
   type MinigameId,
@@ -5,37 +6,59 @@ import {
   type MinigamePlatform,
 } from '@shared/types'
 import type { MinigameModule } from '../types'
-import clickspeed from './clickspeed'
-import coinflip from './coinflip'
-import reactiontest from './reactiontest'
-import numberguess from './numberguess'
-import quickmaths from './quickmaths'
-import memorymatch from './memorymatch'
-import fastesttyper from './fastesttyper'
-import rockpaperscissors from './rockpaperscissors'
-import wordscramble from './wordscramble'
-import colorword from './colorword'
-import higherorlower from './higherorlower'
 
-// TypeScript will error here if a MinigameId is missing a module.
-// When you add a new game: create the module file and add it here.
-const MODULES: Record<MinigameId, MinigameModule> = {
-  clickspeed,
-  coinflip,
-  reactiontest,
-  numberguess,
-  quickmaths,
-  memorymatch,
-  fastesttyper,
-  rockpaperscissors,
-  wordscramble,
-  colorword,
-  higherorlower,
+// ── Dynamic module discovery ───────────────────────────────────────────────────
+// Scans this directory for game files on first use — no manual imports needed.
+// Lazy so the require() calls run at call-time rather than import-time,
+// which keeps the module safe to import in test environments (Vitest) without
+// triggering side effects before the module system is fully set up.
+//
+// Rules for a file to be auto-loaded:
+//   • Must end in .ts or .js
+//   • Must NOT start with _ (templates are excluded)
+//   • Must NOT be index.ts / index.js
+//   • The default export must have an `id` property matching a MinigameId
+
+let _modules: Record<string, MinigameModule> | null = null
+
+function loadModules(): Record<string, MinigameModule> {
+  if (_modules) return _modules
+
+  const mods: Record<string, MinigameModule> = {}
+
+  const files = readdirSync(__dirname).filter((f) => {
+    if (f.startsWith('_')) return false
+    if (f === 'index.ts' || f === 'index.js') return false
+    return f.endsWith('.ts') || f.endsWith('.js')
+  })
+
+  for (const file of files) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const raw = require('./' + file)
+    const mod: MinigameModule = raw.default ?? raw
+    if (mod && typeof mod.id === 'string') {
+      mods[mod.id] = mod
+    }
+  }
+
+  // Fail fast if any game in MINIGAME_CONFIGS is missing a server module.
+  const missing = (Object.keys(MINIGAME_CONFIGS) as MinigameId[]).filter((id) => !mods[id])
+  if (missing.length > 0) {
+    throw new Error(
+      `[minigames] Missing server modules for: ${missing.join(', ')}.\n` +
+        `Create server/src/minigames/<id>.ts with a default export that has id: '${missing[0]}'.`
+    )
+  }
+
+  _modules = mods
+  return _modules
 }
 
 export function getMinigame(id: MinigameId): MinigameModule {
-  return MODULES[id]
+  return loadModules()[id]
 }
+
+// ── Queue builder ──────────────────────────────────────────────────────────────
 
 function fisherYates<T>(arr: T[]): void {
   for (let i = arr.length - 1; i > 0; i--) {

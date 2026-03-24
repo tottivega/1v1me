@@ -27,8 +27,7 @@ const clickspeed: MinigameModule = {
   },
 
   handleInput(room, playerId, input) {
-    const msg = input as { type: string }
-    if (msg.type !== 'CLICK') return
+    if (input.type !== 'CLICK') return
 
     const state = room.match!.minigameState as State
     const now = Date.now()

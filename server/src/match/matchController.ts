@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import type { Room } from '../types'
-import type { MinigameResult } from '@shared/types'
+import type { MinigameInput, MinigameResult } from '@shared/types'
 import { MINIGAME_CONFIGS } from '@shared/types'
 import { broadcast, toPlayerInfos } from '../sync/broadcast'
 import { startTimer, stopTimer } from '../timer/timerController'
@@ -179,7 +179,13 @@ export function forfeitMatch(room: Room, forfeitedPlayerId: string): void {
 
 export function handleGameInput(room: Room, playerId: string, input: unknown): void {
   if (!room.match || room.match.roundResolved || !room.match.currentMinigame) return
+  if (
+    typeof input !== 'object' ||
+    input === null ||
+    typeof (input as Record<string, unknown>).type !== 'string'
+  )
+    return
 
   const module = getMinigame(room.match.currentMinigame)
-  module.handleInput(room, playerId, input)
+  module.handleInput(room, playerId, input as MinigameInput)
 }

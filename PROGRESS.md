@@ -40,13 +40,15 @@
 - [x] Error toast — `errorMessage` auto-clears after 4s
 - [x] Sound effects — Web Audio API synth, zero files; 12 distinct sounds, all check `isMuted()`
 - [x] Sound toggle — 🔊/🔇 fixed top-right, persisted in `localStorage`
-- [x] Share result — Web Share API on mobile, clipboard fallback on desktop
+- [x] Share result — canvas PNG card (winner title, score, per-round recap, accent stripe, 1v1.me footer); `navigator.share({ files })` on mobile, PNG download fallback on desktop, text clipboard last resort
 - [x] Emote buttons — 4 quick reactions fixed bottom-right during match; floating incoming emote
 - [x] Reconnect countdown UI — visible 15→0s countdown, turns red at ≤5s
 - [x] Lobby game preview — "YOU MIGHT FACE…" grid while waiting
 - [x] Match breakdown screen — round-by-round recap with minigame emoji + winner per row
 - [x] Mobile layout — 600px breakpoint, `100dvh` fix, touch events on ClickSpeed
 - [x] Client minigame registry — TS errors if a component is missing
+- [x] QR code in lobby — `qrcode.react` renders a `<QRCodeSVG>` below the invite link; tap-to-enlarge modal; improves mobile-to-mobile sharing
+- [x] Open Graph meta tags — `og:title`, `og:description`, `og:image` in `index.html`; makes shared links render previews in iMessage, WhatsApp, Discord
 - [x] Spectator count display — "👁 N watching" badge in lobby and match scoreboard; `SPECTATOR_COUNT` message broadcast on join/leave
 - [x] Copy button "Copied!" flash — 1.5s "✅ Copied!" then reverts
 - [x] Room idle timeout warning — "Room expires in Xs" badge after 50s of lobby inactivity
@@ -72,9 +74,9 @@
 - [x] **Player animal avatars** — server assigns random emoji from pool of 12 on join; stored on `Player` + `PlayerInfo`; shown in lobby `PlayerSlot` (replaces hardcoded 😤/😈), ScoreBoard next to nicknames; mock players use 😤/😈
 - [x] **Connected player pulse dot** — pulsing green dot next to nickname in `PlayerSlot`; turns grey when `connected: false`
 - [x] **404 / room-not-found screen** — `ROOM_NOT_FOUND` error code sets `roomNotFound` state; `RoomPage` renders friendly 🚪 screen with back button; resets on next `connect()` call
-- [x] Match win confetti burst — CSS-only confetti on `MATCH_END` when local player wins; auto-cleans after animation
+- [x] Match win confetti burst — 60 pieces, `useMemo`-stable random values, varying sizes (6–16px), four shapes (circle/square/wide strip/tall strip), per-piece `--drift` CSS var gives horizontal arc (±120px); auto-cleans after animation
 - [x] Player color assignment — `myColor`/`oppColor` set at `MATCH_START` based on join order; stored in Zustand
-- [x] Round transition count-in — 1.9s overlay: emoji + name pops in, then 3→2→1 with `playTick()`; "1" distinct tone; blocks interaction
+- [x] Round transition count-in — 2.3s overlay: emoji + name pops in, then 3→2→1→GO! with `playTick()`; "1" distinct tone; GO! in green; blocks interaction throughout
 - [x] Timer bar color shift — green >33%, yellow 15–33%, red <15%
 - [x] "How to play" tooltip — `?` button on game banner; shows `cfg.description`; auto-dismisses after 4s
 - [x] Click Speed ripple — spawns at exact click coordinates, expands via `@keyframes ripple`, cleans up after 550ms
@@ -90,9 +92,34 @@
 - [x] `.gitignore`, initial git commit
 - [x] `ARCHITECTURE.md`, `DESIGN.md`, `README.md`, `TODO.md`, `RULES.md`
 
+### Mobile
+- [x] **Device-aware game filtering** — `platforms: 'all' | 'desktop-only' | 'mobile-only'` on every `MINIGAME_CONFIGS` entry; Fastest Typer is `desktop-only`; client detects mobile via `window.matchMedia('(pointer: coarse)')`, sends `isMobile` in `SET_NICKNAME`; `shuffleQueue` accepts `excludePlatforms` and filters accordingly
+- [x] **Landscape lock warning** — yellow banner when `innerHeight < 380 && width > height`; dismisses on rotate; `resize` + `orientationchange` listeners; `LandscapeWarning` component mounted in `App`
+- [x] **Touch target audit** — all interactive elements ≥ 44×44px; ColorWord buttons bumped to 52px height; MemoryMatch "Undo last" btn-sm got `minHeight: 44`
+
+### Game Feel
+- [x] **Round result lingers until both confirm** — `ROUND_READY` client message; `roundReadyVotes: Set<string>` + `roundReadyTimer` on `MatchState`; server waits for both votes before advancing; 5s auto-advance fallback; match-ending rounds still use 2.5s auto-advance
+- [x] **Volume slider** — mute toggle upgraded to 🔇/🔉/🔊 icon + 0–100 range slider; `getVolume()`/`setVolume()` replace binary `isMuted`; all synth nodes multiply gain by current volume; persisted in `localStorage` key `soundVolume`
+- [x] **Space / Enter to ready up** — `keydown` listener in `LobbyView`; fires `setReady()` on Space/Enter when opponent present and not yet ready; guards against INPUT focus
+- [x] **Match duration on end screen** — `matchStartedAt: number | null` in Zustand store; set at `MATCH_START`, cleared on `ROOM_JOINED`; elapsed computed at render time; "⏱ Xm Ys" shown between the score numbers on the match-end screen
+- [x] **Rematch flash banner** — detects `match_end → lobby` status transition in `RoomPage` via `useRef`; shows full-screen "🔥 REMATCH!" overlay (anim-bounce, ~900ms) with semi-transparent backdrop before lobby renders
+- [x] **Client-side Sentry** — `@sentry/react` installed; `Sentry.init()` runs in `main.tsx` only when `VITE_SENTRY_DSN` is set; `ErrorBoundary.componentDidCatch` calls `Sentry.captureException`; `client/.env.example` documents the var
+- [x] **Spectator late-join game state** — `SPECTATE_JOINED` payload includes `match.minigameState` snapshot; `SpectateGameState` in `SpectatePage` renders read-only views for all 11 games using the raw server state
+- [x] **Disconnected opponent overlay** — full-screen pause overlay when `roomStatus === 'reconnecting'`; shows opponent name + countdown timer; pointer-events blocked
+
+### Launch Hardening
+- [x] **Input length caps** — WordScramble guess capped at 50 chars; FastestTyper text sliced to 200 chars; Emote string capped at 10 chars
+- [x] **HTTP rate limiting** — per-IP sliding 10s window, max 30 requests; 429 returned before routing; `GET /rooms` and `GET /health` both protected
+
+### Code Quality
+- [x] **`MinigameInput` discriminated union** — 10 typed variants in `shared/types.ts`; renamed conflicting type strings (`GUESS_WORD`, `PICK_COLOR`, `PICK_DIRECTION`); `MinigameModule.handleInput` takes `MinigameInput`; single `as MinigameInput` cast in `handleGameInput` at the network boundary; all per-module `input as { type: string; ... }` casts eliminated
+- [x] **`clearAllRooms()`** — exported from `roomStore.ts` for test isolation; `roomStore.test.ts` uses `beforeEach(() => clearAllRooms())` instead of deleting by known ID
+- [x] **Integration tests for colorword + higherorlower** — 3 tests each in `server/src/__tests__/minigames/`; use `makeRoom` + `makeMatch` helpers; assert `onRoundDone` fires with correct winner/reason
+- [x] **`ADDING_A_GAME.md` updated** — Step 1 now includes `MinigameInput` variant; Step 2 handleInput description updated; Step 4 (spectator view) and Step 5 (integration tests) added; checklist has 8 items
+
 ### Tests
 - [x] **Vitest setup** — server (node env) and client (happy-dom + React Testing Library); `npm test` works in both packages
-- [x] **Server unit tests (28)** — wordscramble (5), rockpaperscissors (4), matchController (6), roomManager (13)
+- [x] **Server unit + integration tests (57, 8 files)** — wordscramble (5), rockpaperscissors (4), matchController (6), roomManager (13), roomStore (4), colorword (6), higherorlower (7), router integration (10); `clearAllRooms()` for test isolation
 - [x] **Client unit tests (20)** — gameStore (11), ScoreBoard (5), TimerBar (4)
 - [x] Test factories in `server/src/__tests__/helpers.ts` — `makeWs()`, `makePlayer()`, `makeRoom()`, `makeMatch()`
 - [x] **ESLint** — `typescript-eslint` v8 + flat config in both packages; `no-unused-vars` (error), `no-explicit-any` (warn), `react-hooks/rules-of-hooks` (error); server passes at 0 warnings

@@ -34,7 +34,7 @@ interface ServerState {
 }
 
 export default function Template() {
-  const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
+  const { myPlayerId, players, minigameState, wsStatus } = useGameStore()
   const isLive = wsStatus === 'connected'
   const opponent = players.find((p) => p.id !== myPlayerId)
 
@@ -59,8 +59,8 @@ export default function Template() {
   void opponent // may be undefined in solo dev mode
 
   function handleAction() {
-    // TODO: implement player action
-    sendInput({ type: 'YOUR_INPUT_TYPE' /* TODO */ })
+    // TODO: implement player action — no changes to shared/types.ts needed
+    // sendInput({ type: 'YOUR_INPUT_TYPE', ...extraFields })
   }
 
   return (

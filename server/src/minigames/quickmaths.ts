@@ -9,7 +9,7 @@ interface Equation {
 
 interface State {
   equations: Record<string, Equation> // current equation per player
-  correct: Record<string, number>     // correct answer count per player
+  correct: Record<string, number> // correct answer count per player
 }
 
 function generate(): Equation {
@@ -58,13 +58,12 @@ const quickmaths: MinigameModule = {
   },
 
   handleInput(room, playerId, input) {
-    const msg = input as { type: string; answer: unknown }
-    if (msg.type !== 'ANSWER') return
+    if (input.type !== 'ANSWER') return
 
     const state = room.match!.minigameState as State
     if (!state.equations[playerId]) return
 
-    const submitted = Number(msg.answer)
+    const submitted = Number(input.answer)
     if (!Number.isFinite(submitted)) return
 
     if (Math.round(submitted) === state.equations[playerId].answer) {
@@ -83,9 +82,9 @@ const quickmaths: MinigameModule = {
     const c2 = state.correct[p2.id] ?? 0
 
     let winnerId: string
-    if (c1 > c2)      winnerId = p1.id
+    if (c1 > c2) winnerId = p1.id
     else if (c2 > c1) winnerId = p2.id
-    else              winnerId = Math.random() < 0.5 ? p1.id : p2.id
+    else winnerId = Math.random() < 0.5 ? p1.id : p2.id
 
     return { winnerId, reason: 'timeout' }
   },

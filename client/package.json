@@ -15,6 +15,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
+    "@sentry/react": "^10.45.0",
     "1v1-me": "file:..",
     "qrcode.react": "^4.2.0",
     "react": "^18.2.0",

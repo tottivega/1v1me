@@ -47,8 +47,8 @@ describe('higherorlower — integration', () => {
     const correct: 'higher' | 'lower' = state.target > state.clue ? 'higher' : 'lower'
     const wrong: 'higher' | 'lower' = correct === 'higher' ? 'lower' : 'higher'
 
-    higherorlower.handleInput(room, 'p1', { type: 'ANSWER', answer: correct })
-    higherorlower.handleInput(room, 'p2', { type: 'ANSWER', answer: wrong })
+    higherorlower.handleInput(room, 'p1', { type: 'PICK_DIRECTION', answer: correct })
+    higherorlower.handleInput(room, 'p2', { type: 'PICK_DIRECTION', answer: wrong })
 
     expect(onRoundDone).toHaveBeenCalledOnce()
     expect(onRoundDone).toHaveBeenCalledWith(
@@ -65,10 +65,10 @@ describe('higherorlower — integration', () => {
     const state = room.match.minigameState as { target: number; clue: number }
     const correct: 'higher' | 'lower' = state.target > state.clue ? 'higher' : 'lower'
 
-    higherorlower.handleInput(room, 'p1', { type: 'ANSWER', answer: correct })
+    higherorlower.handleInput(room, 'p1', { type: 'PICK_DIRECTION', answer: correct })
     expect(onRoundDone).not.toHaveBeenCalled()
 
-    higherorlower.handleInput(room, 'p2', { type: 'ANSWER', answer: correct })
+    higherorlower.handleInput(room, 'p2', { type: 'PICK_DIRECTION', answer: correct })
     expect(onRoundDone).toHaveBeenCalledOnce()
   })
 
@@ -81,8 +81,8 @@ describe('higherorlower — integration', () => {
     const state = room.match.minigameState as { target: number; clue: number }
     const correct: 'higher' | 'lower' = state.target > state.clue ? 'higher' : 'lower'
 
-    higherorlower.handleInput(room, 'p1', { type: 'ANSWER', answer: correct })
-    higherorlower.handleInput(room, 'p1', { type: 'ANSWER', answer: correct }) // duplicate
+    higherorlower.handleInput(room, 'p1', { type: 'PICK_DIRECTION', answer: correct })
+    higherorlower.handleInput(room, 'p1', { type: 'PICK_DIRECTION', answer: correct }) // duplicate
     // Only p1 answered — should not resolve yet
     expect(onRoundDone).not.toHaveBeenCalled()
   })

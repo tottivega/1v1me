@@ -6,6 +6,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     clearMocks: true,
+    setupFiles: ['./src/__tests__/setup.ts'],
   },
   resolve: {
     alias: {

@@ -1,5 +1,12 @@
 import type { WebSocket } from 'ws'
-import type { RoomStatus, MinigameId, MinigameResult, RoundRecord, RoomConfig } from '@shared/types'
+import type {
+  RoomStatus,
+  MinigameId,
+  MinigameInput,
+  MinigameResult,
+  RoundRecord,
+  RoomConfig,
+} from '@shared/types'
 
 export interface Player {
   id: string
@@ -48,6 +55,6 @@ export interface Room {
 export interface MinigameModule {
   id: MinigameId
   start(room: Room): void
-  handleInput(room: Room, playerId: string, input: unknown): void
+  handleInput(room: Room, playerId: string, input: MinigameInput): void
   getResult(room: Room): MinigameResult
 }

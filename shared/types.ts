@@ -310,3 +310,14 @@ export interface MinigameResult {
   winnerId: string | null
   reason: 'completed' | 'timeout' | 'forfeit'
 }
+
+// ─── Minigame Input ───────────────────────────────────────────────────────────
+// Open interface: each game defines its own payload shape in its own module.
+// The `type` string routes to the correct minigame handler; extra properties
+// are unknown at this layer and validated inside each handler.
+// Adding a new game does NOT require touching this file.
+
+export interface MinigameInput {
+  type: string
+  [key: string]: unknown
+}

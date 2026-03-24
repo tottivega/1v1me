@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo, Suspense } from 'react'
 import { useGameStore } from '../store/gameStore'
 import ScoreBoard from '../components/ScoreBoard'
 import TimerBar from '../components/TimerBar'
@@ -28,6 +28,18 @@ export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>()
   const { roomStatus, myNickname, wsStatus, roomNotFound, connect, reconnectSaved } = useGameStore()
   const navigate = useNavigate()
+  const [rematchFlash, setRematchFlash] = useState(false)
+  const prevStatus = useRef<string>(roomStatus)
+
+  // Detect match_end → lobby transition = rematch accepted
+  useEffect(() => {
+    if (prevStatus.current === 'match_end' && (roomStatus === 'lobby' || roomStatus === 'ready')) {
+      setRematchFlash(true)
+      const t = setTimeout(() => setRematchFlash(false), 900)
+      return () => clearTimeout(t)
+    }
+    prevStatus.current = roomStatus
+  }, [roomStatus])
 
   // Connect (or reconnect) whenever roomId changes
   useEffect(() => {
@@ -70,7 +82,39 @@ export default function RoomPage() {
   // No nickname yet (direct URL visit) → show a quick name gate
   if (!myNickname) return <NicknameGate roomId={roomId!} />
 
-  if (roomStatus === 'lobby' || roomStatus === 'ready') return <LobbyView roomId={roomId!} />
+  if (roomStatus === 'lobby' || roomStatus === 'ready')
+    return (
+      <>
+        {rematchFlash && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(0,0,0,0.55)',
+              pointerEvents: 'none',
+            }}
+          >
+            <div
+              className="anim-bounce"
+              style={{
+                fontFamily: 'var(--font-title)',
+                fontSize: 72,
+                color: 'var(--orange)',
+                WebkitTextStroke: '3px var(--black)',
+                textShadow: '5px 5px 0 var(--black)',
+              }}
+            >
+              🔥 REMATCH!
+            </div>
+          </div>
+        )}
+        <LobbyView roomId={roomId!} />
+      </>
+    )
   if (roomStatus === 'match_end') return <MatchEndView />
 
   // Connecting overlay while WS is establishing
@@ -196,6 +240,20 @@ function LobbyView({ roomId }: { roomId: string }) {
       if (idleTickRef.current) clearInterval(idleTickRef.current)
     }
   }, [opponent?.id, me?.ready, opponent?.ready])
+
+  // Space / Enter to ready up
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== ' ' && e.key !== 'Enter') return
+      if (!opponent || me?.ready) return
+      if ((e.target as HTMLElement)?.tagName === 'INPUT') return
+      e.preventDefault()
+      playReady()
+      setReady()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [opponent, me?.ready, setReady])
 
   return (
     <div className="page">
@@ -677,10 +735,13 @@ function MatchView() {
         playTick(true)
       }, 1450)
       const t4 = setTimeout(() => {
+        setCountNum(0) // 0 = "GO!"
+      }, 1900)
+      const t5 = setTimeout(() => {
         setShowTransition(false)
         setCountNum(null)
-      }, 1900)
-      return () => [t1, t2, t3, t4].forEach(clearTimeout)
+      }, 2300)
+      return () => [t1, t2, t3, t4, t5].forEach(clearTimeout)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRound, currentMinigame])
@@ -921,13 +982,13 @@ function MatchView() {
                 className="anim-count-in"
                 style={{
                   fontFamily: 'var(--font-title)',
-                  fontSize: 88,
-                  color: countNum === 1 ? 'var(--green)' : 'var(--white)',
+                  fontSize: countNum === 0 ? 72 : 88,
+                  color: countNum <= 1 ? 'var(--green)' : 'var(--white)',
                   textShadow: '4px 4px 0 rgba(0,0,0,0.5)',
                   lineHeight: 1,
                 }}
               >
-                {countNum}
+                {countNum === 0 ? 'GO!' : countNum}
               </div>
             )}
           </div>
@@ -996,7 +1057,9 @@ function MatchView() {
       {/* Minigame area */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {MinigameComp ? (
-          <MinigameComp />
+          <Suspense fallback={null}>
+            <MinigameComp />
+          </Suspense>
         ) : (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="subtitle" style={{ opacity: 0.5 }}>
@@ -1101,9 +1164,19 @@ function MatchEndView() {
     send,
     roundHistory,
     rematchVoting,
+    matchStartedAt,
   } = useGameStore()
   const navigate = useNavigate()
   const iWon = matchWinnerId === myPlayerId
+
+  const matchDuration = matchStartedAt
+    ? (() => {
+        const secs = Math.round((Date.now() - matchStartedAt) / 1000)
+        const m = Math.floor(secs / 60)
+        const s = secs % 60
+        return m > 0 ? `${m}m ${s}s` : `${s}s`
+      })()
+    : null
 
   useEffect(() => {
     iWon ? playMatchWin() : playMatchLose()
@@ -1177,7 +1250,14 @@ function MatchEndView() {
             </div>
             <div className="label">{me?.nickname ?? 'You'}</div>
           </div>
-          <div style={{ fontFamily: 'var(--font-title)', fontSize: 32, opacity: 0.3 }}>—</div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-title)', fontSize: 32, opacity: 0.3 }}>—</div>
+            {matchDuration && (
+              <div style={{ fontSize: 11, opacity: 0.45, fontWeight: 700, marginTop: 4 }}>
+                ⏱ {matchDuration}
+              </div>
+            )}
+          </div>
           <div style={{ textAlign: 'center' }}>
             <div
               style={{
@@ -1295,34 +1375,137 @@ function ShareButton({
   myScore: number
   oppScore: number
 }) {
-  const [copied, setCopied] = useState(false)
+  const { roundHistory, myPlayerId } = useGameStore()
+  const [saved, setSaved] = useState(false)
 
-  function share() {
-    playClick()
-    const result = iWon
-      ? `🏆 ${myNickname} beat ${oppNickname} ${myScore}–${oppScore} on 1v1 ME!`
-      : `💀 ${oppNickname} beat ${myNickname} ${oppScore}–${myScore} on 1v1 ME!`
-    const text = `${result}\n\nSettle your beef at 1v1.me`
+  async function buildCard(): Promise<Blob> {
+    const PAD = 28
+    const W = 560
+    const ROW_H = 44
+    const HEADER_H = 140
+    const FOOTER_H = 44
+    const ROUNDS_H = roundHistory.length > 0 ? roundHistory.length * ROW_H + 16 : 0
+    const H = HEADER_H + ROUNDS_H + FOOTER_H
 
-    if (navigator.share) {
-      navigator.share({ text }).catch(() => {})
-    } else {
-      navigator.clipboard.writeText(text).then(() => {
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const canvas = document.createElement('canvas')
+    canvas.width = W * dpr
+    canvas.height = H * dpr
+    const ctx = canvas.getContext('2d')!
+    ctx.scale(dpr, dpr)
+
+    // Background + border
+    ctx.fillStyle = '#fafafa'
+    ctx.fillRect(0, 0, W, H)
+    ctx.strokeStyle = '#000'
+    ctx.lineWidth = 3
+    ctx.strokeRect(1.5, 1.5, W - 3, H - 3)
+
+    // Left accent stripe
+    ctx.fillStyle = iWon ? '#f7c948' : '#e63946'
+    ctx.fillRect(0, 0, 8, H)
+
+    // Title
+    ctx.textAlign = 'left'
+    ctx.fillStyle = '#000'
+    ctx.font = '900 52px "Arial Black", Arial, sans-serif'
+    ctx.fillText(iWon ? '🏆 YOU WIN!' : '💀 YOU LOSE', PAD + 8, 72)
+
+    // Score line
+    ctx.font = '700 20px Arial, sans-serif'
+    ctx.fillStyle = 'rgba(0,0,0,0.55)'
+    ctx.fillText(`${myNickname}  ${myScore}–${oppScore}  ${oppNickname}`, PAD + 8, 110)
+
+    if (roundHistory.length > 0) {
+      // Divider
+      ctx.strokeStyle = 'rgba(0,0,0,0.1)'
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(PAD, HEADER_H - 8)
+      ctx.lineTo(W - PAD, HEADER_H - 8)
+      ctx.stroke()
+
+      roundHistory.forEach((r, idx) => {
+        const cfg = MINIGAME_CONFIGS[r.minigameId]
+        const iWonRow = r.winnerId === myPlayerId
+        const isDraw = r.winnerId === null
+        const y = HEADER_H + idx * ROW_H
+
+        // Row tint
+        ctx.fillStyle = iWonRow
+          ? 'rgba(45,198,83,0.1)'
+          : isDraw
+            ? 'rgba(0,0,0,0.03)'
+            : 'rgba(230,57,70,0.08)'
+        ctx.fillRect(PAD, y, W - PAD * 2, ROW_H - 4)
+
+        // Game emoji + label
+        ctx.font = '700 15px Arial, sans-serif'
+        ctx.fillStyle = '#000'
+        ctx.textAlign = 'left'
+        ctx.fillText(`${cfg.emoji}  ${cfg.label}`, PAD + 10, y + 26)
+
+        // Winner
+        ctx.font = '900 13px Arial, sans-serif'
+        ctx.textAlign = 'right'
+        ctx.fillStyle = iWonRow ? '#2dc653' : isDraw ? '#888' : '#e63946'
+        const label = isDraw ? '🤝 Draw' : iWonRow ? `🏆 ${myNickname}` : `💀 ${oppNickname}`
+        ctx.fillText(label, W - PAD - 10, y + 26)
       })
+    }
+
+    // Footer
+    ctx.textAlign = 'center'
+    ctx.font = '700 13px Arial, sans-serif'
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'
+    ctx.fillText('⚔️  1v1.me  •  Settle it. Once and for all.', W / 2, H - 14)
+
+    return new Promise((resolve, reject) =>
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error('canvas toBlob failed'))),
+        'image/png'
+      )
+    )
+  }
+
+  async function share() {
+    playClick()
+    try {
+      const blob = await buildCard()
+      const file = new File([blob], '1v1me-result.png', { type: 'image/png' })
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: iWon ? 'I won! 🏆' : 'GG 💀' })
+      } else {
+        // Fallback: download the PNG
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = '1v1me-result.png'
+        a.click()
+        URL.revokeObjectURL(url)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2500)
+      }
+    } catch {
+      // Last-resort text fallback
+      const text = iWon
+        ? `🏆 ${myNickname} beat ${oppNickname} ${myScore}–${oppScore} on 1v1.me!`
+        : `💀 ${oppNickname} beat ${myNickname} ${oppScore}–${myScore} on 1v1.me!`
+      navigator.clipboard?.writeText(`${text}\n\nSettle your beef at 1v1.me`).catch(() => {})
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
     }
   }
 
   return (
     <button className="btn btn-white" onClick={share}>
-      {copied ? '✅ Copied!' : '📤 Share'}
+      {saved ? '✅ Saved!' : '📤 Share'}
     </button>
   )
 }
 
 function Confetti() {
-  const colors = [
+  const COLORS = [
     'var(--orange)',
     'var(--yellow)',
     'var(--green)',
@@ -1330,22 +1513,47 @@ function Confetti() {
     'var(--pink)',
     'var(--purple)',
   ]
+  // Stabilise all random values so they don't recalculate on re-renders
+  const pieces = useMemo(
+    () =>
+      Array.from({ length: 60 }, (_, i) => {
+        const r = Math.random()
+        // Three shapes: circle, square, or thin strip (wide or tall)
+        const shape = r < 0.4 ? 'circle' : r < 0.7 ? 'square' : r < 0.85 ? 'strip-h' : 'strip-v'
+        const base = 6 + Math.random() * 10 // 6–16px
+        return {
+          left: Math.random() * 100,
+          width: shape === 'strip-h' ? base * 2.5 : base,
+          height: shape === 'strip-v' ? base * 2.5 : base,
+          color: COLORS[i % COLORS.length],
+          radius: shape === 'circle' ? '50%' : '2px',
+          delay: Math.random() * 1.6,
+          duration: 1.6 + Math.random() * 2,
+          drift: (Math.random() - 0.5) * 240, // –120 to +120px horizontal arc
+        }
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  )
+
   return (
     <>
-      {Array.from({ length: 24 }, (_, i) => (
+      {pieces.map((p, i) => (
         <div
           key={i}
           style={{
             position: 'fixed',
             top: -20,
-            left: `${Math.random() * 100}%`,
-            width: 12,
-            height: 12,
-            background: colors[i % colors.length],
+            left: `${p.left}%`,
+            width: p.width,
+            height: p.height,
+            background: p.color,
             border: '2px solid var(--black)',
-            borderRadius: Math.random() > 0.5 ? '50%' : '2px',
-            animation: `confetti-fall ${1.5 + Math.random() * 2}s ease ${Math.random() * 1.5}s forwards`,
+            borderRadius: p.radius,
+            animation: `confetti-fall ${p.duration}s ease ${p.delay}s forwards`,
+            ['--drift' as string]: `${p.drift}px`,
             pointerEvents: 'none',
+            zIndex: 9999,
           }}
         />
       ))}

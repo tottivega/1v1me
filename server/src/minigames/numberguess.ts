@@ -19,13 +19,12 @@ const numberguess: MinigameModule = {
   },
 
   handleInput(room, playerId, input) {
-    const msg = input as { type: string; value: unknown }
-    if (msg.type !== 'GUESS') return
+    if (input.type !== 'GUESS') return
 
     const state = room.match!.minigameState as State
     if (state.guesses[playerId] !== undefined) return // first guess only
 
-    const value = Number(msg.value)
+    const value = Number(input.value)
     if (!Number.isInteger(value) || value < 1 || value > 100) return
 
     state.guesses[playerId] = value

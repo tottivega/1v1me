@@ -37,7 +37,7 @@ describe('colorword — integration', () => {
     colorword.start(room)
     const state = room.match.minigameState as { inkColor: string }
 
-    colorword.handleInput(room, 'p1', { type: 'PICK', color: state.inkColor })
+    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: state.inkColor })
 
     expect(onRoundDone).toHaveBeenCalledOnce()
     expect(onRoundDone).toHaveBeenCalledWith({ winnerId: 'p1', reason: 'completed' })
@@ -51,7 +51,7 @@ describe('colorword — integration', () => {
     colorword.start(room)
     const state = room.match.minigameState as { word: string; inkColor: string }
     // The word itself is always a wrong pick (word !== inkColor guaranteed by pick())
-    colorword.handleInput(room, 'p1', { type: 'PICK', color: state.word })
+    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: state.word })
 
     expect(onRoundDone).not.toHaveBeenCalled()
   })
@@ -64,8 +64,8 @@ describe('colorword — integration', () => {
     colorword.start(room)
     const state = room.match.minigameState as { inkColor: string }
 
-    colorword.handleInput(room, 'p1', { type: 'PICK', color: state.inkColor })
-    colorword.handleInput(room, 'p2', { type: 'PICK', color: state.inkColor }) // late pick
+    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: state.inkColor })
+    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: state.inkColor }) // late pick
 
     expect(onRoundDone).toHaveBeenCalledOnce() // still only once
   })

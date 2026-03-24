@@ -11,18 +11,35 @@ function ctx(): AudioContext {
   return _ctx
 }
 
-// ── Mute toggle ───────────────────────────────────────────────────────────────
+// ── Volume control ─────────────────────────────────────────────────────────────
 
-export function isMuted(): boolean {
-  try { return localStorage.getItem('soundMuted') === 'true' } catch { return false }
+const VOLUME_KEY = 'soundVolume'
+const DEFAULT_VOLUME = 0.7
+
+export function getVolume(): number {
+  try {
+    const v = parseFloat(localStorage.getItem(VOLUME_KEY) ?? '')
+    if (!isNaN(v) && v >= 0 && v <= 1) return v
+  } catch {}
+  return DEFAULT_VOLUME
 }
 
+export function setVolume(v: number) {
+  try {
+    localStorage.setItem(VOLUME_KEY, String(Math.max(0, Math.min(1, v))))
+  } catch {}
+}
+
+// Legacy compat — kept so existing callers outside this file still compile
+export function isMuted(): boolean {
+  return getVolume() === 0
+}
 export function setMuted(val: boolean) {
-  try { localStorage.setItem('soundMuted', String(val)) } catch {}
+  setVolume(val ? 0 : DEFAULT_VOLUME)
 }
 
 function guard(): boolean {
-  return isMuted()
+  return getVolume() === 0
 }
 
 // ── Primitive builders ────────────────────────────────────────────────────────
@@ -32,7 +49,7 @@ function tone(
   duration: number,
   type: OscillatorType = 'square',
   volume = 0.25,
-  delay = 0,
+  delay = 0
 ) {
   const c = ctx()
   const osc = c.createOscillator()
@@ -41,7 +58,7 @@ function tone(
   gain.connect(c.destination)
   osc.type = type
   osc.frequency.setValueAtTime(freq, c.currentTime + delay)
-  gain.gain.setValueAtTime(volume, c.currentTime + delay)
+  gain.gain.setValueAtTime(volume * getVolume(), c.currentTime + delay)
   gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + delay + duration)
   osc.start(c.currentTime + delay)
   osc.stop(c.currentTime + delay + duration)
@@ -53,7 +70,7 @@ function sweep(
   duration: number,
   type: OscillatorType = 'sine',
   volume = 0.25,
-  delay = 0,
+  delay = 0
 ) {
   const c = ctx()
   const osc = c.createOscillator()
@@ -63,7 +80,7 @@ function sweep(
   osc.type = type
   osc.frequency.setValueAtTime(freqStart, c.currentTime + delay)
   osc.frequency.exponentialRampToValueAtTime(freqEnd, c.currentTime + delay + duration)
-  gain.gain.setValueAtTime(volume, c.currentTime + delay)
+  gain.gain.setValueAtTime(volume * getVolume(), c.currentTime + delay)
   gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + delay + duration)
   osc.start(c.currentTime + delay)
   osc.stop(c.currentTime + delay + duration)
@@ -177,7 +194,7 @@ export function playTick(final = false) {
   if (final) {
     // "1" — sharper, higher
     tone(1100, 0.05, 'square', 0.22)
-    tone(1600, 0.08, 'sine',   0.18, 0.05)
+    tone(1600, 0.08, 'sine', 0.18, 0.05)
   } else {
     tone(660, 0.07, 'sine', 0.18)
   }

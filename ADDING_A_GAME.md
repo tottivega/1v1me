@@ -22,7 +22,9 @@ wordrace: {
 
 Set `platforms` to `'desktop-only'` if the game requires a physical keyboard (like Fastest Typer). Set it to `'mobile-only'` for games that only make sense with touch. Leave as `'all'` for everything else.
 
-`MinigameId` is derived automatically from these keys — no other type changes needed.
+`MinigameId` is derived automatically from these keys.
+
+That's all you need to touch in `shared/types.ts`. `MinigameInput` is an open interface — no union to extend.
 
 ---
 
@@ -33,7 +35,7 @@ Copy `server/src/minigames/_template.ts` → `server/src/minigames/wordrace.ts`.
 Fill in:
 - `id` — must match your key in `MINIGAME_CONFIGS`
 - `start(room)` — initialise state, store on `room.match.minigameState`, broadcast
-- `handleInput(room, playerId, input)` — react to player actions, broadcast updates
+- `handleInput(room, playerId, input)` — react to player actions; narrow with `if (input.type !== 'YOUR_TYPE') return`, then cast extra properties as needed (e.g. `const word = input.word as string`)
 - `getResult(room)` — return `{ winnerId, reason }` (only called for timer-based games)
 
 **Self-resolving games** (timeoutMs: 0): call `room.match!.onRoundDone?.({ winnerId, reason: 'completed' })` from inside `start()` or `handleInput()` when you have a winner. The match controller skips the countdown timer entirely.
@@ -65,17 +67,7 @@ Key rules:
 - Reset local state in a `useEffect` that watches `minigameState === null` (set on `ROUND_START`)
 - Wire sounds from `utils/sounds.ts` for feedback moments
 
-Then register it:
-
-```tsx
-// client/src/minigames/registry.tsx
-import WordRace from './WordRace'
-
-export const MINIGAME_COMPONENTS: Record<MinigameId, ComponentType> = {
-  // ...existing games...
-  wordrace: WordRace,
-}
-```
+The registry auto-discovers component files via `import.meta.glob` — no manual registration needed. The only rule: **filename must match the MinigameId** (case-insensitive). `WordRace.tsx` → `wordrace`.
 
 ---
 
@@ -140,9 +132,9 @@ it('resolves with the first finisher as winner', () => {
 
 ## Checklist
 
-- [ ] Entry in `MINIGAME_CONFIGS` (shared/types.ts)
+- [ ] Entry in `MINIGAME_CONFIGS` (shared/types.ts) — no MinigameInput changes needed
 - [ ] Server module created and added to `MODULES` (server/src/minigames/index.ts)
-- [ ] Client component created and added to `MINIGAME_COMPONENTS` (client/src/minigames/registry.tsx)
+- [ ] Client component created at `client/src/minigames/<PascalCaseId>.tsx` (auto-registered by glob)
 - [ ] Spectator view added to `SpectateGameState` (client/src/pages/SpectatePage.tsx)
 - [ ] Integration tests in `server/src/__tests__/minigames/wordrace.test.ts`
 - [ ] `tsc --noEmit` passes in both `client/` and `server/`

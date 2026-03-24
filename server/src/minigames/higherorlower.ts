@@ -32,14 +32,12 @@ const higherorlower: MinigameModule = {
   },
 
   handleInput(room, playerId, input) {
-    const msg = input as { type: string; answer: string }
-    if (msg.type !== 'ANSWER') return
+    if (input.type !== 'PICK_DIRECTION') return
 
     const state = room.match!.minigameState as State
     if (state.answers[playerId] !== undefined) return // already answered
-    if (msg.answer !== 'higher' && msg.answer !== 'lower') return
 
-    state.answers[playerId] = msg.answer as 'higher' | 'lower'
+    state.answers[playerId] = input.answer as 'higher' | 'lower'
 
     broadcast(room, 'GAME_UPDATE', {
       state: { clue: state.clue, phase: 'guessing', submitted: Object.keys(state.answers) },

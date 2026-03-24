@@ -43,14 +43,15 @@ const memorymatch: MinigameModule = {
   },
 
   handleInput(room, playerId, input) {
-    const msg = input as { type: string; sequence: string[] }
-    if (msg.type !== 'SUBMIT') return
+    if (input.type !== 'SUBMIT') return
 
     const state = room.match!.minigameState as State
     if (state.resolved) return
     if (state.submissions[playerId]) return // already submitted
 
-    const submission = Array.isArray(msg.sequence) ? msg.sequence.slice(0, SEQ_LEN) : []
+    const submission = Array.isArray(input.sequence)
+      ? (input.sequence as string[]).slice(0, SEQ_LEN)
+      : []
     state.submissions[playerId] = submission
 
     broadcast(room, 'GAME_UPDATE', {
@@ -58,7 +59,7 @@ const memorymatch: MinigameModule = {
     })
 
     // If both players have submitted, resolve early
-    const allSubmitted = room.players.every(p => state.submissions[p.id] !== undefined)
+    const allSubmitted = room.players.every((p) => state.submissions[p.id] !== undefined)
     if (allSubmitted) {
       state.resolved = true
       const result = computeResult(room, state)

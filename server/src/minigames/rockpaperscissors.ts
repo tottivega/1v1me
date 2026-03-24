@@ -6,25 +6,28 @@ type Choice = 'rock' | 'paper' | 'scissors'
 
 const BEATS: Record<Choice, Choice> = { rock: 'scissors', paper: 'rock', scissors: 'paper' }
 const THROW_TIMEOUT_MS = 8000
-const REVEAL_DELAY_MS  = 1500
-const THROWS_TO_WIN    = 2
-const TOTAL_THROWS     = 3
+const REVEAL_DELAY_MS = 1500
+const THROWS_TO_WIN = 2
+const TOTAL_THROWS = 3
 
 // Per-room throw timers — not serializable, never broadcast
 const throwTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
 interface State {
-  throwNum:  number
-  phase:     'picking' | 'reveal'
-  picks:     Record<string, Choice>   // current throw picks (only populated during reveal)
-  scores:    Record<string, number>
-  history:   Array<{ picks: Record<string, Choice>; winnerId: string | null }>
-  resolved:  boolean
+  throwNum: number
+  phase: 'picking' | 'reveal'
+  picks: Record<string, Choice> // current throw picks (only populated during reveal)
+  scores: Record<string, number>
+  history: Array<{ picks: Record<string, Choice>; winnerId: string | null }>
+  resolved: boolean
 }
 
 function clearThrowTimer(roomId: string) {
   const t = throwTimers.get(roomId)
-  if (t) { clearTimeout(t); throwTimers.delete(roomId) }
+  if (t) {
+    clearTimeout(t)
+    throwTimers.delete(roomId)
+  }
 }
 
 export function throwWinner(c1: Choice, c2: Choice, p1Id: string, p2Id: string): string | null {
@@ -35,11 +38,11 @@ export function throwWinner(c1: Choice, c2: Choice, p1Id: string, p2Id: string):
 function broadcastPicking(room: Room, state: State) {
   broadcast(room, 'GAME_UPDATE', {
     state: {
-      phase:    'picking',
+      phase: 'picking',
       throwNum: state.throwNum,
-      submitted: Object.keys(state.picks),  // who has picked — not what they picked
-      scores:   state.scores,
-      history:  state.history,
+      submitted: Object.keys(state.picks), // who has picked — not what they picked
+      scores: state.scores,
+      history: state.history,
     },
   })
 }
@@ -47,12 +50,12 @@ function broadcastPicking(room: Room, state: State) {
 function broadcastReveal(room: Room, state: State, winnerId: string | null) {
   broadcast(room, 'GAME_UPDATE', {
     state: {
-      phase:         'reveal',
-      throwNum:      state.throwNum,
-      picks:         state.picks,
+      phase: 'reveal',
+      throwNum: state.throwNum,
+      picks: state.picks,
       throwWinnerId: winnerId,
-      scores:        state.scores,
-      history:       state.history,
+      scores: state.scores,
+      history: state.history,
     },
   })
 }
@@ -67,7 +70,7 @@ function resolveThrowAndAdvance(room: Room, state: State, winnerId: string | nul
   broadcastReveal(room, state, winnerId)
 
   const [p1, p2] = room.players
-  const matchWinner = [p1, p2].find(p => (state.scores[p.id] ?? 0) >= THROWS_TO_WIN)
+  const matchWinner = [p1, p2].find((p) => (state.scores[p.id] ?? 0) >= THROWS_TO_WIN)
   const allDone = state.history.length >= TOTAL_THROWS
 
   if (matchWinner || allDone) {
@@ -89,20 +92,21 @@ function resolveThrowAndAdvance(room: Room, state: State, winnerId: string | nul
 
 function startThrowTimeout(room: Room, state: State) {
   clearThrowTimer(room.roomId)
-  throwTimers.set(room.roomId, setTimeout(() => {
-    if (!room.match || room.match.paused || state.resolved) return
-    const [p1, p2] = room.players
-    const p1Picked = !!state.picks[p1.id]
-    const p2Picked = !!state.picks[p2.id]
-    // Award throw to whoever picked; if both or neither timed out → null
-    const timeoutWinnerId =
-      p1Picked && !p2Picked ? p1.id :
-      p2Picked && !p1Picked ? p2.id : null
-    // Fill in missing picks for history display
-    if (!state.picks[p1.id]) state.picks[p1.id] = 'rock'  // placeholder
-    if (!state.picks[p2.id]) state.picks[p2.id] = 'rock'
-    resolveThrowAndAdvance(room, state, timeoutWinnerId)
-  }, THROW_TIMEOUT_MS))
+  throwTimers.set(
+    room.roomId,
+    setTimeout(() => {
+      if (!room.match || room.match.paused || state.resolved) return
+      const [p1, p2] = room.players
+      const p1Picked = !!state.picks[p1.id]
+      const p2Picked = !!state.picks[p2.id]
+      // Award throw to whoever picked; if both or neither timed out → null
+      const timeoutWinnerId = p1Picked && !p2Picked ? p1.id : p2Picked && !p1Picked ? p2.id : null
+      // Fill in missing picks for history display
+      if (!state.picks[p1.id]) state.picks[p1.id] = 'rock' // placeholder
+      if (!state.picks[p2.id]) state.picks[p2.id] = 'rock'
+      resolveThrowAndAdvance(room, state, timeoutWinnerId)
+    }, THROW_TIMEOUT_MS)
+  )
 }
 
 function computeResult(room: Room, state: State): MinigameResult {
@@ -121,10 +125,10 @@ const rockpaperscissors: MinigameModule = {
     const [p1, p2] = room.players
     const state: State = {
       throwNum: 1,
-      phase:    'picking',
-      picks:    {},
-      scores:   { [p1.id]: 0, [p2.id]: 0 },
-      history:  [],
+      phase: 'picking',
+      picks: {},
+      scores: { [p1.id]: 0, [p2.id]: 0 },
+      history: [],
       resolved: false,
     }
     room.match!.minigameState = state
@@ -133,20 +137,19 @@ const rockpaperscissors: MinigameModule = {
   },
 
   handleInput(room, playerId, input) {
-    const msg = input as { type: string; choice: string }
-    if (msg.type !== 'PICK') return
+    if (input.type !== 'PICK') return
 
     const state = room.match!.minigameState as State
     if (state.resolved || state.phase !== 'picking') return
-    if (state.picks[playerId]) return  // already picked this throw
+    if (state.picks[playerId]) return // already picked this throw
 
-    const choice = msg.choice as Choice
+    const choice = input.choice as Choice
     if (!['rock', 'paper', 'scissors'].includes(choice)) return
 
     state.picks[playerId] = choice
     broadcastPicking(room, state)
 
-    const bothPicked = room.players.every(p => state.picks[p.id] !== undefined)
+    const bothPicked = room.players.every((p) => state.picks[p.id] !== undefined)
     if (!bothPicked) return
 
     const [p1, p2] = room.players
