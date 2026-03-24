@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   joinOrCreateRoom,
+  setPlayerAvatar,
   handleDisconnect,
   handleReconnect,
   handleRematchVote,
@@ -163,6 +164,82 @@ describe('handleRematchVote()', () => {
     expect(roomJoinedCalls).toHaveLength(2)
     expect(room.rematchVotes.size).toBe(0)
     expect(room.status).toBe('lobby')
+  })
+})
+
+describe('stale room cleanup', () => {
+  it('deletes a room when the host disconnects before anyone joins and idle timer fires', () => {
+    joinOrCreateRoom(ROOM_ID, 'p1', 'Alice', makeWs())
+    handleDisconnect(ROOM_ID, 'p1')
+
+    // Room still exists (cleanup timer not yet fired)
+    expect(getRoom(ROOM_ID)).toBeDefined()
+
+    // Advance past the 60s idle cleanup window
+    vi.advanceTimersByTime(60_001)
+
+    expect(getRoom(ROOM_ID)).toBeUndefined()
+  })
+
+  it('deletes a room when both players disconnect during a match and neither reconnects', () => {
+    joinOrCreateRoom(ROOM_ID, 'p1', 'Alice', makeWs())
+    joinOrCreateRoom(ROOM_ID, 'p2', 'Bob', makeWs())
+    const room = getRoom(ROOM_ID)!
+    room.status = 'playing'
+    room.match = makeMatch('p1', 'p2')
+
+    handleDisconnect(ROOM_ID, 'p1')
+    handleDisconnect(ROOM_ID, 'p2')
+
+    // Both players are marked disconnected with reconnect timers
+    expect(room.players.every((p) => !p.connected)).toBe(true)
+    expect(room.players.every((p) => p.reconnectTimer !== null)).toBe(true)
+
+    // Room still exists — giving players a chance to reconnect
+    expect(getRoom(ROOM_ID)).toBeDefined()
+
+    // Advance past the 15s reconnect window — forfeit fires, room is deleted
+    vi.advanceTimersByTime(15_001)
+
+    expect(getRoom(ROOM_ID)).toBeUndefined()
+  })
+})
+
+describe('setPlayerAvatar()', () => {
+  it('updates the player avatar when a valid emoji is given', () => {
+    joinOrCreateRoom(ROOM_ID, 'p1', 'Alice', makeWs())
+    const room = getRoom(ROOM_ID)!
+    setPlayerAvatar(room, 'p1', '🦊')
+    expect(room.players[0]!.avatar).toBe('🦊')
+  })
+
+  it('rejects an invalid emoji (not in AVATARS list)', () => {
+    joinOrCreateRoom(ROOM_ID, 'p1', 'Alice', makeWs())
+    const room = getRoom(ROOM_ID)!
+    const original = room.players[0]!.avatar
+    setPlayerAvatar(room, 'p1', '🍕')
+    expect(room.players[0]!.avatar).toBe(original)
+  })
+
+  it('does nothing when the room status is not lobby', () => {
+    joinOrCreateRoom(ROOM_ID, 'p1', 'Alice', makeWs())
+    joinOrCreateRoom(ROOM_ID, 'p2', 'Bob', makeWs())
+    const room = getRoom(ROOM_ID)!
+    room.status = 'playing'
+    const original = room.players[0]!.avatar
+    setPlayerAvatar(room, 'p1', '🦊')
+    expect(room.players[0]!.avatar).toBe(original)
+  })
+
+  it('broadcasts ROOM_JOINED to all players after a valid change', () => {
+    joinOrCreateRoom(ROOM_ID, 'p1', 'Alice', makeWs())
+    joinOrCreateRoom(ROOM_ID, 'p2', 'Bob', makeWs())
+    const room = getRoom(ROOM_ID)!
+    vi.clearAllMocks()
+    setPlayerAvatar(room, 'p1', '🦊')
+    const calls = (send as ReturnType<typeof vi.fn>).mock.calls
+    const roomJoinedCalls = calls.filter(([, type]) => type === 'ROOM_JOINED')
+    expect(roomJoinedCalls).toHaveLength(2)
   })
 })
 

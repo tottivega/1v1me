@@ -148,8 +148,8 @@ describe('MatchEndView', () => {
 
   it('shows final score', async () => {
     renderMatchEnd()
-    await waitFor(() => expect(screen.getByText('3')).toBeInTheDocument())
-    expect(screen.getByText('1')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getAllByText('3').length).toBeGreaterThan(0))
+    expect(screen.getAllByText('1').length).toBeGreaterThan(0)
   })
 
   it('shows match duration when matchStartedAt is set', () => {
@@ -163,6 +163,102 @@ describe('MatchEndView', () => {
     useGameStore.setState({ matchStartedAt: null })
     renderMatchEnd()
     expect(screen.queryByText(/⏱/)).not.toBeInTheDocument()
+  })
+})
+
+describe('LobbyView — avatar picker', () => {
+  it('shows the change-avatar button on the local player slot', () => {
+    renderLobby()
+    expect(screen.getByRole('button', { name: 'Change avatar' })).toBeInTheDocument()
+  })
+
+  it('opens the avatar picker when clicking the avatar', () => {
+    renderLobby()
+    fireEvent.click(screen.getByRole('button', { name: 'Change avatar' }))
+    expect(screen.getByText('Pick your avatar')).toBeInTheDocument()
+  })
+
+  it('renders all 12 avatar options in the picker', () => {
+    renderLobby()
+    fireEvent.click(screen.getByRole('button', { name: 'Change avatar' }))
+    // Avatar buttons use single emoji as aria-label (e.g. "🐺")
+    // Use the known emoji list to count them precisely
+    const emojis = ['🐺', '🦊', '🐻', '🐯', '🦁', '🐸', '🐨', '🦝', '🦄', '🐙', '🦖', '🐝']
+    const avatarButtons = emojis.map((e) => screen.getByRole('button', { name: e }))
+    expect(avatarButtons).toHaveLength(12)
+  })
+
+  it('closes the picker when backdrop is clicked', async () => {
+    renderLobby()
+    fireEvent.click(screen.getByRole('button', { name: 'Change avatar' }))
+    expect(screen.getByText('Pick your avatar')).toBeInTheDocument()
+    // Click the backdrop (the fixed overlay div)
+    const backdrop = screen.getByText('Pick your avatar').closest('div')!.parentElement!
+    fireEvent.click(backdrop)
+    await waitFor(() => expect(screen.queryByText('Pick your avatar')).not.toBeInTheDocument())
+  })
+
+  it('does not show change-avatar button when player is ready (locked)', () => {
+    useGameStore.setState({ players: [{ ...ME, ready: true }, OPP] })
+    renderLobby()
+    expect(screen.queryByRole('button', { name: 'Change avatar' })).not.toBeInTheDocument()
+  })
+})
+
+describe('MatchEndView — config panel', () => {
+  function renderMatchEnd() {
+    return render(
+      <MemoryRouter initialEntries={['/room/TEST-42']}>
+        <Routes>
+          <Route path="/room/:roomId" element={<RoomPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+  }
+
+  beforeEach(() => {
+    useGameStore.setState({
+      myPlayerId: 'p1',
+      players: [ME, OPP],
+      roomStatus: 'match_end',
+      wsStatus: 'connected',
+      roomConfig: { ...DEFAULT_ROOM_CONFIG },
+      scores: { p1: 3, p2: 1 },
+      matchWinnerId: 'p1',
+      roundHistory: [],
+      rematchVoting: false,
+      matchStartedAt: null,
+    })
+  })
+
+  it('shows the Best-of selector on the match-end screen', () => {
+    renderMatchEnd()
+    expect(screen.getByText('Best of')).toBeInTheDocument()
+  })
+
+  it('P1 can change Best-of config', () => {
+    const sendRoomConfig = vi.fn()
+    useGameStore.setState({ sendRoomConfig })
+    renderMatchEnd()
+    fireEvent.click(screen.getByRole('button', { name: 'best-of-3' }))
+    expect(sendRoomConfig).toHaveBeenCalledWith(expect.objectContaining({ bestOf: 3 }))
+  })
+
+  it('P2 cannot change config (read-only)', () => {
+    const sendRoomConfig = vi.fn()
+    useGameStore.setState({ myPlayerId: 'p2', sendRoomConfig })
+    renderMatchEnd()
+    // Buttons are rendered but clicking them for P2 (isCreator=false) should not call sendRoomConfig
+    fireEvent.click(screen.getByRole('button', { name: 'best-of-3' }))
+    expect(sendRoomConfig).not.toHaveBeenCalled()
+  })
+
+  it('config is locked while rematch is in progress', () => {
+    const sendRoomConfig = vi.fn()
+    useGameStore.setState({ rematchVoting: true, sendRoomConfig })
+    renderMatchEnd()
+    fireEvent.click(screen.getByRole('button', { name: 'best-of-3' }))
+    expect(sendRoomConfig).not.toHaveBeenCalled()
   })
 })
 
@@ -192,12 +288,11 @@ describe('LobbyView — room settings', () => {
 
   it('highlights the current bestOf value', () => {
     renderLobby()
-    // Default is bestOf=5; the "5" button should be visually active (btn-orange class)
-    // We just check all four options render
-    expect(screen.getByRole('button', { name: '3' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '5' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '7' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '9' })).toBeInTheDocument()
+    // Default is bestOf=5; check all four options render via aria-label
+    expect(screen.getByRole('button', { name: 'best-of-3' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'best-of-5' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'best-of-7' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'best-of-9' })).toBeInTheDocument()
   })
 
   it('all 5 category chips are visible', () => {
@@ -213,15 +308,12 @@ describe('LobbyView — room settings', () => {
     // p2 is not the creator (players[0] = p1)
     useGameStore.setState({ myPlayerId: 'p2' })
     renderLobby()
-    // All bestOf buttons should be disabled for the non-creator
-    const btn3 = screen.getByRole('button', { name: '3' })
-    expect(btn3).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'best-of-3' })).toBeDisabled()
   })
 
   it('settings controls are enabled for creator', () => {
     // p1 is the creator (players[0])
     renderLobby()
-    const btn3 = screen.getByRole('button', { name: '3' })
-    expect(btn3).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: 'best-of-3' })).not.toBeDisabled()
   })
 })

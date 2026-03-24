@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { resolveRound } from '../match/matchController'
+import { persistRoundResult } from '../db/index'
 import { makeRoom, makeMatch } from './helpers'
 
 // Mock all side effects so resolveRound is isolated to its core logic
@@ -10,7 +11,10 @@ vi.mock('../timer/timerController', () => ({
   pauseTimer: vi.fn(),
   resumeTimer: vi.fn(),
 }))
-vi.mock('../db/index', () => ({ persistMatchResult: vi.fn().mockResolvedValue(undefined) }))
+vi.mock('../db/index', () => ({
+  persistMatchResult: vi.fn().mockResolvedValue(undefined),
+  persistRoundResult: vi.fn().mockResolvedValue(undefined),
+}))
 
 describe('resolveRound()', () => {
   beforeEach(() => {
@@ -40,6 +44,29 @@ describe('resolveRound()', () => {
       minigameId: 'clickspeed',
       winnerId: 'p2',
     })
+  })
+
+  it('calls persistRoundResult with correct round data', () => {
+    const room = makeRoom()
+    room.match = makeMatch('p1', 'p2')
+
+    resolveRound(room, { winnerId: 'p1', reason: 'completed' })
+
+    expect(persistRoundResult).toHaveBeenCalledWith({
+      matchId: 'match-1',
+      roundNumber: 1,
+      minigameId: 'clickspeed',
+      winnerId: 'p1',
+    })
+  })
+
+  it('calls persistRoundResult with null winnerId on draw', () => {
+    const room = makeRoom()
+    room.match = makeMatch('p1', 'p2')
+
+    resolveRound(room, { winnerId: null, reason: 'timeout' })
+
+    expect(persistRoundResult).toHaveBeenCalledWith(expect.objectContaining({ winnerId: null }))
   })
 
   it('does not double-resolve if called twice', () => {

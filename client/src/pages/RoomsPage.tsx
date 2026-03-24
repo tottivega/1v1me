@@ -43,7 +43,6 @@ export default function RoomsPage() {
         setLoading(false)
         setLastRefresh(Date.now())
       }
-       
     },
     [page]
   )

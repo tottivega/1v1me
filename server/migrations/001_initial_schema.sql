@@ -13,3 +13,12 @@ create table match_results (
   winner_user_id  text,                  -- anonymous localStorage UUID, nullable
   loser_user_id   text                   -- anonymous localStorage UUID, nullable
 );
+
+create table game_rounds (
+  id           bigint generated always as identity primary key,
+  created_at   timestamptz default now(),
+  match_id     text        not null,     -- MatchState.matchId (UUID)
+  round_number int         not null,
+  minigame_id  text        not null,
+  winner_id    text                      -- server-side playerId; null = draw
+);

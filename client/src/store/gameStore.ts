@@ -51,6 +51,23 @@ function getUserId(): string {
   }
 }
 
+// ── Avatar (localStorage) ─────────────────────────────────────────────────────
+const AVATAR_KEY = '1v1me_avatar'
+
+export function getAvatar(): string | null {
+  try {
+    return localStorage.getItem(AVATAR_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function saveAvatar(emoji: string): void {
+  try {
+    localStorage.setItem(AVATAR_KEY, emoji)
+  } catch {}
+}
+
 // ── Win streak + match history (localStorage) ─────────────────────────────────
 const STREAK_KEY = '1v1me_streak'
 const HISTORY_KEY = '1v1me_history'
@@ -211,6 +228,7 @@ interface GameState {
   spectate: (roomId: string) => void
   reconnectSaved: (roomId: string, playerId: string) => void
   sendRoomConfig: (config: RoomConfig) => void
+  sendSetAvatar: (avatar: string) => void
 
   // ── Mock actions (DevPanel / dev mode only) ──────────────────────────────
   mockJoinRoom: (roomId: string, nickname: string) => void
@@ -278,7 +296,13 @@ export const useGameStore = create<GameState>((set, get) => ({
           type: 'SET_NICKNAME',
           roomId,
           playerId: '',
-          payload: { nickname, isMobile, streak: getStreak(), userId: getUserId() },
+          payload: {
+            nickname,
+            isMobile,
+            streak: getStreak(),
+            userId: getUserId(),
+            avatar: getAvatar() ?? undefined,
+          },
         })
       )
     }
@@ -623,6 +647,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   sendRoomConfig: (config) => {
     get().send('SET_ROOM_CONFIG', config)
+  },
+
+  sendSetAvatar: (avatar) => {
+    saveAvatar(avatar)
+    get().send('SET_AVATAR', { avatar })
   },
 
   pushToast: (message, type = 'error') => {

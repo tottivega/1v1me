@@ -5,7 +5,7 @@ import { MINIGAME_CONFIGS } from '@shared/types'
 import { broadcast, toPlayerInfos } from '../sync/broadcast'
 import { startTimer, stopTimer } from '../timer/timerController'
 import { getMinigame, shuffleQueue } from '../minigames/index'
-import { persistMatchResult } from '../db/index'
+import { persistMatchResult, persistRoundResult } from '../db/index'
 
 const ROUND_READY_TIMEOUT_MS = 5000 // auto-advance if a player doesn't confirm
 
@@ -157,11 +157,19 @@ export function resolveRound(room: Room, result: MinigameResult): void {
   }
 
   // Record this round in history
-  room.match.roundHistory.push({
+  const roundRecord = {
     round: room.match.currentRound,
     minigameId: room.match.currentMinigame!,
     winnerId: result.winnerId,
-  })
+  }
+  room.match.roundHistory.push(roundRecord)
+
+  persistRoundResult({
+    matchId: room.match.matchId,
+    roundNumber: roundRecord.round,
+    minigameId: roundRecord.minigameId,
+    winnerId: roundRecord.winnerId,
+  }).catch((err) => console.error('[DB] Round persist error:', err))
 
   room.status = 'round_end'
   broadcast(room, 'ROUND_END', {

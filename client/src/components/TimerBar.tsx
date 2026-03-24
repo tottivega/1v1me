@@ -18,7 +18,9 @@ export default function TimerBar() {
       if (current <= 0) clearInterval(intervalRef.current!)
       else mockSetRemainingMs(Math.max(0, current - 100))
     }, 100)
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
   }, [isPlaying, useMockTimer, mockSetRemainingMs])
 
   const pct = timeoutMs > 0 ? remainingMs / timeoutMs : 0
@@ -26,12 +28,48 @@ export default function TimerBar() {
   const color = pct > 0.33 ? 'var(--green)' : pct > 0.15 ? 'var(--yellow)' : 'var(--red)'
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 20px', background: 'var(--white)', borderBottom: 'var(--border)' }}>
-      <span style={{ fontFamily: 'var(--font-title)', fontSize: 28, color, minWidth: 36, textAlign: 'right', transition: 'color 0.3s' }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '8px 20px',
+        background: 'var(--white)',
+        borderBottom: 'var(--border)',
+      }}
+    >
+      <span
+        style={{
+          fontFamily: 'var(--font-title)',
+          fontSize: 28,
+          color,
+          minWidth: 36,
+          textAlign: 'right',
+          transition: 'color 0.3s',
+        }}
+      >
         {secs}
       </span>
-      <div style={{ flex: 1, height: 18, background: '#e0e0e0', border: '2px solid var(--black)', borderRadius: 99, overflow: 'hidden' }}>
-        <div data-testid="timer-bar-fill" style={{ height: '100%', width: `${pct * 100}%`, background: color, borderRadius: 99, transition: 'width 0.1s linear, background 0.3s' }} />
+      <div
+        style={{
+          flex: 1,
+          height: 18,
+          background: '#e0e0e0',
+          border: '2px solid var(--black)',
+          borderRadius: 99,
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          data-testid="timer-bar-fill"
+          style={{
+            height: '100%',
+            width: `${pct * 100}%`,
+            background: color,
+            borderRadius: 99,
+            transition: 'width 0.1s linear, background 0.3s',
+          }}
+        />
       </div>
     </div>
   )

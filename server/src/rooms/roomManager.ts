@@ -1,11 +1,10 @@
 import { WebSocket } from 'ws'
 import type { Room, Player } from '../types'
+import { DEFAULT_ROOM_CONFIG, AVATARS } from '@shared/types'
 
-const AVATARS = ['🐺', '🦊', '🐻', '🐯', '🦁', '🐸', '🐨', '🦝', '🦄', '🐙', '🦖', '🐝']
 function randomAvatar(): string {
   return AVATARS[Math.floor(Math.random() * AVATARS.length)]!
 }
-import { DEFAULT_ROOM_CONFIG } from '@shared/types'
 import { getRoom, setRoom, deleteRoom } from './roomStore'
 import { broadcast, send, toPlayerInfos } from '../sync/broadcast'
 import { startMatch, forfeitMatch } from '../match/matchController'
@@ -37,7 +36,8 @@ export function joinOrCreateRoom(
   ws: WebSocket,
   isMobile = false,
   streak = 0,
-  userId?: string
+  userId?: string,
+  avatar?: string
 ): { room: Room } | { error: { code: string; message: string } } {
   let room = getRoom(roomId)
 
@@ -75,7 +75,7 @@ export function joinOrCreateRoom(
   const player: Player = {
     id: playerId,
     nickname: nickname.trim().slice(0, 18) || 'Player',
-    avatar: randomAvatar(),
+    avatar: avatar && (AVATARS as readonly string[]).includes(avatar) ? avatar : randomAvatar(),
     ws,
     ready: false,
     connected: true,
@@ -90,6 +90,26 @@ export function joinOrCreateRoom(
 
   console.log(`[Room] ${nickname} (${playerId}) joined room ${roomId} (${room.players.length}/2)`)
   return { room }
+}
+
+// ── Avatar ───────────────────────────────────────────────────────────────────
+
+export function setPlayerAvatar(room: Room, playerId: string, avatar: string): void {
+  if (!(AVATARS as readonly string[]).includes(avatar)) return
+  if (room.status !== 'lobby') return
+  const player = room.players.find((p) => p.id === playerId)
+  if (!player) return
+  player.avatar = avatar
+  // Re-broadcast ROOM_JOINED so both players see the updated avatar
+  for (const p of room.players) {
+    send(p.ws, 'ROOM_JOINED', {
+      roomId: room.roomId,
+      playerId: p.id,
+      players: toPlayerInfos(room.players),
+      spectatorCount: room.spectators.length,
+      config: room.config,
+    })
+  }
 }
 
 // ── Ready ────────────────────────────────────────────────────────────────────

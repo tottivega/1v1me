@@ -5,6 +5,7 @@ import { send, toPlayerInfos } from './broadcast'
 import { getRoom } from '../rooms/roomStore'
 import {
   joinOrCreateRoom,
+  setPlayerAvatar,
   setPlayerReady,
   handleDisconnect,
   handleReconnect,
@@ -109,6 +110,7 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
       const isMobile = !!p.isMobile
       const streak = Math.max(0, Math.min(999, parseInt(String(p.streak ?? 0), 10) || 0))
       const userId = typeof p.userId === 'string' && p.userId.length <= 64 ? p.userId : undefined
+      const avatar = typeof p.avatar === 'string' ? p.avatar : undefined
       const roomId = msg.roomId
 
       if (!roomId || !nickname) {
@@ -116,7 +118,16 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
         return
       }
 
-      const result = joinOrCreateRoom(roomId, conn.playerId, nickname, ws, isMobile, streak, userId)
+      const result = joinOrCreateRoom(
+        roomId,
+        conn.playerId,
+        nickname,
+        ws,
+        isMobile,
+        streak,
+        userId,
+        avatar
+      )
 
       if ('error' in result) {
         send(ws, 'ERROR', result.error)
@@ -179,6 +190,15 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
         ? (bannedGameIds.filter((id) => typeof id === 'string') as string[])
         : []
       handleBanSubmit(room, conn.playerId, ids as import('@shared/types').MinigameId[])
+      break
+    }
+
+    case 'SET_AVATAR': {
+      if (!conn.roomId) return
+      const room = getRoom(conn.roomId)
+      if (!room) return
+      const { avatar } = msg.payload as { avatar: string }
+      if (typeof avatar === 'string') setPlayerAvatar(room, conn.playerId, avatar)
       break
     }
 

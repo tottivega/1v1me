@@ -171,7 +171,24 @@ export interface SetNicknamePayload {
   streak?: number
   /** Anonymous persistent user ID from localStorage ('1v1me_userId'). Optional — omitted by old clients. */
   userId?: string
+  /** Preferred avatar emoji from localStorage ('1v1me_avatar'). Server validates against AVATARS list. */
+  avatar?: string
 }
+
+export const AVATARS = [
+  '🐺',
+  '🦊',
+  '🐻',
+  '🐯',
+  '🦁',
+  '🐸',
+  '🐨',
+  '🦝',
+  '🦄',
+  '🐙',
+  '🦖',
+  '🐝',
+] as const
 
 // ─── WebSocket Messages ───────────────────────────────────────────────────────
 
@@ -200,6 +217,7 @@ export type ServerMessageType =
 // Client → Server
 export type ClientMessageType =
   | 'SET_NICKNAME'
+  | 'SET_AVATAR'
   | 'SET_READY'
   | 'SET_ROOM_CONFIG'
   | 'SUBMIT_BANS'

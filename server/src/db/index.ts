@@ -1,5 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 
+export interface RoundResult {
+  matchId: string
+  roundNumber: number
+  minigameId: string
+  winnerId: string | null // null = draw
+}
+
 export interface MatchResult {
   roomId: string
   winnerNickname: string
@@ -40,4 +47,20 @@ export async function persistMatchResult(result: MatchResult): Promise<void> {
 
   if (error) throw new Error(error.message)
   console.log('[DB] Match result saved to Supabase')
+}
+
+export async function persistRoundResult(result: RoundResult): Promise<void> {
+  if (!supabase) {
+    console.log('[DB] Round result (mock):', result)
+    return
+  }
+
+  const { error } = await supabase.from('game_rounds').insert({
+    match_id: result.matchId,
+    round_number: result.roundNumber,
+    minigame_id: result.minigameId,
+    winner_id: result.winnerId,
+  })
+
+  if (error) throw new Error(error.message)
 }

@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useMemo, Suspense } from 'react'
 import { useGameStore, getStreak } from '../store/gameStore'
 import ScoreBoard from '../components/ScoreBoard'
 import TimerBar from '../components/TimerBar'
-import { MINIGAME_CONFIGS, type MinigameCategory, type RoomConfig } from '@shared/types'
+import { MINIGAME_CONFIGS, AVATARS, type MinigameCategory, type RoomConfig } from '@shared/types'
 import { MINIGAME_COMPONENTS } from '../minigames/registry'
 import {
   playClick,
@@ -234,12 +234,16 @@ function LobbyView({ roomId }: { roomId: string }) {
     spectatorCount,
     roomConfig,
     sendRoomConfig,
+    sendSetAvatar,
   } = useGameStore()
   const me = players.find((p) => p.id === myPlayerId)
   const opponent = players.find((p) => p.id !== myPlayerId)
   const isCreator = players[0]?.id === myPlayerId
   const locked = !!(me?.ready || opponent?.ready)
   const inviteUrl = `${window.location.origin}/room/${roomId}`
+
+  // Avatar picker
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false)
 
   // Copy flash
   const [copied, setCopied] = useState(false)
@@ -413,9 +417,19 @@ function LobbyView({ roomId }: { roomId: string }) {
 
       {/* Player slots */}
       <div style={{ display: 'flex', gap: 16, width: '100%', maxWidth: 460 }}>
-        <PlayerSlot player={me ?? null} />
+        <PlayerSlot
+          player={me ?? null}
+          onPickAvatar={!locked && me ? () => setAvatarPickerOpen(true) : undefined}
+        />
         <PlayerSlot player={opponent ?? null} />
       </div>
+
+      {avatarPickerOpen && (
+        <AvatarPicker
+          onPick={(emoji) => sendSetAvatar(emoji)}
+          onClose={() => setAvatarPickerOpen(false)}
+        />
+      )}
 
       {/* Spectator count */}
       {spectatorCount > 0 && (
@@ -559,6 +573,7 @@ function RoomSettings({
           {BEST_OF_OPTIONS.map((n) => (
             <button
               key={n}
+              aria-label={`best-of-${n}`}
               className={`btn btn-sm ${config.bestOf === n ? 'btn-orange' : 'btn-white'}`}
               style={{ flex: 1, opacity: interactive || config.bestOf === n ? 1 : 0.5 }}
               onClick={() => setBestOf(n)}
@@ -828,6 +843,7 @@ function LobbyGamePreview() {
 
 function PlayerSlot({
   player,
+  onPickAvatar,
 }: {
   player: {
     nickname: string
@@ -836,6 +852,7 @@ function PlayerSlot({
     connected: boolean
     streak?: number
   } | null
+  onPickAvatar?: () => void
 }) {
   return (
     <div
@@ -853,7 +870,32 @@ function PlayerSlot({
         transition: 'all 0.2s',
       }}
     >
-      <div style={{ fontSize: 44 }}>{player ? player.avatar : '❓'}</div>
+      <div
+        role={onPickAvatar ? 'button' : undefined}
+        aria-label={onPickAvatar ? 'Change avatar' : undefined}
+        onClick={onPickAvatar}
+        style={{
+          fontSize: 44,
+          cursor: onPickAvatar ? 'pointer' : 'default',
+          borderRadius: 12,
+          padding: 4,
+          transition: 'background 0.15s',
+        }}
+        onMouseEnter={(e) => {
+          if (onPickAvatar)
+            (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,0,0,0.06)'
+        }}
+        onMouseLeave={(e) => {
+          if (onPickAvatar) (e.currentTarget as HTMLDivElement).style.background = ''
+        }}
+      >
+        {player ? player.avatar : '❓'}
+        {onPickAvatar && (
+          <span style={{ fontSize: 12, marginLeft: 2, verticalAlign: 'super', opacity: 0.5 }}>
+            ✏️
+          </span>
+        )}
+      </div>
       {/* Nickname + live dot */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         {player && (
@@ -898,6 +940,77 @@ function PlayerSlot({
           {player.ready ? '✅ Ready' : '⏳ Not ready'}
         </div>
       )}
+    </div>
+  )
+}
+
+function AvatarPicker({
+  onPick,
+  onClose,
+}: {
+  onPick: (emoji: string) => void
+  onClose: () => void
+}) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.45)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 100,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'var(--white)',
+          border: 'var(--border)',
+          borderRadius: 20,
+          boxShadow: 'var(--shadow)',
+          padding: '24px 28px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 16,
+        }}
+      >
+        <p style={{ fontWeight: 900, fontSize: 16, margin: 0 }}>Pick your avatar</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+          {AVATARS.map((emoji) => (
+            <button
+              key={emoji}
+              onClick={() => {
+                onPick(emoji)
+                onClose()
+              }}
+              style={{
+                fontSize: 36,
+                background: 'none',
+                border: '3px solid transparent',
+                borderRadius: 12,
+                cursor: 'pointer',
+                padding: 6,
+                transition: 'border-color 0.1s, background 0.1s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--black)'
+                e.currentTarget.style.background = 'rgba(0,0,0,0.06)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'transparent'
+                e.currentTarget.style.background = 'none'
+              }}
+              aria-label={emoji}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
@@ -1482,9 +1595,12 @@ function MatchEndView() {
     roundHistory,
     rematchVoting,
     matchStartedAt,
+    roomConfig,
+    sendRoomConfig,
   } = useGameStore()
   const navigate = useNavigate()
   const iWon = matchWinnerId === myPlayerId
+  const isCreator = players[0]?.id === myPlayerId
 
   const matchDuration = matchStartedAt
     ? (() => {
@@ -1665,6 +1781,13 @@ function MatchEndView() {
           </div>
         )}
       </div>
+
+      <RoomSettings
+        config={roomConfig}
+        isCreator={isCreator}
+        locked={rematchVoting}
+        onChange={sendRoomConfig}
+      />
 
       <div className="match-end-actions" style={{ display: 'flex', gap: 12 }}>
         {rematchVoting ? (
