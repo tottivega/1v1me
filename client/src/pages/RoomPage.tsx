@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
+import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useState, useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
 import ScoreBoard from '../components/ScoreBoard'
@@ -163,6 +164,7 @@ function LobbyView({ roomId }: { roomId: string }) {
 
   // Copy flash
   const [copied, setCopied] = useState(false)
+  const [qrOpen, setQrOpen] = useState(false)
   function copyLink() {
     navigator.clipboard.writeText(inviteUrl)
     setCopied(true)
@@ -262,13 +264,50 @@ function LobbyView({ roomId }: { roomId: string }) {
             className="btn btn-white btn-sm"
             onClick={() => {
               playClick()
+              setQrOpen((v) => !v)
+            }}
+            title="Show QR code"
+          >
+            {qrOpen ? '✕ QR' : '📱 QR'}
+          </button>
+          <button
+            className="btn btn-white btn-sm"
+            onClick={() => {
+              playClick()
               navigator.clipboard.writeText(`${window.location.origin}/spectate/${roomId}`)
             }}
             title="Copy spectator link"
           >
-            👁 Spectate Link
+            👁 Spectate
           </button>
         </div>
+        {qrOpen && (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 8,
+              padding: '12px 0 4px',
+              animation: 'pop-in 0.2s ease both',
+            }}
+          >
+            <div
+              style={{
+                background: '#fff',
+                border: 'var(--border)',
+                borderRadius: 12,
+                padding: 12,
+                boxShadow: 'var(--shadow-sm)',
+              }}
+            >
+              <QRCodeSVG value={inviteUrl} size={160} />
+            </div>
+            <p style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', fontWeight: 700, margin: 0 }}>
+              Scan to join this room
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Room settings */}
