@@ -34,9 +34,7 @@
 
 ### Core share flow (do this first)
 
-- [ ] **Native share sheet + copy fallback** — on match-end screen, a `🔗 Share Result` button calls `navigator.share({ title, text, url })` on mobile; falls back to `clipboard.writeText` with ✓ flash on desktop.
-  - Share text: `"I beat {opponent} {myScore}–{oppScore} in 1v1 ME 🏆 {url}"`  /  `"Close one — {opponent} beat me {oppScore}–{myScore} in 1v1 ME 😤 {url}"`
-  - URL: `https://1v1me.vercel.app` (home, not the dead room)
+- [x] **Native share sheet + copy fallback** — on match-end screen, a `🔗 Share Result` button calls `navigator.share({ title, text, url })` on mobile; falls back to `clipboard.writeText` with ✓ flash on desktop. Three-tier: image share (mobile) → text-only share → clipboard copy. `VITE_APP_URL` env var controls the shared URL.
 
 ### Platform deep links (add alongside native share)
 

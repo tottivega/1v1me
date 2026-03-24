@@ -1551,36 +1551,52 @@ function ShareButton({
 
   async function share() {
     playClick()
+    const appUrl =
+      (import.meta.env.VITE_APP_URL as string | undefined) ?? 'https://1v1me.vercel.app'
+    const shareText = iWon
+      ? `I beat ${oppNickname} ${myScore}–${oppScore} in 1v1 ME 🏆`
+      : `Close one — ${oppNickname} beat me ${oppScore}–${myScore} in 1v1 ME 😤`
+
+    // Tier 1: native share with result card image (mobile, supports file share)
     try {
       const blob = await buildCard()
       const file = new File([blob], '1v1me-result.png', { type: 'image/png' })
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: iWon ? 'I won! 🏆' : 'GG 💀' })
-      } else {
-        // Fallback: download the PNG
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = '1v1me-result.png'
-        a.click()
-        URL.revokeObjectURL(url)
-        setSaved(true)
-        setTimeout(() => setSaved(false), 2500)
+        await navigator.share({
+          files: [file],
+          title: iWon ? 'I won! 🏆' : 'GG 💀',
+          text: shareText,
+          url: appUrl,
+        })
+        return
       }
     } catch {
-      // Last-resort text fallback
-      const text = iWon
-        ? `🏆 ${myNickname} beat ${oppNickname} ${myScore}–${oppScore} on 1v1.me!`
-        : `💀 ${oppNickname} beat ${myNickname} ${oppScore}–${myScore} on 1v1.me!`
-      navigator.clipboard?.writeText(`${text}\n\nSettle your beef at 1v1.me`).catch(() => {})
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2500)
+      // fall through to next tier
     }
+
+    // Tier 2: text-only native share (desktop Chrome, Safari, etc.)
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: '1v1 ME', text: shareText, url: appUrl })
+        return
+      } catch {
+        // user cancelled or not supported — fall through
+      }
+    }
+
+    // Tier 3: clipboard copy with ✓ flash
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n${appUrl}`)
+    } catch {
+      // clipboard unavailable — silent fail
+    }
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
   }
 
   return (
     <button className="btn btn-white" onClick={share}>
-      {saved ? '✅ Saved!' : '📤 Share'}
+      {saved ? '✓ Copied!' : '🔗 Share Result'}
     </button>
   )
 }
