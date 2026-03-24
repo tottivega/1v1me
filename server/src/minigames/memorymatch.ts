@@ -1,4 +1,4 @@
-import type { MinigameModule, Room } from '../types'
+import type { MinigameModule, Room, Player } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 
@@ -14,7 +14,7 @@ interface State {
 function generateSequence(): string[] {
   const seq: string[] = []
   for (let i = 0; i < SEQ_LEN; i++) {
-    seq.push(SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)])
+    seq.push(SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]!)
   }
   return seq
 }
@@ -75,7 +75,7 @@ const memorymatch: MinigameModule = {
 }
 
 function computeResult(room: Room, state: State): MinigameResult {
-  const [p1, p2] = room.players
+  const [p1, p2] = room.players as [Player, Player]
   const s1 = scoreSubmission(state.sequence, state.submissions[p1.id] ?? [])
   const s2 = scoreSubmission(state.sequence, state.submissions[p2.id] ?? [])
 

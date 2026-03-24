@@ -3,7 +3,7 @@ import type { Room, Player } from '../types'
 
 const AVATARS = ['🐺', '🦊', '🐻', '🐯', '🦁', '🐸', '🐨', '🦝', '🦄', '🐙', '🦖', '🐝']
 function randomAvatar(): string {
-  return AVATARS[Math.floor(Math.random() * AVATARS.length)]
+  return AVATARS[Math.floor(Math.random() * AVATARS.length)]!
 }
 import { DEFAULT_ROOM_CONFIG } from '@shared/types'
 import { getRoom, setRoom, deleteRoom } from './roomStore'

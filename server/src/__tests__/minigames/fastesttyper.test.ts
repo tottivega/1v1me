@@ -69,7 +69,7 @@ describe('fastesttyper — integration', () => {
     }
     const phrase = state.phrase
     // Correct chars at positions 0-1, wrong at 2, correct at 3+
-    const text = phrase[0] + phrase[1] + 'X' + phrase.slice(3)
+    const text = phrase[0]! + phrase[1]! + 'X' + phrase.slice(3)
     fastesttyper.handleInput(room, 'p1', { type: 'TYPE', text })
     expect(state.progress['p1']).toBe(2)
   })

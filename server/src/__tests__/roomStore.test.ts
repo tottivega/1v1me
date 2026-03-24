@@ -32,9 +32,9 @@ describe('getOpenRooms()', () => {
 
     const open = getOpenRooms()
     expect(open).toHaveLength(1)
-    expect(open[0].roomId).toBe('r1')
-    expect(open[0].creatorNickname).toBe('Alice')
-    expect(typeof open[0].createdAt).toBe('number')
+    expect(open[0]!.roomId).toBe('r1')
+    expect(open[0]!.creatorNickname).toBe('Alice')
+    expect(typeof open[0]!.createdAt).toBe('number')
   })
 
   it('excludes rooms with 2 players', () => {

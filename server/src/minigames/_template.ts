@@ -12,7 +12,7 @@
  * See ADDING_A_GAME.md at the repo root for the full walkthrough.
  */
 
-import type { MinigameModule, Room } from '../types'
+import type { MinigameModule, Room, Player } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 
@@ -96,7 +96,7 @@ const template: MinigameModule = {
   // Return the final result. Tie-breaking is your responsibility.
   getResult(room): MinigameResult {
     const state = room.match!.minigameState as State
-    const [p1, p2] = room.players
+    const [p1, p2] = room.players as [Player, Player]
 
     // TODO: determine winner from state
     void state

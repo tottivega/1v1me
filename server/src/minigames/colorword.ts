@@ -1,4 +1,4 @@
-import type { MinigameModule } from '../types'
+import type { MinigameModule, Player } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 
@@ -12,9 +12,9 @@ interface State {
 }
 
 export function pick(): { word: Color; inkColor: Color } {
-  const word = COLORS[Math.floor(Math.random() * COLORS.length)]
+  const word = COLORS[Math.floor(Math.random() * COLORS.length)]!
   const others = COLORS.filter((c) => c !== word)
-  const inkColor = others[Math.floor(Math.random() * others.length)]
+  const inkColor = others[Math.floor(Math.random() * others.length)]!
   return { word, inkColor }
 }
 
@@ -47,7 +47,7 @@ const colorword: MinigameModule = {
 
   getResult(room): MinigameResult {
     // Timeout: random winner
-    const [p1, p2] = room.players
+    const [p1, p2] = room.players as [Player, Player]
     const winnerId = Math.random() < 0.5 ? p1.id : p2.id
     broadcast(room, 'GAME_UPDATE', {
       state: {

@@ -1,4 +1,4 @@
-import type { MinigameModule, Room } from '../types'
+import type { MinigameModule, Room, Player } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 
@@ -77,7 +77,7 @@ const quickmaths: MinigameModule = {
 
   getResult(room): MinigameResult {
     const state = room.match!.minigameState as State
-    const [p1, p2] = room.players
+    const [p1, p2] = room.players as [Player, Player]
     const c1 = state.correct[p1.id] ?? 0
     const c2 = state.correct[p2.id] ?? 0
 

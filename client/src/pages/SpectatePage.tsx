@@ -211,7 +211,7 @@ function SpectateScoreboard({
       <PlayerScore
         nickname={p1?.nickname ?? '…'}
         avatar={p1?.avatar}
-        score={scores[p1?.id] ?? 0}
+        score={scores[p1?.id ?? ''] ?? 0}
         align="left"
         color="var(--blue)"
       />
@@ -231,7 +231,7 @@ function SpectateScoreboard({
       <PlayerScore
         nickname={p2?.nickname ?? '…'}
         avatar={p2?.avatar}
-        score={scores[p2?.id] ?? 0}
+        score={scores[p2?.id ?? ''] ?? 0}
         align="right"
         color="var(--orange)"
       />
@@ -369,14 +369,14 @@ function SpectateMatchEnd() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontFamily: 'var(--font-title)', fontSize: 56, color: 'var(--blue)' }}>
-              {scores[p1?.id] ?? 0}
+              {scores[p1?.id ?? ''] ?? 0}
             </div>
             <div className="label">{p1?.nickname ?? '…'}</div>
           </div>
           <div style={{ fontFamily: 'var(--font-title)', fontSize: 32, opacity: 0.3 }}>—</div>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontFamily: 'var(--font-title)', fontSize: 56, color: 'var(--orange)' }}>
-              {scores[p2?.id] ?? 0}
+              {scores[p2?.id ?? ''] ?? 0}
             </div>
             <div className="label">{p2?.nickname ?? '…'}</div>
           </div>

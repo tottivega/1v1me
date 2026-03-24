@@ -123,8 +123,9 @@
 
 ### Tests
 - [x] **Vitest setup** — server (node env) and client (happy-dom + React Testing Library); `npm test` works in both packages
-- [x] **Server unit + integration tests (77, 11 files)** — quickmaths (6), memorymatch (6), fastesttyper (7), wordscramble (5), rockpaperscissors (4), matchController (6), roomManager (13), roomStore (4), colorword (6), higherorlower (7), router integration (10); `clearAllRooms()` for test isolation
-- [x] **Client unit tests (20)** — gameStore (11), ScoreBoard (5), TimerBar (4)
+- [x] **Server unit + integration tests (86, 12 files)** — numberguess (8), quickmaths (6), memorymatch (6), fastesttyper (7), wordscramble (5), rockpaperscissors (4), matchController (6), roomManager (13), roomStore (4), colorword (6), higherorlower (7), router integration (10); `clearAllRooms()` for test isolation
+- [x] **Client unit tests (45, 5 files)** — gameStore (11), ScoreBoard (6), TimerBar (4), HomePage (6), RoomPage (18); sounds + WebSocket actions mocked in RoomPage tests
+- [x] **`noUncheckedIndexedAccess`** — enabled in both `client/tsconfig.json` and `server/tsconfig.json`; all `[p1, p2] = arr` destructures cast as `[T, T]`, array random-index access guarded with `!`, `Record<K,V>` access uses `?? fallback` where appropriate; zero TS errors in both packages
 - [x] Test factories in `server/src/__tests__/helpers.ts` — `makeWs()`, `makePlayer()`, `makeRoom()`, `makeMatch()`
 - [x] **ESLint** — `typescript-eslint` v8 + flat config in both packages; `no-unused-vars` (error), `no-explicit-any` (warn), `react-hooks/rules-of-hooks` (error); server passes at 0 warnings
 - [x] **Prettier** — `.prettierrc` at root; `format` / `format:check` scripts in root and both packages

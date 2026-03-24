@@ -17,13 +17,13 @@ function scramble(word: string): string {
   const letters = word.split('')
   for (let i = letters.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
-    ;[letters[i], letters[j]] = [letters[j], letters[i]]
+    ;[letters[i], letters[j]] = [letters[j]!, letters[i]!]
   }
   const result = letters.join('')
   return result === word ? scramble(word) : result
 }
 
-const mockWord = MOCK_WORDS[Math.floor(Math.random() * MOCK_WORDS.length)]
+const mockWord = MOCK_WORDS[Math.floor(Math.random() * MOCK_WORDS.length)]!
 const mockScramble = scramble(mockWord)
 
 export default function WordScramble() {

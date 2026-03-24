@@ -110,12 +110,12 @@ function computeResult(playerIds: string[], state: State): MinigameResult {
 
   if (eligible.length === 0) {
     // Everyone penalized → random winner
-    const winnerId = playerIds[Math.floor(Math.random() * playerIds.length)]
+    const winnerId = playerIds[Math.floor(Math.random() * playerIds.length)] ?? null
     return { winnerId, reason: 'completed' }
   }
 
   if (eligible.length === 1) {
-    return { winnerId: eligible[0], reason: 'completed' }
+    return { winnerId: eligible[0] ?? null, reason: 'completed' }
   }
 
   // Compare reaction times — lower is better
@@ -123,16 +123,16 @@ function computeResult(playerIds: string[], state: State): MinigameResult {
 
   if (withReaction.length === 0) {
     // Nobody reacted in window → random winner
-    const winnerId = eligible[Math.floor(Math.random() * eligible.length)]
+    const winnerId = eligible[Math.floor(Math.random() * eligible.length)] ?? null
     return { winnerId, reason: 'timeout' }
   }
 
   if (withReaction.length === 1) {
-    return { winnerId: withReaction[0], reason: 'completed' }
+    return { winnerId: withReaction[0] ?? null, reason: 'completed' }
   }
 
-  withReaction.sort((a, b) => state.reactions[a] - state.reactions[b])
-  return { winnerId: withReaction[0], reason: 'completed' }
+  withReaction.sort((a, b) => (state.reactions[a] ?? 0) - (state.reactions[b] ?? 0))
+  return { winnerId: withReaction[0] ?? null, reason: 'completed' }
 }
 
 export default reactiontest

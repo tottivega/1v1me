@@ -4,7 +4,12 @@ import { makeRoom, makeMatch } from './helpers'
 
 // Mock all side effects so resolveRound is isolated to its core logic
 vi.mock('../sync/broadcast', () => ({ broadcast: vi.fn(), toPlayerInfos: vi.fn(() => []) }))
-vi.mock('../timer/timerController', () => ({ stopTimer: vi.fn(), startTimer: vi.fn(), pauseTimer: vi.fn(), resumeTimer: vi.fn() }))
+vi.mock('../timer/timerController', () => ({
+  stopTimer: vi.fn(),
+  startTimer: vi.fn(),
+  pauseTimer: vi.fn(),
+  resumeTimer: vi.fn(),
+}))
 vi.mock('../db/index', () => ({ persistMatchResult: vi.fn().mockResolvedValue(undefined) }))
 
 describe('resolveRound()', () => {
@@ -30,7 +35,7 @@ describe('resolveRound()', () => {
     resolveRound(room, { winnerId: 'p2', reason: 'completed' })
 
     expect(room.match!.roundHistory).toHaveLength(1)
-    expect(room.match!.roundHistory[0]).toMatchObject({
+    expect(room.match!.roundHistory[0]!).toMatchObject({
       round: 1,
       minigameId: 'clickspeed',
       winnerId: 'p2',
@@ -42,7 +47,7 @@ describe('resolveRound()', () => {
     room.match = makeMatch('p1', 'p2')
 
     resolveRound(room, { winnerId: 'p1', reason: 'completed' })
-    resolveRound(room, { winnerId: 'p2', reason: 'completed' })  // should be ignored
+    resolveRound(room, { winnerId: 'p2', reason: 'completed' }) // should be ignored
 
     expect(room.match!.scores['p1']).toBe(1)
     expect(room.match!.scores['p2']).toBe(0)
@@ -66,7 +71,7 @@ describe('resolveRound()', () => {
 
     expect(room.match!.scores['p1']).toBe(0)
     expect(room.match!.scores['p2']).toBe(0)
-    expect(room.match!.roundHistory[0].winnerId).toBeNull()
+    expect(room.match!.roundHistory[0]!.winnerId).toBeNull()
   })
 
   it('transitions to match_end when a player reaches 3 wins', () => {

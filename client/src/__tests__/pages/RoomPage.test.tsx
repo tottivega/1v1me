@@ -1,9 +1,27 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import RoomPage from '../../pages/RoomPage'
 import { useGameStore } from '../../store/gameStore'
 import { DEFAULT_ROOM_CONFIG } from '@shared/types'
+
+// Silence Web Audio API — not available in happy-dom
+vi.mock('../../utils/sounds', () => ({
+  playClick: vi.fn(),
+  playReady: vi.fn(),
+  playTick: vi.fn(),
+  playCorrect: vi.fn(),
+  playWrong: vi.fn(),
+  playMatchWin: vi.fn(),
+  playMatchLose: vi.fn(),
+  playCoinFlip: vi.fn(),
+  playReaction: vi.fn(),
+  playCountIn: vi.fn(),
+  playEmote: vi.fn(),
+  playRoundWin: vi.fn(),
+  isMuted: vi.fn(() => false),
+  getVolume: vi.fn(() => 1),
+}))
 
 // Stub clipboard — happy-dom exposes it as a getter-only property
 Object.defineProperty(navigator, 'clipboard', {
@@ -24,6 +42,14 @@ function renderLobby(roomId = 'TEST-42') {
   )
 }
 
+// Shared no-op action overrides — prevent RoomPage from opening a real WebSocket
+const NO_WS = {
+  connect: vi.fn(),
+  reconnectSaved: vi.fn(),
+  disconnect: vi.fn(),
+  send: vi.fn(),
+}
+
 beforeEach(() => {
   useGameStore.setState({
     myPlayerId: 'p1',
@@ -34,6 +60,7 @@ beforeEach(() => {
     roomId: 'TEST-42',
     spectatorCount: 0,
     roomConfig: { ...DEFAULT_ROOM_CONFIG },
+    ...NO_WS,
   })
 })
 
@@ -76,6 +103,84 @@ describe('LobbyView — spectator badge', () => {
     useGameStore.setState({ spectatorCount: 3 })
     renderLobby()
     expect(screen.getByText('👁 3 watching')).toBeInTheDocument()
+  })
+})
+
+describe('MatchEndView', () => {
+  function renderMatchEnd() {
+    return render(
+      <MemoryRouter initialEntries={['/room/TEST-42']}>
+        <Routes>
+          <Route path="/room/:roomId" element={<RoomPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+  }
+
+  beforeEach(() => {
+    useGameStore.setState({
+      myPlayerId: 'p1',
+      myNickname: 'Alice',
+      players: [ME, OPP],
+      roomStatus: 'match_end',
+      wsStatus: 'connected',
+      roomId: 'TEST-42',
+      spectatorCount: 0,
+      roomConfig: { ...DEFAULT_ROOM_CONFIG },
+      scores: { p1: 3, p2: 1 },
+      matchWinnerId: 'p1',
+      roundHistory: [],
+      rematchVoting: false,
+      matchStartedAt: null,
+    })
+  })
+
+  it('shows winner message when I win', () => {
+    renderMatchEnd()
+    expect(screen.getByText(/You Win/i)).toBeInTheDocument()
+  })
+
+  it('shows loser message when I lose', () => {
+    useGameStore.setState({ matchWinnerId: 'p2' })
+    renderMatchEnd()
+    expect(screen.getByText(/You Lose/i)).toBeInTheDocument()
+  })
+
+  it('shows final score', () => {
+    renderMatchEnd()
+    expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.getByText('1')).toBeInTheDocument()
+  })
+
+  it('shows match duration when matchStartedAt is set', () => {
+    const fiveSecondsAgo = Date.now() - 5000
+    useGameStore.setState({ matchStartedAt: fiveSecondsAgo })
+    renderMatchEnd()
+    expect(screen.getByText(/⏱/)).toBeInTheDocument()
+  })
+
+  it('does not show duration when matchStartedAt is null', () => {
+    useGameStore.setState({ matchStartedAt: null })
+    renderMatchEnd()
+    expect(screen.queryByText(/⏱/)).not.toBeInTheDocument()
+  })
+})
+
+describe('Rematch flash', () => {
+  it('shows REMATCH! overlay when status transitions from match_end to lobby', async () => {
+    useGameStore.setState({ roomStatus: 'match_end' })
+    render(
+      <MemoryRouter initialEntries={['/room/TEST-42']}>
+        <Routes>
+          <Route path="/room/:roomId" element={<RoomPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+    // Simulate rematch accepted: transition to lobby inside act so React processes it
+    act(() => {
+      useGameStore.setState({ roomStatus: 'lobby' })
+    })
+    expect(await screen.findByText(/REMATCH/i)).toBeInTheDocument()
   })
 })
 

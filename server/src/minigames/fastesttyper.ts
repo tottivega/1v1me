@@ -1,4 +1,4 @@
-import type { MinigameModule } from '../types'
+import type { MinigameModule, Player } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 
@@ -31,7 +31,7 @@ const fastesttyper: MinigameModule = {
   id: 'fastesttyper',
 
   start(room) {
-    const phrase = PHRASES[Math.floor(Math.random() * PHRASES.length)]
+    const phrase = PHRASES[Math.floor(Math.random() * PHRASES.length)]!
     const state: State = {
       phrase,
       progress: {},
@@ -87,7 +87,7 @@ const fastesttyper: MinigameModule = {
     const state = room.match!.minigameState as State
     if (state.winnerId) return { winnerId: state.winnerId, reason: 'completed' }
 
-    const [p1, p2] = room.players
+    const [p1, p2] = room.players as [Player, Player]
     const prog1 = state.progress[p1.id] ?? 0
     const prog2 = state.progress[p2.id] ?? 0
 

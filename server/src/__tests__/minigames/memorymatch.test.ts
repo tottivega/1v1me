@@ -39,7 +39,7 @@ describe('memorymatch — integration', () => {
     const seq = state.sequence
 
     memorymatch.handleInput(room, 'p1', { type: 'SUBMIT', sequence: [...seq] })
-    const firstSubmission = [...state.submissions['p1']]
+    const firstSubmission = [...(state.submissions['p1'] ?? [])]
 
     // Second submit should be ignored
     memorymatch.handleInput(room, 'p1', {

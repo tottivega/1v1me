@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import type { Room } from '../types'
+import type { Room, Player } from '../types'
 import type { MinigameInput, MinigameResult } from '@shared/types'
 import { MINIGAME_CONFIGS } from '@shared/types'
 import { broadcast, toPlayerInfos } from '../sync/broadcast'
@@ -10,7 +10,7 @@ import { persistMatchResult } from '../db/index'
 const ROUND_READY_TIMEOUT_MS = 5000 // auto-advance if a player doesn't confirm
 
 export function startMatch(room: Room): void {
-  const [p1, p2] = room.players
+  const [p1, p2] = room.players as [Player, Player]
   const matchId = uuidv4()
 
   const { bestOf, enabledCategories } = room.config
@@ -50,7 +50,7 @@ function startRound(room: Room): void {
   room.match.currentRound++
   room.match.roundResolved = false
 
-  const minigameId = room.match.minigameQueue[room.match.currentRound - 1]
+  const minigameId = room.match.minigameQueue[room.match.currentRound - 1]!
   room.match.currentMinigame = minigameId
 
   const module = getMinigame(minigameId)
@@ -116,7 +116,7 @@ export function resolveRound(room: Room, result: MinigameResult): void {
     // Match over — no confirm needed, just a short visual pause
     setTimeout(() => endMatch(room, matchWinner.id, 'completed'), 2500)
   } else if (room.match.currentRound >= bestOf) {
-    const [p1, p2] = room.players
+    const [p1, p2] = room.players as [Player, Player]
     const s1 = room.match.scores[p1.id] ?? 0
     const s2 = room.match.scores[p2.id] ?? 0
     const winnerId = s1 >= s2 ? p1.id : p2.id

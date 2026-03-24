@@ -1,4 +1,4 @@
-import type { MinigameModule, Room } from '../types'
+import type { MinigameModule, Room, Player } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 
@@ -49,7 +49,7 @@ export function scramble(word: string): string {
   const letters = word.split('')
   for (let i = letters.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
-    ;[letters[i], letters[j]] = [letters[j], letters[i]]
+    ;[letters[i], letters[j]] = [letters[j]!, letters[i]!]
   }
   const result = letters.join('')
   // Re-scramble if we accidentally produced the original (rare but possible)
@@ -72,7 +72,7 @@ const wordscramble: MinigameModule = {
   id: 'wordscramble',
 
   start(room) {
-    const answer = WORDS[Math.floor(Math.random() * WORDS.length)]
+    const answer = WORDS[Math.floor(Math.random() * WORDS.length)]!
     const state: State = {
       answer,
       scrambled: scramble(answer),
@@ -113,7 +113,7 @@ const wordscramble: MinigameModule = {
     broadcastState(room, state, true) // reveal on timeout
     if (state.winnerId) return { winnerId: state.winnerId, reason: 'completed' }
     // Nobody guessed — random winner
-    const [p1, p2] = room.players
+    const [p1, p2] = room.players as [Player, Player]
     const winnerId = Math.random() < 0.5 ? p1.id : p2.id
     return { winnerId, reason: 'timeout' }
   },

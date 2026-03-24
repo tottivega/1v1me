@@ -59,7 +59,7 @@ describe('joinOrCreateRoom()', () => {
     if (!('room' in result)) return
     expect(result.room.roomId).toBe(ROOM_ID)
     expect(result.room.players).toHaveLength(1)
-    expect(result.room.players[0].nickname).toBe('Alice')
+    expect(result.room.players[0]!.nickname).toBe('Alice')
   })
 
   it('adds a second player to an existing room', () => {
@@ -82,7 +82,7 @@ describe('joinOrCreateRoom()', () => {
   it('trims and caps nickname at 18 chars', () => {
     const result = joinOrCreateRoom(ROOM_ID, 'p1', '  VeryLongNicknameExceeding18Chars  ', makeWs())
     if (!('room' in result)) return
-    expect(result.room.players[0].nickname.length).toBeLessThanOrEqual(18)
+    expect(result.room.players[0]!.nickname.length).toBeLessThanOrEqual(18)
   })
 })
 

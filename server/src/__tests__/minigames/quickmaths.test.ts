@@ -14,7 +14,7 @@ describe('quickmaths — integration', () => {
       equations: Record<string, { answer: number }>
       correct: Record<string, number>
     }
-    const correctAnswer = state.equations['p1'].answer
+    const correctAnswer = state.equations['p1']!.answer
 
     quickmaths.handleInput(room, 'p1', { type: 'ANSWER', answer: correctAnswer })
 
@@ -31,7 +31,7 @@ describe('quickmaths — integration', () => {
       equations: Record<string, { answer: number }>
       correct: Record<string, number>
     }
-    const wrongAnswer = state.equations['p1'].answer + 1
+    const wrongAnswer = state.equations['p1']!.answer + 1
 
     quickmaths.handleInput(room, 'p1', { type: 'ANSWER', answer: wrongAnswer })
 
@@ -46,19 +46,19 @@ describe('quickmaths — integration', () => {
     const state = room.match.minigameState as {
       equations: Record<string, { question: string; answer: number }>
     }
-    const firstQuestion = state.equations['p1'].question
+    const firstQuestion = state.equations['p1']!.question
 
     // Submit the correct answer
     quickmaths.handleInput(room, 'p1', {
       type: 'ANSWER',
-      answer: state.equations['p1'].answer,
+      answer: state.equations['p1']!.answer,
     })
 
     // Equation must change (statistically guaranteed across 500 possible equations)
     // — at worst same question appears again, but we test the rotation mechanism exists
     expect(state.equations['p1']).toBeDefined()
     // New equation object is a different reference
-    expect(state.equations['p1'].question).toBeDefined()
+    expect(state.equations['p1']!.question).toBeDefined()
     void firstQuestion // rotation is tested indirectly via state mutation
   })
 
@@ -73,9 +73,9 @@ describe('quickmaths — integration', () => {
     }
 
     // p1 gets 2 right, p2 gets 1 right
-    quickmaths.handleInput(room, 'p1', { type: 'ANSWER', answer: state.equations['p1'].answer })
-    quickmaths.handleInput(room, 'p1', { type: 'ANSWER', answer: state.equations['p1'].answer })
-    quickmaths.handleInput(room, 'p2', { type: 'ANSWER', answer: state.equations['p2'].answer })
+    quickmaths.handleInput(room, 'p1', { type: 'ANSWER', answer: state.equations['p1']!.answer })
+    quickmaths.handleInput(room, 'p1', { type: 'ANSWER', answer: state.equations['p1']!.answer })
+    quickmaths.handleInput(room, 'p2', { type: 'ANSWER', answer: state.equations['p2']!.answer })
 
     const result = quickmaths.getResult(room)
     expect(result.winnerId).toBe('p1')
@@ -91,8 +91,8 @@ describe('quickmaths — integration', () => {
       equations: Record<string, { answer: number }>
     }
 
-    quickmaths.handleInput(room, 'p2', { type: 'ANSWER', answer: state.equations['p2'].answer })
-    quickmaths.handleInput(room, 'p2', { type: 'ANSWER', answer: state.equations['p2'].answer })
+    quickmaths.handleInput(room, 'p2', { type: 'ANSWER', answer: state.equations['p2']!.answer })
+    quickmaths.handleInput(room, 'p2', { type: 'ANSWER', answer: state.equations['p2']!.answer })
 
     const result = quickmaths.getResult(room)
     expect(result.winnerId).toBe('p2')

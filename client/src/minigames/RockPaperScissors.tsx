@@ -92,7 +92,7 @@ export default function RockPaperScissors() {
     stagedOppPick.current = null
     const delay = 700 + Math.random() * 1500
     const t = setTimeout(() => {
-      const oppChoice = CHOICES[Math.floor(Math.random() * 3)].id
+      const oppChoice = CHOICES[Math.floor(Math.random() * 3)]!.id
       stagedOppPick.current = oppChoice
       // If player already picked, resolve immediately
       setMock((prev) => {

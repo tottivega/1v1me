@@ -40,7 +40,7 @@ export function getOpenRooms(): Array<{
     if (room.players.length === 1 && room.status === 'lobby') {
       result.push({
         roomId: room.roomId,
-        creatorNickname: room.players[0].nickname,
+        creatorNickname: room.players[0]!.nickname,
         createdAt: room.createdAt,
       })
     }

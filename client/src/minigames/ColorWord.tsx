@@ -32,7 +32,7 @@ const ALL_COLORS: Color[] = ['red', 'blue', 'green', 'yellow', 'orange', 'purple
 
 function pickDifferent(base: Color): Color {
   const others = ALL_COLORS.filter((c) => c !== base)
-  return others[Math.floor(Math.random() * others.length)]
+  return others[Math.floor(Math.random() * others.length)]!
 }
 
 export default function ColorWord() {
@@ -54,7 +54,7 @@ export default function ColorWord() {
 
   useEffect(() => {
     if (isLive) return
-    const word = ALL_COLORS[Math.floor(Math.random() * ALL_COLORS.length)]
+    const word = ALL_COLORS[Math.floor(Math.random() * ALL_COLORS.length)]!
     const ink = pickDifferent(word)
     setMockWord(word)
     setMockInk(ink)

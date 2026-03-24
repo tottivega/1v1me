@@ -37,7 +37,10 @@ export default function MemoryMatch() {
     const t = setTimeout(
       () => {
         setMockOppSub(
-          Array.from({ length: SEQ_LEN }, () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)])
+          Array.from(
+            { length: SEQ_LEN },
+            () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]!
+          )
         )
       },
       2500 + Math.random() * 2000

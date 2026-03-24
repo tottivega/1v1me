@@ -1,4 +1,4 @@
-import type { MinigameModule } from '../types'
+import type { MinigameModule, Player } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 
@@ -46,7 +46,7 @@ const numberguess: MinigameModule = {
 
   getResult(room): MinigameResult {
     const state = room.match!.minigameState as State
-    const [p1, p2] = room.players
+    const [p1, p2] = room.players as [Player, Player]
 
     const g1 = state.guesses[p1.id]
     const g2 = state.guesses[p2.id]

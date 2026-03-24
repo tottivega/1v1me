@@ -1,4 +1,4 @@
-import type { MinigameModule } from '../types'
+import type { MinigameModule, Player } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 
@@ -33,14 +33,16 @@ const clickspeed: MinigameModule = {
     const now = Date.now()
 
     // CPS cap
-    state.timestamps[playerId] = state.timestamps[playerId].filter((t) => now - t < WINDOW_MS)
-    if (state.timestamps[playerId].length >= CPS_CAP) return
+    state.timestamps[playerId] = (state.timestamps[playerId] ?? []).filter(
+      (t) => now - t < WINDOW_MS
+    )
+    if (state.timestamps[playerId]!.length >= CPS_CAP) return
 
-    state.timestamps[playerId].push(now)
-    state.clicks[playerId]++
-    const count = state.clicks[playerId]
-    if (!state.firstTimes[playerId][count]) {
-      state.firstTimes[playerId][count] = now
+    state.timestamps[playerId]!.push(now)
+    state.clicks[playerId] = (state.clicks[playerId] ?? 0) + 1
+    const count = state.clicks[playerId]!
+    if (!state.firstTimes[playerId]![count]) {
+      state.firstTimes[playerId]![count] = now
     }
 
     broadcast(room, 'GAME_UPDATE', { state: { clicks: state.clicks } })
@@ -48,7 +50,7 @@ const clickspeed: MinigameModule = {
 
   getResult(room): MinigameResult {
     const state = room.match!.minigameState as State
-    const [p1, p2] = room.players
+    const [p1, p2] = room.players as [Player, Player]
     const c1 = state.clicks[p1.id] ?? 0
     const c2 = state.clicks[p2.id] ?? 0
 
@@ -57,8 +59,8 @@ const clickspeed: MinigameModule = {
 
     // Tie: whoever hit their shared click count first
     const tied = c1
-    const t1 = state.firstTimes[p1.id][tied] ?? Infinity
-    const t2 = state.firstTimes[p2.id][tied] ?? Infinity
+    const t1 = (state.firstTimes[p1.id] ?? {})[tied] ?? Infinity
+    const t2 = (state.firstTimes[p2.id] ?? {})[tied] ?? Infinity
     const winnerId = t1 <= t2 ? p1.id : p2.id
     return { winnerId, reason: 'timeout' }
   },

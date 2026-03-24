@@ -55,7 +55,7 @@ function loadModules(): Record<string, MinigameModule> {
 }
 
 export function getMinigame(id: MinigameId): MinigameModule {
-  return loadModules()[id]
+  return loadModules()[id]!
 }
 
 // ── Queue builder ──────────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ export function getMinigame(id: MinigameId): MinigameModule {
 function fisherYates<T>(arr: T[]): void {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
-    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    ;[arr[i], arr[j]] = [arr[j]!, arr[i]!]
   }
 }
 
@@ -96,16 +96,16 @@ export function shuffleQueue(
   const queue: MinigameId[] = []
 
   while (queue.length < size) {
-    const lastCat = queue.length > 0 ? MINIGAME_CONFIGS[queue[queue.length - 1]].category : null
+    const lastCat = queue.length > 0 ? MINIGAME_CONFIGS[queue[queue.length - 1]!].category : null
 
     // Prefer a game with a different category than the previous one
     const idx = pool.findIndex((id) => MINIGAME_CONFIGS[id].category !== lastCat)
 
     if (idx !== -1) {
-      queue.push(pool.splice(idx, 1)[0])
+      queue.push(pool.splice(idx, 1)[0]!)
     } else {
       // All remaining games share the same category — just pick the first
-      queue.push(pool.splice(0, 1)[0])
+      queue.push(pool.splice(0, 1)[0]!)
     }
 
     // Refill pool when exhausted (best-of-N can exceed unique game count)

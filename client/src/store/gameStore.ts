@@ -579,7 +579,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
     if (status === 'match_end') updates.matchWinnerId = 'player-1'
     if (['round_start', 'playing', 'round_end', 'match_end'].includes(status)) {
-      if (get().players.length < 2) updates.players = [get().players[0], MOCK_OPP]
+      if (get().players.length < 2) updates.players = [get().players[0]!, MOCK_OPP]
     }
     set(updates)
   },

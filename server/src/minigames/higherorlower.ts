@@ -1,4 +1,4 @@
-import type { MinigameModule } from '../types'
+import type { MinigameModule, Player } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 
@@ -57,10 +57,10 @@ const higherorlower: MinigameModule = {
     let winnerId: string
 
     if (scorers.length === 1) {
-      winnerId = scorers[0].id
+      winnerId = scorers[0]!.id
     } else {
       // Both correct or both wrong (or timeout) → random
-      const [p1, p2] = room.players
+      const [p1, p2] = room.players as [Player, Player]
       winnerId = Math.random() < 0.5 ? p1.id : p2.id
     }
 
