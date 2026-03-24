@@ -16,7 +16,7 @@
 
 - [ ] Run `npm install` in `server/` to pull `@supabase/supabase-js`
 - [ ] Create Supabase project → run `match_results` table migration
-- [ ] Set Fly.io secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`
+- [ ] Set Fly.io secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ALLOWED_ORIGIN` (your Vercel URL)
 - [ ] Set Sentry DSN: `VITE_SENTRY_DSN=https://...@sentry.io/...` in Vercel env vars
 - [ ] Deploy server: `fly deploy` from `server/`
 - [ ] Deploy client: Vercel import; set `VITE_WS_URL=wss://your-app.fly.dev`
