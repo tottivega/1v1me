@@ -109,12 +109,39 @@ Rules:
 
 ---
 
+## 5. Add server integration tests
+
+Create `server/src/__tests__/minigames/wordrace.test.ts`. At minimum:
+
+1. **Unit tests** for any exported helper functions (puzzle generators, scorers, etc.)
+2. **Integration tests** using `makeRoom` + `makeMatch` helpers:
+   - Call `module.start(room)` with a `vi.fn()` as `onRoundDone`
+   - Send winning input via `module.handleInput(room, playerId, input)`
+   - Assert `onRoundDone` was called with the correct `{ winnerId, reason }`
+   - Assert invalid or duplicate inputs are ignored
+
+```ts
+it('resolves with the first finisher as winner', () => {
+  const room = makeRoom()
+  const onRoundDone = vi.fn()
+  room.match = makeMatch('p1', 'p2', { onRoundDone })
+
+  wordrace.start(room)
+  wordrace.handleInput(room, 'p1', { type: 'FINISH' })
+
+  expect(onRoundDone).toHaveBeenCalledWith({ winnerId: 'p1', reason: 'completed' })
+})
+```
+
+---
+
 ## Checklist
 
 - [ ] Entry in `MINIGAME_CONFIGS` (shared/types.ts)
 - [ ] Server module created and added to `MODULES` (server/src/minigames/index.ts)
 - [ ] Client component created and added to `MINIGAME_COMPONENTS` (client/src/minigames/registry.tsx)
 - [ ] Spectator view added to `SpectateGameState` (client/src/pages/SpectatePage.tsx)
+- [ ] Integration tests in `server/src/__tests__/minigames/wordrace.test.ts`
 - [ ] `tsc --noEmit` passes in both `client/` and `server/`
 - [ ] Tested in DevPanel (mock mode) — no server needed
 - [ ] Tested end-to-end in a real match

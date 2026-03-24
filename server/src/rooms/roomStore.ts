@@ -25,6 +25,11 @@ export function getRoomCount(): number {
   return rooms.size
 }
 
+/** Remove all rooms. Intended for use in tests only. */
+export function clearAllRooms(): void {
+  rooms.clear()
+}
+
 export function getOpenRooms(): Array<{
   roomId: string
   creatorNickname: string

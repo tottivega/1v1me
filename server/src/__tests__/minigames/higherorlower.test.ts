@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { generatePuzzle } from '../../minigames/higherorlower'
+import { describe, it, expect, vi } from 'vitest'
+import higherorlower, { generatePuzzle } from '../../minigames/higherorlower'
+import { makeRoom, makeMatch } from '../helpers'
 
 describe('generatePuzzle()', () => {
   it('target and clue are always different', () => {
@@ -32,5 +33,57 @@ describe('generatePuzzle()', () => {
       expect(diff).toBeGreaterThanOrEqual(1)
       expect(diff).toBeLessThanOrEqual(20)
     }
+  })
+})
+
+describe('higherorlower — integration', () => {
+  it('resolves with the sole correct answerer as winner', () => {
+    const room = makeRoom()
+    const onRoundDone = vi.fn()
+    room.match = makeMatch('p1', 'p2', { onRoundDone })
+
+    higherorlower.start(room)
+    const state = room.match.minigameState as { target: number; clue: number }
+    const correct: 'higher' | 'lower' = state.target > state.clue ? 'higher' : 'lower'
+    const wrong: 'higher' | 'lower' = correct === 'higher' ? 'lower' : 'higher'
+
+    higherorlower.handleInput(room, 'p1', { type: 'ANSWER', answer: correct })
+    higherorlower.handleInput(room, 'p2', { type: 'ANSWER', answer: wrong })
+
+    expect(onRoundDone).toHaveBeenCalledOnce()
+    expect(onRoundDone).toHaveBeenCalledWith(
+      expect.objectContaining({ winnerId: 'p1', reason: 'completed' })
+    )
+  })
+
+  it('does not resolve until both players have answered', () => {
+    const room = makeRoom()
+    const onRoundDone = vi.fn()
+    room.match = makeMatch('p1', 'p2', { onRoundDone })
+
+    higherorlower.start(room)
+    const state = room.match.minigameState as { target: number; clue: number }
+    const correct: 'higher' | 'lower' = state.target > state.clue ? 'higher' : 'lower'
+
+    higherorlower.handleInput(room, 'p1', { type: 'ANSWER', answer: correct })
+    expect(onRoundDone).not.toHaveBeenCalled()
+
+    higherorlower.handleInput(room, 'p2', { type: 'ANSWER', answer: correct })
+    expect(onRoundDone).toHaveBeenCalledOnce()
+  })
+
+  it('ignores duplicate answers from the same player', () => {
+    const room = makeRoom()
+    const onRoundDone = vi.fn()
+    room.match = makeMatch('p1', 'p2', { onRoundDone })
+
+    higherorlower.start(room)
+    const state = room.match.minigameState as { target: number; clue: number }
+    const correct: 'higher' | 'lower' = state.target > state.clue ? 'higher' : 'lower'
+
+    higherorlower.handleInput(room, 'p1', { type: 'ANSWER', answer: correct })
+    higherorlower.handleInput(room, 'p1', { type: 'ANSWER', answer: correct }) // duplicate
+    // Only p1 answered — should not resolve yet
+    expect(onRoundDone).not.toHaveBeenCalled()
   })
 })

@@ -38,9 +38,9 @@
 
 - [x] **Round result lingers until both confirm** — currently the round-end overlay auto-dismisses on a server timer. Add a "Next Round →" button that each player must tap. Server waits for both `ROUND_READY` messages (with a 5s auto-advance fallback). Reduces the feeling of being rushed.
 
-- [ ] **Spectator late-join game state** — spectators who join mid-round see a blank screen until `GAME_UPDATE` fires. Send a snapshot of `minigameState` in `SPECTATE_JOINED` (already there structurally) and make each minigame component render from it immediately on mount.
+- [x] **Spectator late-join game state** — spectators who join mid-round see a blank screen until `GAME_UPDATE` fires. Send a snapshot of `minigameState` in `SPECTATE_JOINED` (already there structurally) and make each minigame component render from it immediately on mount.
 
-- [ ] **Disconnected opponent overlay** — when `PLAYER_DISCONNECTED` fires mid-match, show a full-screen pause overlay with the countdown timer (already tracked in store). Currently the timer ticks but nothing communicates the pause to the non-disconnected player.
+- [x] **Disconnected opponent overlay** — when `PLAYER_DISCONNECTED` fires mid-match, show a full-screen pause overlay with the countdown timer (already tracked in store). Currently the timer ticks but nothing communicates the pause to the non-disconnected player.
 
 ---
 
@@ -48,9 +48,9 @@
 
 - [ ] **Typed GAME_INPUT per minigame** — `handleInput` currently receives `input: unknown` and casts. Create a `MinigameInput` discriminated union in `shared/types.ts` (one variant per game), use it server-side for `handleInput` signatures and client-side for `sendInput` call sites. Eliminates all the `as { type: string; ... }` casts.
 
-- [ ] **Integration tests for Color Word and Higher or Lower** — the 10-game roster now has 2 games with no integration-level coverage (only unit tests). Add a test file in `server/src/__tests__/minigames/` for each: start the game, send valid input, assert `onRoundDone` fires with the correct winner. Use `makeRoom` + `makeMatch` helpers.
+- [x] **Integration tests for Color Word and Higher or Lower** — the 10-game roster now has 2 games with no integration-level coverage (only unit tests). Add a test file in `server/src/__tests__/minigames/` for each: start the game, send valid input, assert `onRoundDone` fires with the correct winner. Use `makeRoom` + `makeMatch` helpers.
 
-- [ ] **roomStore isolation between tests** — `roomStore.test.ts` currently deletes rooms by known IDs in `beforeEach`. If a future test uses the same IDs it will silently leak. Refactor `roomStore` to accept an optional injected `Map` (or expose a `clearAll()` for test-only use via `import.meta.env.TEST`) so tests always start clean.
+- [x] **roomStore isolation between tests** — `roomStore.test.ts` currently deletes rooms by known IDs in `beforeEach`. If a future test uses the same IDs it will silently leak. Refactor `roomStore` to accept an optional injected `Map` (or expose a `clearAll()` for test-only use via `import.meta.env.TEST`) so tests always start clean.
 
 ---
 
