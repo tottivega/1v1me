@@ -18,25 +18,25 @@
 
 ## 🎨 Visual Polish
 
-- [ ] **Player animal avatars** — server assigns a random animal emoji from a pool of 12 (🐺 🦊 🐻 🐯 🦁 🐸 🐨 🦝 🦄 🐙 🦖 🐝) on join. Stored in `PlayerInfo`, shown next to names everywhere. Gives identity without auth.
+- [x] **Player animal avatars** — server assigns a random animal emoji from a pool of 12 (🐺 🦊 🐻 🐯 🦁 🐸 🐨 🦝 🦄 🐙 🦖 🐝) on join. Stored in `PlayerInfo`, shown next to names everywhere. Gives identity without auth.
 
-- [ ] **Connected player pulse dot** — a small pulsing green dot next to each player's name in the lobby to show they're live. Turns grey when `connected: false`. Replaces the implicit "they're here" assumption with a visible signal.
+- [x] **Connected player pulse dot** — a small pulsing green dot next to each player's name in the lobby to show they're live. Turns grey when `connected: false`. Replaces the implicit "they're here" assumption with a visible signal.
 
-- [ ] **404 / room-not-found page** — navigating to `/room/FAKE-99` currently drops you into a broken lobby. Catch the `ROOM_NOT_FOUND` server error (already sent) and render a friendly "Room not found" screen with a back button. Same for `/spectate/:id`.
+- [x] **404 / room-not-found page** — navigating to `/room/FAKE-99` currently drops you into a broken lobby. Catch the `ROOM_NOT_FOUND` server error (already sent) and render a friendly "Room not found" screen with a back button. Same for `/spectate/:id`.
 
 ---
 
 ## 🔗 Sharing & Discovery
 
-- [ ] **QR code in lobby** — below the "Copy Invite Link" button, render a small QR code pointing to the room URL using a zero-dependency QR library (`qrcode` or `qr-creator`). Tap to enlarge. Dramatically improves mobile-to-mobile invites where copy-paste is painful.
+- [x] **QR code in lobby** — below the "Copy Invite Link" button, render a small QR code pointing to the room URL using a zero-dependency QR library (`qrcode` or `qr-creator`). Tap to enlarge. Dramatically improves mobile-to-mobile invites where copy-paste is painful.
 
-- [ ] **Open Graph meta tags** — add `<meta property="og:title">`, `og:description`, and `og:image` to `index.html` (or generated per-room via a simple `/og` endpoint). Makes shared links look good in iMessage, WhatsApp, and Discord previews.
+- [x] **Open Graph meta tags** — add `<meta property="og:title">`, `og:description`, and `og:image` to `index.html` (or generated per-room via a simple `/og` endpoint). Makes shared links look good in iMessage, WhatsApp, and Discord previews.
 
 ---
 
 ## ⚡ Game Feel
 
-- [ ] **Round result lingers until both confirm** — currently the round-end overlay auto-dismisses on a server timer. Add a "Next Round →" button that each player must tap. Server waits for both `ROUND_READY` messages (with a 5s auto-advance fallback). Reduces the feeling of being rushed.
+- [x] **Round result lingers until both confirm** — currently the round-end overlay auto-dismisses on a server timer. Add a "Next Round →" button that each player must tap. Server waits for both `ROUND_READY` messages (with a 5s auto-advance fallback). Reduces the feeling of being rushed.
 
 - [ ] **Spectator late-join game state** — spectators who join mid-round see a blank screen until `GAME_UPDATE` fires. Send a snapshot of `minigameState` in `SPECTATE_JOINED` (already there structurally) and make each minigame component render from it immediately on mount.
 

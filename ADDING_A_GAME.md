@@ -76,11 +76,45 @@ export const MINIGAME_COMPONENTS: Record<MinigameId, ComponentType> = {
 
 ---
 
+## 4. Add a spectator view
+
+Spectators watch live at `/spectate/:roomId`. The `SpectateGameState` component in
+`client/src/pages/SpectatePage.tsx` renders a read-only view of each game from
+`minigameState`.
+
+Add a branch for your game:
+
+```tsx
+if (minigameId === 'wordrace') {
+  const s = state as { phrase?: string; progress?: Record<string, number> } | null
+  return (
+    <TwoColState
+      p1={{ label: p1?.nickname ?? '…', value: s?.progress[p1?.id] ?? 0, unit: 'chars' }}
+      p2={{ label: p2?.nickname ?? '…', value: s?.progress[p2?.id] ?? 0, unit: 'chars' }}
+      color1="var(--blue)"
+      color2="var(--orange)"
+    />
+  )
+}
+```
+
+Rules:
+- `state` is whatever the server stores in `room.match.minigameState` (the raw server
+  object, not the broadcast-filtered shape). Cast it carefully — it may be `null` if a
+  spectator joins before the first `GAME_UPDATE`.
+- **Never** show information that is private to one player (e.g. hide picks in RPS
+  until the reveal phase).
+- Keep it read-only — no `sendInput`, no buttons.
+- Reuse `TwoColState`, `StatPill`, or `MathsPanel` helper components when they fit.
+
+---
+
 ## Checklist
 
 - [ ] Entry in `MINIGAME_CONFIGS` (shared/types.ts)
 - [ ] Server module created and added to `MODULES` (server/src/minigames/index.ts)
 - [ ] Client component created and added to `MINIGAME_COMPONENTS` (client/src/minigames/registry.tsx)
+- [ ] Spectator view added to `SpectateGameState` (client/src/pages/SpectatePage.tsx)
 - [ ] `tsc --noEmit` passes in both `client/` and `server/`
 - [ ] Tested in DevPanel (mock mode) — no server needed
 - [ ] Tested end-to-end in a real match

@@ -406,6 +406,308 @@ function SpectateGameState({
     )
   }
 
+  if (minigameId === 'memorymatch') {
+    const s = state as { sequence?: string[]; submissions?: Record<string, string[]> } | null
+    const seq = s?.sequence ?? []
+    const subs = s?.submissions ?? {}
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 28,
+          flex: 1,
+          padding: 32,
+        }}
+      >
+        <div style={{ display: 'flex', gap: 10 }}>
+          {seq.map((sym, i) => (
+            <div
+              key={i}
+              style={{
+                width: 52,
+                height: 52,
+                border: 'var(--border)',
+                borderRadius: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 26,
+                background: 'var(--white)',
+                boxShadow: 'var(--shadow-sm)',
+              }}
+            >
+              {sym}
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 40 }}>
+          {players.map((p) => (
+            <div key={p.id} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 36 }}>{subs[p.id] !== undefined ? '✅' : '⏳'}</div>
+              <div className="label" style={{ opacity: 0.6, marginTop: 4 }}>
+                {p.nickname}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (minigameId === 'fastesttyper') {
+    const s = state as {
+      phrase?: string
+      progress?: Record<string, number>
+    } | null
+    const phrase = s?.phrase ?? ''
+    const prog = s?.progress ?? {}
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 28,
+          flex: 1,
+          padding: 32,
+        }}
+      >
+        <div
+          style={{
+            background: 'var(--white)',
+            border: 'var(--border)',
+            borderRadius: 16,
+            padding: '18px 28px',
+            boxShadow: 'var(--shadow-sm)',
+            fontFamily: 'monospace',
+            fontSize: 18,
+            letterSpacing: 1,
+            maxWidth: 480,
+            textAlign: 'center',
+          }}
+        >
+          {phrase || '…'}
+        </div>
+        <div style={{ display: 'flex', gap: 40 }}>
+          {players.map((p, i) => {
+            const done = prog[p.id] ?? 0
+            const pct = phrase ? Math.round((done / phrase.length) * 100) : 0
+            const color = i === 0 ? 'var(--blue)' : 'var(--orange)'
+            return (
+              <div key={p.id} style={{ textAlign: 'center', minWidth: 110 }}>
+                <div style={{ fontFamily: 'var(--font-title)', fontSize: 36, color }}>{pct}%</div>
+                <div
+                  style={{
+                    height: 8,
+                    borderRadius: 4,
+                    background: 'rgba(0,0,0,0.1)',
+                    margin: '8px 0',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${pct}%`,
+                      background: color,
+                      borderRadius: 4,
+                      transition: 'width 0.1s',
+                    }}
+                  />
+                </div>
+                <div className="label" style={{ opacity: 0.6 }}>
+                  {p.nickname}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  if (minigameId === 'rockpaperscissors') {
+    const s = state as {
+      phase?: string
+      throwNum?: number
+      submitted?: string[]
+      picks?: Record<string, string>
+      scores?: Record<string, number>
+      throwWinnerId?: string | null
+    } | null
+    const phase = s?.phase ?? 'picking'
+    const throwNum = s?.throwNum ?? 1
+    const scores = s?.scores ?? {}
+    const picks = s?.picks ?? {}
+    // raw state has picks map; broadcast picking state has submitted array
+    const submitted = s?.submitted ?? Object.keys(picks)
+    const EMOJI: Record<string, string> = { rock: '✊', paper: '🖐️', scissors: '✌️' }
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 20,
+          flex: 1,
+          padding: 32,
+        }}
+      >
+        <div className="label" style={{ opacity: 0.5 }}>
+          Throw {throwNum} / 3
+        </div>
+        <div style={{ display: 'flex', gap: 48, alignItems: 'center' }}>
+          {players.map((p, i) => {
+            const hasPicked = submitted.includes(p.id) || !!picks[p.id]
+            const pick = phase === 'reveal' ? picks[p.id] : null
+            const color = i === 0 ? 'var(--blue)' : 'var(--orange)'
+            return (
+              <div key={p.id} style={{ textAlign: 'center' }}>
+                <div
+                  style={{ fontFamily: 'var(--font-title)', fontSize: 28, color, marginBottom: 8 }}
+                >
+                  {scores[p.id] ?? 0}
+                </div>
+                <div style={{ fontSize: 56, lineHeight: 1.1 }}>
+                  {pick ? (EMOJI[pick] ?? '?') : hasPicked ? '✅' : '⏳'}
+                </div>
+                <div className="label" style={{ opacity: 0.6, marginTop: 6 }}>
+                  {p.nickname}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  if (minigameId === 'wordscramble') {
+    const s = state as {
+      scrambled?: string
+      attempts?: Record<string, number>
+    } | null
+    const scrambled = s?.scrambled ?? '…'
+    const attempts = s?.attempts ?? {}
+    return (
+      <TwoColState
+        p1={{ label: p1?.nickname ?? '…', value: attempts[p1?.id] ?? 0, unit: 'wrong guesses' }}
+        p2={{ label: p2?.nickname ?? '…', value: attempts[p2?.id] ?? 0, unit: 'wrong guesses' }}
+        color1="var(--blue)"
+        color2="var(--orange)"
+        extra={`🔤 ${scrambled}`}
+      />
+    )
+  }
+
+  if (minigameId === 'colorword') {
+    const s = state as { word?: string; inkColor?: string } | null
+    const COLOR_CSS: Record<string, string> = {
+      red: '#e53e3e',
+      blue: '#3182ce',
+      green: '#38a169',
+      yellow: '#d69e2e',
+      orange: '#dd6b20',
+      purple: '#805ad5',
+    }
+    const ink = s?.inkColor ? (COLOR_CSS[s.inkColor] ?? 'var(--black)') : 'var(--black)'
+    const word = (s?.word ?? '').toUpperCase()
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flex: 1,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: 'var(--font-title)',
+            fontSize: 72,
+            color: ink,
+            WebkitTextStroke: '2px rgba(0,0,0,0.15)',
+            textShadow: '4px 4px 0 rgba(0,0,0,0.1)',
+          }}
+        >
+          {word || '…'}
+        </div>
+      </div>
+    )
+  }
+
+  if (minigameId === 'higherorlower') {
+    const s = state as {
+      clue?: number
+      phase?: string
+      submitted?: string[]
+      answers?: Record<string, string>
+      target?: number
+      correct?: string
+    } | null
+    const clue = s?.clue ?? '?'
+    // raw server state has answers map; broadcast has submitted array
+    const submitted = s?.submitted ?? (s?.answers ? Object.keys(s.answers) : [])
+    const isReveal = s?.phase === 'reveal' || s?.target !== undefined
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 20,
+          flex: 1,
+          padding: 32,
+        }}
+      >
+        <div style={{ fontFamily: 'var(--font-title)', fontSize: 96, lineHeight: 1 }}>{clue}</div>
+        <div className="label" style={{ opacity: 0.5 }}>
+          Clue number — is the secret Higher or Lower?
+        </div>
+        {isReveal && s?.target !== undefined && (
+          <div
+            style={{
+              fontFamily: 'var(--font-title)',
+              fontSize: 28,
+              color: 'var(--green)',
+              marginTop: 4,
+            }}
+          >
+            Answer: {s.target} ({s.correct})
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 40, marginTop: 8 }}>
+          {players.map((p) => {
+            const answered = submitted.includes(p.id)
+            const answer = s?.answers?.[p.id]
+            return (
+              <div key={p.id} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 36 }}>
+                  {isReveal && answer
+                    ? answer === 'higher'
+                      ? '📈'
+                      : '📉'
+                    : answered
+                      ? '✅'
+                      : '⏳'}
+                </div>
+                <div className="label" style={{ opacity: 0.6, marginTop: 4 }}>
+                  {p.nickname}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
   return null
 }
 
