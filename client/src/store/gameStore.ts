@@ -157,7 +157,7 @@ interface GameState {
   spectatorCount: number
 
   // Incoming emote (from opponent), clears after 1.5s
-  incomingEmote: { fromPlayerId: string; emote: string } | null
+  incomingEmote: { fromPlayerId: string; fromName?: string; emote: string } | null
 
   // Rematch vote — true while waiting for opponent to also click Rematch
   rematchVoting: boolean
@@ -308,7 +308,21 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     ws.onopen = () => {
       set({ wsStatus: 'connected' })
-      ws.send(JSON.stringify({ type: 'SPECTATE', roomId, playerId: '', payload: { roomId } }))
+      const spectatorNickname = (() => {
+        try {
+          return localStorage.getItem('nickname') ?? ''
+        } catch {
+          return ''
+        }
+      })()
+      ws.send(
+        JSON.stringify({
+          type: 'SPECTATE',
+          roomId,
+          playerId: '',
+          payload: { roomId, nickname: spectatorNickname },
+        })
+      )
     }
     ws.onmessage = (event) => {
       try {
@@ -544,7 +558,9 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       case 'EMOTE_RECEIVED': {
         const p = msg.payload as EmotePayload
-        set({ incomingEmote: { fromPlayerId: p.fromPlayerId, emote: p.emote } })
+        set({
+          incomingEmote: { fromPlayerId: p.fromPlayerId, fromName: p.fromName, emote: p.emote },
+        })
         setTimeout(() => set({ incomingEmote: null }), 1500)
         break
       }

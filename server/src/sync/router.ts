@@ -21,6 +21,8 @@ interface ConnState {
   playerId: string
   roomId: string | null
   role: 'player' | 'spectator'
+  spectatorNickname?: string
+  spectatorNum?: number
   msgCount: number
   windowStart: number
 }
@@ -167,7 +169,7 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
     }
 
     case 'SPECTATE': {
-      const { roomId } = msg.payload as { roomId: string }
+      const { roomId, nickname } = msg.payload as { roomId: string; nickname?: string }
       if (!roomId) {
         send(ws, 'ERROR', { code: 'MISSING_FIELDS', message: 'roomId required' })
         return
@@ -179,6 +181,14 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
       }
       conn.roomId = roomId
       conn.role = 'spectator'
+      conn.spectatorNum = result.room.spectators.length // 1-based after push
+      const rawNick = nickname?.trim().slice(0, 18) || undefined
+      if (rawNick) {
+        const isImpostor = result.room.players.some(
+          (p) => p.nickname.toLowerCase() === rawNick.toLowerCase()
+        )
+        conn.spectatorNickname = isImpostor ? `${rawNick} (Impostor)` : rawNick
+      }
       break
     }
 
@@ -188,12 +198,19 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
       if (!room) return
       const { emote } = msg.payload as { emote: string }
       if (!emote || typeof emote !== 'string' || emote.length > 10) return
-      // Broadcast to all players and spectators in the room
+      // For spectators, resolve display name; for players, send playerId for client lookup
+      const fromName =
+        conn.role === 'spectator'
+          ? (conn.spectatorNickname ?? `Spectator ${conn.spectatorNum ?? '?'}`)
+          : undefined
+      const payload = fromName
+        ? { fromPlayerId: '', fromName, emote }
+        : { fromPlayerId: conn.playerId, emote }
       for (const player of room.players) {
-        send(player.ws, 'EMOTE_RECEIVED', { fromPlayerId: conn.playerId, emote })
+        send(player.ws, 'EMOTE_RECEIVED', payload)
       }
       for (const spec of room.spectators) {
-        send(spec, 'EMOTE_RECEIVED', { fromPlayerId: conn.playerId, emote })
+        send(spec, 'EMOTE_RECEIVED', payload)
       }
       break
     }

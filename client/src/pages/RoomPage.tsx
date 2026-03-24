@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useState, useRef, useMemo, Suspense } from 'react'
-import { useGameStore } from '../store/gameStore'
+import { useGameStore, getStreak } from '../store/gameStore'
 import ScoreBoard from '../components/ScoreBoard'
 import TimerBar from '../components/TimerBar'
 import { MINIGAME_CONFIGS, type MinigameCategory, type RoomConfig } from '@shared/types'
@@ -1092,7 +1092,11 @@ function MatchView() {
       {incomingEmote &&
         (() => {
           const sender = players.find((p) => p.id === incomingEmote.fromPlayerId)
-          const senderName = sender ? (sender.id === myPlayerId ? 'You' : sender.nickname) : null
+          const senderName = sender
+            ? sender.id === myPlayerId
+              ? 'You'
+              : sender.nickname
+            : (incomingEmote.fromName ?? null)
           return (
             <div
               className="anim-pop"
@@ -1560,13 +1564,26 @@ function ShareButton({
   }
 
   async function buildCard(): Promise<Blob> {
-    const PAD = 28
+    const PAD = 32
     const W = 560
-    const ROW_H = 44
-    const HEADER_H = 140
-    const FOOTER_H = 44
-    const ROUNDS_H = roundHistory.length > 0 ? roundHistory.length * ROW_H + 16 : 0
+    const ROW_H = 40
+    const HEADER_H = 160
+    const FOOTER_H = 40
+    const ROUNDS_H = roundHistory.length > 0 ? roundHistory.length * ROW_H + 12 : 0
     const H = HEADER_H + ROUNDS_H + FOOTER_H
+
+    const accent = iWon ? '#f7c948' : '#e63946'
+    const BG = '#18181b'
+    const streak = getStreak()
+
+    // Top-3 most-played games from round history
+    const counts: Record<string, number> = {}
+    for (const r of roundHistory) counts[r.minigameId] = (counts[r.minigameId] ?? 0) + 1
+    const top3 = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([id]) => MINIGAME_CONFIGS[id as keyof typeof MINIGAME_CONFIGS]?.emoji ?? '🎮')
+      .join(' ')
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     const canvas = document.createElement('canvas')
@@ -1575,71 +1592,99 @@ function ShareButton({
     const ctx = canvas.getContext('2d')!
     ctx.scale(dpr, dpr)
 
-    // Background + border
-    ctx.fillStyle = '#fafafa'
+    // Dark background
+    ctx.fillStyle = BG
     ctx.fillRect(0, 0, W, H)
-    ctx.strokeStyle = '#000'
-    ctx.lineWidth = 3
-    ctx.strokeRect(1.5, 1.5, W - 3, H - 3)
 
-    // Left accent stripe
-    ctx.fillStyle = iWon ? '#f7c948' : '#e63946'
-    ctx.fillRect(0, 0, 8, H)
+    // Top accent bar
+    ctx.fillStyle = accent
+    ctx.fillRect(0, 0, W, 6)
 
-    // Title
+    // Win/lose title
     ctx.textAlign = 'left'
-    ctx.fillStyle = '#000'
-    ctx.font = '900 52px "Arial Black", Arial, sans-serif'
-    ctx.fillText(iWon ? '🏆 YOU WIN!' : '💀 YOU LOSE', PAD + 8, 72)
+    ctx.fillStyle = accent
+    ctx.font = '900 48px "Arial Black", Arial, sans-serif'
+    ctx.fillText(iWon ? '🏆 YOU WIN!' : '💀 YOU LOSE', PAD, 68)
 
-    // Score line
-    ctx.font = '700 20px Arial, sans-serif'
-    ctx.fillStyle = 'rgba(0,0,0,0.55)'
-    ctx.fillText(`${myNickname}  ${myScore}–${oppScore}  ${oppNickname}`, PAD + 8, 110)
+    // Big score
+    ctx.font = '900 64px "Arial Black", Arial, sans-serif'
+    ctx.fillStyle = '#ffffff'
+    ctx.fillText(`${myScore}`, PAD, 138)
+    ctx.font = '700 32px Arial, sans-serif'
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'
+    ctx.fillText('–', PAD + 60, 130)
+    ctx.font = '900 64px "Arial Black", Arial, sans-serif'
+    ctx.fillStyle = 'rgba(255,255,255,0.6)'
+    ctx.fillText(`${oppScore}`, PAD + 84, 138)
+
+    // Nicknames under scores
+    ctx.font = '700 14px Arial, sans-serif'
+    ctx.fillStyle = 'rgba(255,255,255,0.45)'
+    ctx.textAlign = 'left'
+    ctx.fillText(myNickname, PAD, 156)
+    ctx.fillText(oppNickname, PAD + 84, 156)
+
+    // Streak badge (right side of header)
+    if (iWon && streak >= 2) {
+      ctx.font = '900 15px Arial, sans-serif'
+      ctx.fillStyle = '#f7c948'
+      ctx.textAlign = 'right'
+      ctx.fillText(`🔥 ${streak} win streak`, W - PAD, 68)
+    }
+
+    // Top-3 game emojis (right side)
+    if (top3) {
+      ctx.font = '22px Arial, sans-serif'
+      ctx.textAlign = 'right'
+      ctx.fillText(top3, W - PAD, 110)
+    }
 
     if (roundHistory.length > 0) {
       // Divider
-      ctx.strokeStyle = 'rgba(0,0,0,0.1)'
-      ctx.lineWidth = 1.5
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)'
+      ctx.lineWidth = 1
       ctx.beginPath()
-      ctx.moveTo(PAD, HEADER_H - 8)
-      ctx.lineTo(W - PAD, HEADER_H - 8)
+      ctx.moveTo(PAD, HEADER_H)
+      ctx.lineTo(W - PAD, HEADER_H)
       ctx.stroke()
 
       roundHistory.forEach((r, idx) => {
         const cfg = MINIGAME_CONFIGS[r.minigameId]
         const iWonRow = r.winnerId === myPlayerId
         const isDraw = r.winnerId === null
-        const y = HEADER_H + idx * ROW_H
+        const y = HEADER_H + idx * ROW_H + 6
 
         // Row tint
         ctx.fillStyle = iWonRow
-          ? 'rgba(45,198,83,0.1)'
+          ? 'rgba(45,198,83,0.12)'
           : isDraw
-            ? 'rgba(0,0,0,0.03)'
-            : 'rgba(230,57,70,0.08)'
-        ctx.fillRect(PAD, y, W - PAD * 2, ROW_H - 4)
+            ? 'rgba(255,255,255,0.03)'
+            : 'rgba(230,57,70,0.12)'
+        ctx.fillRect(PAD - 8, y, W - PAD * 2 + 16, ROW_H - 4)
 
-        // Game emoji + label
-        ctx.font = '700 15px Arial, sans-serif'
-        ctx.fillStyle = '#000'
+        // Game label
+        ctx.font = '700 14px Arial, sans-serif'
+        ctx.fillStyle = 'rgba(255,255,255,0.85)'
         ctx.textAlign = 'left'
-        ctx.fillText(`${cfg.emoji}  ${cfg.label}`, PAD + 10, y + 26)
+        ctx.fillText(`${cfg.emoji}  ${cfg.label}`, PAD, y + 22)
 
-        // Winner
-        ctx.font = '900 13px Arial, sans-serif'
+        // Result
+        ctx.font = '900 12px Arial, sans-serif'
         ctx.textAlign = 'right'
         ctx.fillStyle = iWonRow ? '#2dc653' : isDraw ? '#888' : '#e63946'
-        const label = isDraw ? '🤝 Draw' : iWonRow ? `🏆 ${myNickname}` : `💀 ${oppNickname}`
-        ctx.fillText(label, W - PAD - 10, y + 26)
+        ctx.fillText(
+          isDraw ? '🤝 Draw' : iWonRow ? `🏆 ${myNickname}` : `💀 ${oppNickname}`,
+          W - PAD,
+          y + 22
+        )
       })
     }
 
     // Footer
     ctx.textAlign = 'center'
-    ctx.font = '700 13px Arial, sans-serif'
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'
-    ctx.fillText('⚔️  1v1.me  •  Settle it. Once and for all.', W / 2, H - 14)
+    ctx.font = '700 12px Arial, sans-serif'
+    ctx.fillStyle = 'rgba(255,255,255,0.2)'
+    ctx.fillText('⚔️  1v1 ME  •  Settle it. Once and for all.', W / 2, H - 12)
 
     return new Promise((resolve, reject) =>
       canvas.toBlob(

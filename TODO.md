@@ -27,7 +27,7 @@
 - [x] **Game transition countdown** — 3-2-1 → GO! overlay already built with `anim-count-in` and tick sounds.
 - [x] **"How to play" inline tooltip per game** — `?` button in orange game-label banner, shows `cfg.description`, auto-dismisses after 4s. Already solid.
 - [x] **Opponent emote name tag** — sender nickname shown above emote bubble; looks up `fromPlayerId` in `players[]`.
-- [ ] **Spectator emotes** — allow spectators to send emotes; identify by localStorage nickname or "Spectator N".
+- [x] **Spectator emotes** — emote buttons added to `SpectateMatchView`; spectator nickname sent in SPECTATE payload (from localStorage); if nickname matches a player's (case-insensitive) it gets " (Impostor)" appended; server broadcasts `fromName` for spectators; RoomPage emote nametag falls back to `fromName`.
 
 ---
 
@@ -46,8 +46,7 @@
 
 ### Result card image (do last — most impactful for Instagram/Stories)
 
-- [ ] **Result card generator** — render an off-screen `<div>` with the match result (winner, score, top-3 games, streak) and capture it with `html2canvas` or `dom-to-image-more`; offer as a PNG download + include in `navigator.share` files array on supported browsers. This is what gets shared to Instagram Stories, Snapchat, etc.
-  - Design: dark card, big score, player nicknames, game emojis, "1v1 ME" watermark.
+- [x] **Result card generator** — Canvas-drawn PNG: dark card (#18181b), accent bar (yellow/red), big score, nicknames, 🔥 streak badge, top-3 game emojis, per-round breakdown rows, "1v1 ME" watermark. Included in `navigator.share` files on mobile; clipboard-copy fallback on desktop.
 
 ### Open Graph / link preview
 

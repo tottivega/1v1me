@@ -297,6 +297,7 @@ export interface RematchVotePayload {
 
 export interface EmotePayload {
   fromPlayerId: string
+  fromName?: string // set for spectator emotes instead of looking up by playerId
   emote: string
 }
 

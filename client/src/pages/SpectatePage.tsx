@@ -4,6 +4,9 @@ import { useGameStore } from '../store/gameStore'
 import { MINIGAME_CONFIGS, type MinigameId } from '@shared/types'
 import TimerBar from '../components/TimerBar'
 import { SPECTATOR_COMPONENTS } from '../minigames/spectatorRegistry'
+import { playClick } from '../utils/sounds'
+
+const EMOTES = ['😂', '🔥', '💀', '👏']
 
 export default function SpectatePage() {
   const { roomId } = useParams<{ roomId: string }>()
@@ -100,8 +103,16 @@ function SpectateWaiting({ roomId }: { roomId: string }) {
 // ── Live match view ───────────────────────────────────────────────────────────
 
 function SpectateMatchView() {
-  const { players, scores, currentRound, currentMinigame, minigameState, roomStatus, roomConfig } =
-    useGameStore()
+  const {
+    players,
+    scores,
+    currentRound,
+    currentMinigame,
+    minigameState,
+    roomStatus,
+    roomConfig,
+    send,
+  } = useGameStore()
   const cfg = currentMinigame ? MINIGAME_CONFIGS[currentMinigame] : null
 
   return (
@@ -180,6 +191,44 @@ function SpectateMatchView() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Spectator emote buttons */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          zIndex: 90,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+        }}
+      >
+        {EMOTES.map((e) => (
+          <button
+            key={e}
+            onClick={() => {
+              playClick()
+              send('EMOTE', { emote: e })
+            }}
+            style={{
+              width: 44,
+              height: 44,
+              fontSize: 22,
+              background: 'var(--white)',
+              border: 'var(--border)',
+              borderRadius: 12,
+              cursor: 'pointer',
+              boxShadow: 'var(--shadow-sm)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {e}
+          </button>
+        ))}
       </div>
     </div>
   )
