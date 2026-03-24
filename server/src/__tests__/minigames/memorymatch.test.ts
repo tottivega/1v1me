@@ -1,12 +1,19 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import memorymatch from '../../minigames/memorymatch'
 import { makeRoom, makeMatch } from '../helpers'
 
 vi.mock('../../sync/broadcast', () => ({ broadcast: vi.fn() }))
 
 describe('memorymatch — integration', () => {
-  it('resolves early when both players submit, winner has more matches', () => {
+  beforeEach(() => {
     vi.useFakeTimers()
+    vi.clearAllMocks()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('resolves early when both players submit, winner has more matches', () => {
     const room = makeRoom()
     const onRoundDone = vi.fn()
     room.match = makeMatch('p1', 'p2', { onRoundDone })
@@ -26,7 +33,6 @@ describe('memorymatch — integration', () => {
   })
 
   it('ignores duplicate submissions from the same player', () => {
-    vi.useFakeTimers()
     const room = makeRoom()
     const onRoundDone = vi.fn()
     room.match = makeMatch('p1', 'p2', { onRoundDone })
