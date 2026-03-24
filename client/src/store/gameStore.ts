@@ -46,6 +46,7 @@ export interface MatchHistoryEntry {
   oppScore: number
   iWon: boolean
   date: string // ISO string
+  topGames?: string[] // top-3 game emojis played this match
 }
 
 export function getStreak(): number {
@@ -66,17 +67,28 @@ function recordMatchResult(
   iWon: boolean,
   opponentNickname: string,
   myScore: number,
-  oppScore: number
+  oppScore: number,
+  roundHistory: RoundRecord[]
 ) {
   try {
     const streak = iWon ? getStreak() + 1 : 0
     localStorage.setItem(STREAK_KEY, String(streak))
+    // Extract top-3 most-played game emojis from round history
+    const counts: Record<string, number> = {}
+    for (const r of roundHistory) {
+      counts[r.minigameId] = (counts[r.minigameId] ?? 0) + 1
+    }
+    const topGames = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([id]) => MINIGAME_CONFIGS[id as MinigameId]?.emoji ?? '🎮')
     const entry: MatchHistoryEntry = {
       opponentNickname,
       myScore,
       oppScore,
       iWon,
       date: new Date().toISOString(),
+      topGames,
     }
     const prev = getMatchHistory()
     localStorage.setItem(HISTORY_KEY, JSON.stringify([entry, ...prev].slice(0, HISTORY_MAX)))
@@ -441,7 +453,8 @@ export const useGameStore = create<GameState>((set, get) => ({
           iWon,
           opponent?.nickname ?? '???',
           p.scores[s.myPlayerId] ?? 0,
-          opponent ? (p.scores[opponent.id] ?? 0) : 0
+          opponent ? (p.scores[opponent.id] ?? 0) : 0,
+          p.roundHistory ?? []
         )
         set({
           matchWinnerId: p.winnerId,

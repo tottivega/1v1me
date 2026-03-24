@@ -106,6 +106,12 @@
 - [x] **Client-side Sentry** — `@sentry/react` installed; `Sentry.init()` runs in `main.tsx` only when `VITE_SENTRY_DSN` is set; `ErrorBoundary.componentDidCatch` calls `Sentry.captureException`; `client/.env.example` documents the var
 - [x] **Spectator late-join game state** — `SPECTATE_JOINED` payload includes `match.minigameState` snapshot; `SpectateGameState` in `SpectatePage` renders read-only views for all 11 games using the raw server state
 - [x] **Disconnected opponent overlay** — full-screen pause overlay when `roomStatus === 'reconnecting'`; shows opponent name + countdown timer; pointer-events blocked
+- [x] **`document.title` updates** — reflects room state: `Lobby · ROOM-CODE · 1v1 ME`, `Round N · Game Name · 1v1 ME`, `You won! 🏆 · 1v1 ME`; resets to `1v1 ME` on unmount
+- [x] **Suspense fallback** — lazy minigame chunk shows game emoji + label while loading instead of blank; uses `cfg.emoji` + `cfg.label` from `MINIGAME_CONFIGS`
+- [x] **LobbyGamePreview category filter** — "YOU MIGHT FACE…" grid reads `roomConfig.enabledCategories` and hides games outside the configured category set
+- [x] **Rematch cancel button** — while waiting for opponent's rematch vote, a "✕ Cancel" button appears; disconnects + navigates home
+- [x] **Emote keyboard shortcuts** — `1`/`2`/`3`/`4` keys fire the corresponding emote during a match; guarded against INPUT focus
+- [x] **Match history top-3 games** — `MatchHistoryEntry.topGames?: string[]` stores up to 3 most-played game emojis; tallied from `roundHistory` in `recordMatchResult`; rendered inline in `HistoryRow`
 
 ### Launch Hardening
 - [x] **Input length caps** — WordScramble guess capped at 50 chars; FastestTyper text sliced to 200 chars; Emote string capped at 10 chars

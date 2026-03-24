@@ -344,6 +344,11 @@ function HistoryRow({ entry }: { entry: MatchHistoryEntry }) {
       >
         {entry.myScore}–{entry.oppScore}
       </span>
+      {entry.topGames && entry.topGames.length > 0 && (
+        <span style={{ fontSize: 13, letterSpacing: 1, opacity: 0.7 }}>
+          {entry.topGames.join('')}
+        </span>
+      )}
       <span style={{ fontSize: 11, opacity: 0.45, minWidth: 42, textAlign: 'right' }}>{label}</span>
     </div>
   )

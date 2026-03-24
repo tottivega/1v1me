@@ -26,10 +26,42 @@ function getSavedSession(): { roomId: string; playerId: string } | null {
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>()
-  const { roomStatus, myNickname, wsStatus, roomNotFound, connect, reconnectSaved } = useGameStore()
+  const {
+    roomStatus,
+    myNickname,
+    wsStatus,
+    roomNotFound,
+    connect,
+    reconnectSaved,
+    currentMinigame,
+    currentRound,
+    matchWinnerId,
+    myPlayerId,
+  } = useGameStore()
   const navigate = useNavigate()
   const [rematchFlash, setRematchFlash] = useState(false)
   const prevStatus = useRef<string>(roomStatus)
+
+  // Document title — reflects current room state
+  useEffect(() => {
+    const base = '1v1 ME'
+    if (roomStatus === 'lobby' || roomStatus === 'ready') {
+      document.title = roomId ? `Lobby · ${roomId} · ${base}` : `Lobby · ${base}`
+    } else if (roomStatus === 'match_end') {
+      const iWon = matchWinnerId === myPlayerId
+      document.title = iWon ? `You won! 🏆 · ${base}` : `You lost 💀 · ${base}`
+    } else if (currentMinigame) {
+      const cfg = MINIGAME_CONFIGS[currentMinigame]
+      document.title = cfg
+        ? `Round ${currentRound} · ${cfg.label} · ${base}`
+        : `Round ${currentRound} · ${base}`
+    } else {
+      document.title = base
+    }
+    return () => {
+      document.title = base
+    }
+  }, [roomStatus, roomId, currentMinigame, currentRound, matchWinnerId, myPlayerId])
 
   // Detect match_end → lobby transition = rematch accepted
   useEffect(() => {
@@ -556,6 +588,11 @@ function RoomSettings({
 }
 
 function LobbyGamePreview() {
+  const { roomConfig } = useGameStore()
+  const enabledCategories = roomConfig.enabledCategories
+  const games = Object.entries(MINIGAME_CONFIGS).filter(
+    ([, cfg]) => enabledCategories.length === 0 || enabledCategories.includes(cfg.category)
+  )
   return (
     <div style={{ width: '100%', maxWidth: 460 }}>
       <div
@@ -571,7 +608,7 @@ function LobbyGamePreview() {
           gap: 8,
         }}
       >
-        {Object.entries(MINIGAME_CONFIGS).map(([id, cfg]) => (
+        {games.map(([id, cfg]) => (
           <div
             key={id}
             style={{
@@ -745,6 +782,21 @@ function MatchView() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRound, currentMinigame])
+
+  // Emote keyboard shortcuts (1/2/3/4)
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.target as HTMLElement)?.tagName === 'INPUT') return
+      const idx = ['1', '2', '3', '4'].indexOf(e.key)
+      if (idx === -1) return
+      const emote = EMOTES[idx]
+      if (!emote) return
+      playClick()
+      send('EMOTE', { emote })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [send])
 
   // How-to-play tooltip
   const [showTooltip, setShowTooltip] = useState(false)
@@ -1057,7 +1109,24 @@ function MatchView() {
       {/* Minigame area */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {MinigameComp ? (
-          <Suspense fallback={null}>
+          <Suspense
+            fallback={
+              <div
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  opacity: 0.5,
+                }}
+              >
+                <div style={{ fontSize: 48 }}>{cfg?.emoji ?? '🎮'}</div>
+                <div className="label">{cfg?.label ?? 'Loading…'}</div>
+              </div>
+            }
+          >
             <MinigameComp />
           </Suspense>
         ) : (
@@ -1339,9 +1408,21 @@ function MatchEndView() {
 
       <div className="match-end-actions" style={{ display: 'flex', gap: 12 }}>
         {rematchVoting ? (
-          <button className="btn btn-orange btn-lg anim-pulse" disabled>
-            ⏳ Waiting for opponent…
-          </button>
+          <>
+            <button className="btn btn-orange btn-lg anim-pulse" disabled>
+              ⏳ Waiting for opponent…
+            </button>
+            <button
+              className="btn btn-white"
+              onClick={() => {
+                playClick()
+                disconnect()
+                navigate('/')
+              }}
+            >
+              ✕ Cancel
+            </button>
+          </>
         ) : (
           <button className="btn btn-orange btn-lg" onClick={rematch}>
             🔁 Rematch
