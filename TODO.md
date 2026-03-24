@@ -10,9 +10,9 @@
 
 - [x] **Device-aware game filtering** — tag each game in `MINIGAME_CONFIGS` with a `platforms` field (`'all' | 'desktop-only' | 'mobile-only'`). Client detects mobile via `window.matchMedia('(pointer: coarse)')` and sends `isMobile: boolean` in the `JOIN` message. Server stores it on `Player`, and `shuffleQueue` excludes `desktop-only` and `mobile-only` games when appropiate. Fastest Typer is the primary candidate for `desktop-only`; others can be evaluated as the roster grows. This avoids gutting the game on mobile while keeping it great on desktop.
 
-- [ ] **Touch target audit** — walk every minigame and check that all interactive elements are ≥ 44×44px on mobile. ClickSpeed ripple, RPS throw buttons, and Memory Match symbol taps are the most likely offenders. Fix any that fail.
+- [x] **Touch target audit** — walk every minigame and check that all interactive elements are ≥ 44×44px on mobile. ClickSpeed ripple, RPS throw buttons, and Memory Match symbol taps are the most likely offenders. Fix any that fail.
 
-- [ ] **Landscape lock warning** — on screens narrower than 380px in landscape, show a soft banner: "Rotate your phone for a better experience 📱". Dismiss on rotate. CSS media query + small React component, no libraries.
+- [x] **Landscape lock warning** — on screens narrower than 380px in landscape, show a soft banner: "Rotate your phone for a better experience 📱". Dismiss on rotate. CSS media query + small React component, no libraries.
 
 ---
 

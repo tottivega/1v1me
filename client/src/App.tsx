@@ -6,6 +6,7 @@ import RoomsPage from './pages/RoomsPage'
 import DevPanel from './components/DevPanel'
 import ErrorToast from './components/ErrorToast'
 import SoundToggle from './components/SoundToggle'
+import LandscapeWarning from './components/LandscapeWarning'
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
       {import.meta.env.DEV && <DevPanel />}
       <ErrorToast />
       <SoundToggle />
+      <LandscapeWarning />
     </>
   )
 }

@@ -171,7 +171,7 @@ export default function ColorWord() {
               onClick={() => handlePick(color)}
               style={{
                 width: 90,
-                height: 44,
+                height: 52,
                 borderRadius: 8,
                 border: '3px solid var(--black)',
                 boxShadow: picked === color ? 'none' : '3px 3px 0 var(--black)',

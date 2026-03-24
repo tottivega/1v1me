@@ -224,7 +224,7 @@ export default function MemoryMatch() {
           </div>
 
           {picks.length > 0 && (
-            <button className="btn btn-white btn-sm" onClick={removeLast}>
+            <button className="btn btn-white btn-sm" onClick={removeLast} style={{ minHeight: 44 }}>
               ← Undo last
             </button>
           )}
