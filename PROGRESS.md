@@ -112,6 +112,8 @@
 - [x] **Rematch cancel button** — while waiting for opponent's rematch vote, a "✕ Cancel" button appears; disconnects + navigates home
 - [x] **Emote keyboard shortcuts** — `1`/`2`/`3`/`4` keys fire the corresponding emote during a match; guarded against INPUT focus
 - [x] **Match history top-3 games** — `MatchHistoryEntry.topGames?: string[]` stores up to 3 most-played game emojis; tallied from `roundHistory` in `recordMatchResult`; rendered inline in `HistoryRow`
+- [x] **Confetti `prefers-reduced-motion`** — `@media (prefers-reduced-motion: reduce)` guard in `index.css` hides all confetti pieces for users who opt out of motion
+- [x] **OG image** — `og-image.svg` (1200×630) in `client/public/`; dark card with brand colors, category pills, game emoji accents; `og:url` + `og:image` wired in `index.html`
 
 ### Launch Hardening
 - [x] **Input length caps** — WordScramble guess capped at 50 chars; FastestTyper text sliced to 200 chars; Emote string capped at 10 chars
