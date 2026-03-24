@@ -38,15 +38,10 @@
 
 ### Platform deep links (add alongside native share)
 
-- [ ] **Twitter / X** — `https://twitter.com/intent/tweet?text=...` pre-filled with result + URL; opens in new tab.
-- [ ] **WhatsApp** — `https://wa.me/?text=...` with the same message; most effective on mobile.
-- [ ] **Reddit** — `https://www.reddit.com/submit?url=...&title=...`; useful for posting in gaming subreddits.
-- [ ] **Copy for Discord** — plain "copy message" button with a Discord-flavoured block:
-  ```
-  🎮 **1v1 ME** — I beat {opponent} {myScore}–{oppScore}
-  👉 {url}
-  ```
-  Discord doesn't support deep links so copy is the right move.
+- [x] **Twitter / X** — `https://twitter.com/intent/tweet?text=...` pre-filled with result + URL; opens in new tab.
+- [x] **WhatsApp** — `https://wa.me/?text=...` with the same message; most effective on mobile.
+- [x] **Reddit** — `https://www.reddit.com/submit?url=...&title=...`; useful for posting in gaming subreddits.
+- [x] **Copy for Discord** — "Discord" button copies markdown-bold block to clipboard; shows ✓ on success.
 
 ### Result card image (do last — most impactful for Instagram/Stories)
 

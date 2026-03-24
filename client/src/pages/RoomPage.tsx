@@ -1458,6 +1458,30 @@ function ShareButton({
 }) {
   const { roundHistory, myPlayerId } = useGameStore()
   const [saved, setSaved] = useState(false)
+  const [discordCopied, setDiscordCopied] = useState(false)
+
+  const appUrl = (import.meta.env.VITE_APP_URL as string | undefined) ?? 'https://1v1me.vercel.app'
+  const shareText = iWon
+    ? `I beat ${oppNickname} ${myScore}–${oppScore} in 1v1 ME 🏆`
+    : `Close one — ${oppNickname} beat me ${oppScore}–${myScore} in 1v1 ME 😤`
+
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(`${shareText} ${appUrl}`)}`
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${shareText}\n${appUrl}`)}`
+  const redditUrl = `https://www.reddit.com/submit?url=${encodeURIComponent(appUrl)}&title=${encodeURIComponent(shareText)}`
+  const discordText = iWon
+    ? `🎮 **1v1 ME** — I beat ${oppNickname} ${myScore}–${oppScore}\n👉 ${appUrl}`
+    : `🎮 **1v1 ME** — ${oppNickname} beat me ${oppScore}–${myScore}\n👉 ${appUrl}`
+
+  async function copyDiscord() {
+    playClick()
+    try {
+      await navigator.clipboard.writeText(discordText)
+    } catch {
+      // silent
+    }
+    setDiscordCopied(true)
+    setTimeout(() => setDiscordCopied(false), 2500)
+  }
 
   async function buildCard(): Promise<Blob> {
     const PAD = 28
@@ -1551,11 +1575,6 @@ function ShareButton({
 
   async function share() {
     playClick()
-    const appUrl =
-      (import.meta.env.VITE_APP_URL as string | undefined) ?? 'https://1v1me.vercel.app'
-    const shareText = iWon
-      ? `I beat ${oppNickname} ${myScore}–${oppScore} in 1v1 ME 🏆`
-      : `Close one — ${oppNickname} beat me ${oppScore}–${myScore} in 1v1 ME 😤`
 
     // Tier 1: native share with result card image (mobile, supports file share)
     try {
@@ -1595,9 +1614,54 @@ function ShareButton({
   }
 
   return (
-    <button className="btn btn-white" onClick={share}>
-      {saved ? '✓ Copied!' : '🔗 Share Result'}
-    </button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+      <button className="btn btn-white" onClick={share}>
+        {saved ? '✓ Copied!' : '🔗 Share Result'}
+      </button>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <a
+          className="btn btn-sm btn-white"
+          href={twitterUrl}
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => playClick()}
+          title="Share on X / Twitter"
+          style={{ fontSize: 12 }}
+        >
+          𝕏
+        </a>
+        <a
+          className="btn btn-sm btn-white"
+          href={whatsappUrl}
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => playClick()}
+          title="Share on WhatsApp"
+          style={{ fontSize: 12 }}
+        >
+          WA
+        </a>
+        <a
+          className="btn btn-sm btn-white"
+          href={redditUrl}
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => playClick()}
+          title="Share on Reddit"
+          style={{ fontSize: 12 }}
+        >
+          Reddit
+        </a>
+        <button
+          className="btn btn-sm btn-white"
+          onClick={copyDiscord}
+          title="Copy for Discord"
+          style={{ fontSize: 12 }}
+        >
+          {discordCopied ? '✓' : 'Discord'}
+        </button>
+      </div>
+    </div>
   )
 }
 
