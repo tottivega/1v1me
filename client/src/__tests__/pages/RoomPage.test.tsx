@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import RoomPage from '../../pages/RoomPage'
 import { useGameStore } from '../../store/gameStore'
@@ -146,9 +146,9 @@ describe('MatchEndView', () => {
     expect(screen.getByText(/You Lose/i)).toBeInTheDocument()
   })
 
-  it('shows final score', () => {
+  it('shows final score', async () => {
     renderMatchEnd()
-    expect(screen.getByText('3')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('3')).toBeInTheDocument())
     expect(screen.getByText('1')).toBeInTheDocument()
   })
 

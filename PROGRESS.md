@@ -114,6 +114,11 @@
 - [x] **Match history top-3 games** — `MatchHistoryEntry.topGames?: string[]` stores up to 3 most-played game emojis; tallied from `roundHistory` in `recordMatchResult`; rendered inline in `HistoryRow`
 - [x] **Confetti `prefers-reduced-motion`** — `@media (prefers-reduced-motion: reduce)` guard in `index.css` hides all confetti pieces for users who opt out of motion
 - [x] **OG image** — `og-image.svg` (1200×630) in `client/public/`; dark card with brand colors, category pills, game emoji accents; `og:url` + `og:image` wired in `index.html`
+- [x] **Animated score counter** — match-end screen counts up from 0 to final score via `requestAnimationFrame` with cubic ease-out over 600ms
+- [x] **Win streak badge in lobby** — `🔥 N` badge next to nickname when streak ≥ 2; `PlayerInfo.streak?` threaded from localStorage → SET_NICKNAME → server `Player` → `toPlayerInfos` → `PlayerSlot`
+- [x] **Native share + platform deep links** — three-tier share flow: `navigator.share` with PNG (mobile) → text-only share → clipboard copy with ✓ flash; Twitter/X, WhatsApp, Reddit, Discord (clipboard markdown) deep links below
+- [x] **Result card generator** — Canvas PNG: dark `#18181b` card, accent bar (yellow win/red loss), large score, nicknames, 🔥 streak badge, top-3 game emojis, per-round breakdown rows, "1v1 ME" footer watermark; included in `navigator.share files` on mobile
+- [x] **Spectator emotes** — emote buttons in `SpectateMatchView`; spectator nickname from localStorage sent in SPECTATE payload; impostor detection (case-insensitive match against player nicknames appends " (Impostor)"); `EmotePayload.fromName?` in shared types; `EMOTE_RECEIVED` broadcasts `fromName` for spectators; RoomPage emote name tag falls back to `fromName`
 
 ### Launch Hardening
 - [x] **Input length caps** — WordScramble guess capped at 50 chars; FastestTyper text sliced to 200 chars; Emote string capped at 10 chars
