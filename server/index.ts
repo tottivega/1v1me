@@ -22,7 +22,30 @@ const PORT = Number(process.env.PORT) || 3001
 
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN // e.g. https://1v1me.vercel.app
 
+// ── HTTP rate limiter (per-IP, sliding window) ─────────────────────────────
+const HTTP_RATE_LIMIT = 30
+const HTTP_RATE_WINDOW_MS = 10_000
+const httpRateMap = new Map<string, { count: number; windowStart: number }>()
+
+function isHttpRateLimited(ip: string): boolean {
+  const now = Date.now()
+  const entry = httpRateMap.get(ip)
+  if (!entry || now - entry.windowStart >= HTTP_RATE_WINDOW_MS) {
+    httpRateMap.set(ip, { count: 1, windowStart: now })
+    return false
+  }
+  entry.count++
+  return entry.count > HTTP_RATE_LIMIT
+}
+
 const server = createServer((req, res) => {
+  const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ?? req.socket.remoteAddress ?? 'unknown'
+  if (isHttpRateLimited(ip)) {
+    res.writeHead(429, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ error: 'Too many requests' }))
+    return
+  }
+
   const url = req.url?.split('?')[0]
 
   if (url === '/health') {

@@ -3,17 +3,44 @@ import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 
 const WORDS = [
-  'planet', 'bridge', 'forest', 'castle', 'dragon', 'silver', 'bottle',
-  'candle', 'feather', 'jungle', 'marble', 'pillow', 'rocket', 'saddle',
-  'temple', 'trophy', 'turtle', 'violin', 'walrus', 'zipper', 'anchor',
-  'blanket', 'captain', 'diamond', 'eclipse', 'flutter', 'lantern',
-  'penguin', 'sparrow', 'thunder', 'whisper', 'crystal',
+  'planet',
+  'bridge',
+  'forest',
+  'castle',
+  'dragon',
+  'silver',
+  'bottle',
+  'candle',
+  'feather',
+  'jungle',
+  'marble',
+  'pillow',
+  'rocket',
+  'saddle',
+  'temple',
+  'trophy',
+  'turtle',
+  'violin',
+  'walrus',
+  'zipper',
+  'anchor',
+  'blanket',
+  'captain',
+  'diamond',
+  'eclipse',
+  'flutter',
+  'lantern',
+  'penguin',
+  'sparrow',
+  'thunder',
+  'whisper',
+  'crystal',
 ]
 
 interface State {
-  answer:   string                    // never sent to clients until resolved
+  answer: string // never sent to clients until resolved
   scrambled: string
-  attempts: Record<string, number>    // wrong guess count per player
+  attempts: Record<string, number> // wrong guess count per player
   resolved: boolean
   winnerId: string | null
 }
@@ -33,9 +60,9 @@ function broadcastState(room: Room, state: State, revealAnswer = false) {
   broadcast(room, 'GAME_UPDATE', {
     state: {
       scrambled: state.scrambled,
-      attempts:  state.attempts,
-      resolved:  state.resolved,
-      winnerId:  state.winnerId,
+      attempts: state.attempts,
+      resolved: state.resolved,
+      winnerId: state.winnerId,
       ...(revealAnswer ? { answer: state.answer } : {}),
     },
   })
@@ -49,9 +76,9 @@ const wordscramble: MinigameModule = {
     const state: State = {
       answer,
       scrambled: scramble(answer),
-      attempts:  {},
-      resolved:  false,
-      winnerId:  null,
+      attempts: {},
+      resolved: false,
+      winnerId: null,
     }
     for (const p of room.players) state.attempts[p.id] = 0
     room.match!.minigameState = state
@@ -65,24 +92,26 @@ const wordscramble: MinigameModule = {
     const state = room.match!.minigameState as State
     if (state.resolved) return
 
-    const guess = typeof msg.word === 'string' ? msg.word.toLowerCase().trim() : ''
+    const raw = typeof msg.word === 'string' ? msg.word : ''
+    if (raw.length > 50) return
+    const guess = raw.toLowerCase().trim()
 
     if (guess !== state.answer) {
       state.attempts[playerId] = (state.attempts[playerId] ?? 0) + 1
-      broadcastState(room, state)  // opponent can see your attempt count climbing
+      broadcastState(room, state) // opponent can see your attempt count climbing
       return
     }
 
     // Correct!
     state.resolved = true
     state.winnerId = playerId
-    broadcastState(room, state, true)  // reveal the answer
+    broadcastState(room, state, true) // reveal the answer
     setTimeout(() => room.match?.onRoundDone?.({ winnerId: playerId, reason: 'completed' }), 1500)
   },
 
   getResult(room): MinigameResult {
     const state = room.match!.minigameState as State
-    broadcastState(room, state, true)  // reveal on timeout
+    broadcastState(room, state, true) // reveal on timeout
     if (state.winnerId) return { winnerId: state.winnerId, reason: 'completed' }
     // Nobody guessed — random winner
     const [p1, p2] = room.players

@@ -58,9 +58,9 @@
 
 These are required before the April deploy.
 
-- [ ] **Input length caps on all server handlers** — currently only nickname is capped (18 chars). Audit every `handleInput` path: WordScramble guess, FastestTyper text, and any future string inputs. Reject anything over a reasonable limit (e.g. 200 chars) before processing.
+- [x] **Input length caps on all server handlers** — currently only nickname is capped (18 chars). Audit every `handleInput` path: WordScramble guess, FastestTyper text, and any future string inputs. Reject anything over a reasonable limit (e.g. 200 chars) before processing.
 
-- [ ] **Rate-limit HTTP endpoints** — `GET /rooms` and `GET /health` have no rate limiting. Add a simple per-IP counter (sliding 10s window, max 30 requests) in the `createServer` callback before delegating to the route handlers. Prevents trivial scraping abuse.
+- [x] **Rate-limit HTTP endpoints** — `GET /rooms` and `GET /health` have no rate limiting. Add a simple per-IP counter (sliding 10s window, max 30 requests) in the `createServer` callback before delegating to the route handlers. Prevents trivial scraping abuse.
 
 ---
 

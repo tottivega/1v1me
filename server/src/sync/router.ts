@@ -181,6 +181,7 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
       const room = getRoom(conn.roomId)
       if (!room) return
       const { emote } = msg.payload as { emote: string }
+      if (!emote || typeof emote !== 'string' || emote.length > 10) return
       // Broadcast to all players and spectators in the room
       for (const player of room.players) {
         send(player.ws, 'EMOTE_RECEIVED', { fromPlayerId: conn.playerId, emote })
