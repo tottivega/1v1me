@@ -8,7 +8,7 @@
 
 **1v1 ME** is a browser-based multiplayer minigame platform. Two players settle disputes by competing in a Best-of-N series of randomly selected minigames. No login required — invite-link rooms, server-authoritative results.
 
-**Status:** Feature-complete for MVP. UX-polished. Deploy is planned for April. Current focus: staging smoke test before production.
+**Status:** Feature-complete for MVP. UX-polished. Deploy is planned for April. Current focus: improve the underlying systems and UX until we reach a state where we will solely focus on minigame creation, polish and art style.
 
 ---
 
