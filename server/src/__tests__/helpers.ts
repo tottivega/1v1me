@@ -19,6 +19,7 @@ export function makePlayer(id: string, nickname = 'Player') {
     connected: true,
     reconnectTimer: null,
     isMobile: false,
+    streak: 0,
   }
 }
 

@@ -10,23 +10,24 @@
 
 ### Match End & Results
 
-- [ ] **Round-by-round breakdown** — collapsible panel on the match-end screen listing each round: game emoji, winner, score delta. Makes the result feel earned instead of just a number.
-- [ ] **Animated score counter** — final scores count up from 0 on the match-end screen (CSS counter or requestAnimationFrame). Simple but satisfying.
+- [x] **Round-by-round breakdown** — panel on the match-end screen listing each round: game emoji, winner. Already built.
+- [x] **Animated score counter** — final scores ease-out count up from 0 on mount via `requestAnimationFrame`.
 - [x] **Confetti burst on win** — custom CSS `confetti-fall` animation, 60 pieces, 4 shapes, brand colors, drift physics. `prefers-reduced-motion` guard added to `index.css`.
-- [ ] **Win streak badge in lobby** — if a player has a streak ≥ 2, show `🔥 N` next to their name in the lobby player card. Server reads it from the `ROOM_JOINED` payload (client sends it as part of `SET_NICKNAME`).
+- [x] **Win streak badge in lobby** — `🔥 N` badge shown next to nickname when streak ≥ 2; client sends streak in `SET_NICKNAME`, server stores it on `Player`, `toPlayerInfos` includes it in `PlayerInfo`, rendered in `PlayerSlot`.
 
 ### Lobby & Room
 
-- [ ] **Copy link button with ✓ flash** — replace the current QR-only share with a `📋 Copy Link` button next to the QR code; shows `✓ Copied!` for 1.5s using `navigator.clipboard`. First thing friends need to join.
-- [ ] **Room link as shareable URL** — `window.location.href` already contains the room code; make sure clicking the link in a browser takes you directly to `NicknameGate`. Currently it does — just needs a test + visible "share this URL" affordance.
-- [ ] **"Waiting for opponent" animation** — replace static "Waiting for opponent…" text in lobby with a pulsing avatar placeholder + "Share this link to invite a friend". Reduces the blank-screen moment.
-- [ ] **Game count badge** — show how many games are in the current rotation on the lobby config panel (e.g. "8 games · 3 rounds"). Helps players know what they're signing up for. Make sure games are removed from the pool after every round and the game count badge reacts accordingly.
+- [x] **Copy link button with ✓ flash** — `📋 Copy Invite Link` button already present; shows `✅ Copied!` for 1.5s.
+- [x] **Room link as shareable URL** — direct URL visits land on `NicknameGate`; invite URL visible and copyable.
+- [x] **"Waiting for opponent" animation** — pulsing text + `📋 Share this link to invite a friend` copy button shown when no opponent present.
+- [x] **Game count badge** — `{N} games in pool · best of {X}` summary line at the bottom of `RoomSettings`; reacts to category filter changes.
 
 ### In-Match Feel
 
-- [ ] **Game transition countdown** — brief 3-2-1 overlay between rounds (before the next game starts) so players know something is about to happen instead of a cold cut.
+- [x] **Game transition countdown** — 3-2-1 → GO! overlay already built with `anim-count-in` and tick sounds.
 - [x] **"How to play" inline tooltip per game** — `?` button in orange game-label banner, shows `cfg.description`, auto-dismisses after 4s. Already solid.
-- [ ] **Opponent emote name tag** — show the opponent's nickname above their emote bubble so it's clear who sent it. Allow spectators to send emotes as well, try to find spectator nickname from their localStorage data and if it's not available just name then "Spectator N" where N is their number.
+- [x] **Opponent emote name tag** — sender nickname shown above emote bubble; looks up `fromPlayerId` in `players[]`.
+- [ ] **Spectator emotes** — allow spectators to send emotes; identify by localStorage nickname or "Spectator N".
 
 ---
 

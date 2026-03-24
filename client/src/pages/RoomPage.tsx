@@ -460,8 +460,13 @@ function LobbyView({ roomId }: { roomId: string }) {
       )}
 
       {!opponent && (
-        <div className="subtitle anim-pulse" style={{ opacity: 0.5 }}>
-          Waiting for your opponent to join…
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+          <div className="subtitle anim-pulse" style={{ opacity: 0.5 }}>
+            Waiting for your opponent to join…
+          </div>
+          <button className="btn btn-yellow btn-sm" onClick={copyLink}>
+            {copied ? '✓ Copied!' : '📋 Share this link to invite a friend'}
+          </button>
         </div>
       )}
 
@@ -583,6 +588,21 @@ function RoomSettings({
           })}
         </div>
       </div>
+
+      {/* Game pool summary */}
+      {(() => {
+        const count = Object.values(MINIGAME_CONFIGS).filter(
+          (cfg) =>
+            config.enabledCategories.length === 0 || config.enabledCategories.includes(cfg.category)
+        ).length
+        return (
+          <div
+            style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', fontWeight: 700, textAlign: 'right' }}
+          >
+            {count} game{count !== 1 ? 's' : ''} in pool · best of {config.bestOf}
+          </div>
+        )
+      })()}
     </div>
   )
 }
@@ -660,7 +680,13 @@ function LobbyGamePreview() {
 function PlayerSlot({
   player,
 }: {
-  player: { nickname: string; avatar: string; ready: boolean; connected: boolean } | null
+  player: {
+    nickname: string
+    avatar: string
+    ready: boolean
+    connected: boolean
+    streak?: number
+  } | null
 }) {
   return (
     <div
@@ -702,6 +728,21 @@ function PlayerSlot({
         >
           {player ? player.nickname : 'Waiting…'}
         </span>
+        {player?.streak != null && player.streak >= 2 && (
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 900,
+              background: 'var(--orange)',
+              color: 'var(--white)',
+              border: '2px solid var(--black)',
+              borderRadius: 8,
+              padding: '1px 6px',
+            }}
+          >
+            🔥 {player.streak}
+          </span>
+        )}
       </div>
       {player && (
         <div className={`badge ${player.ready ? 'badge-green' : 'badge-orange'}`}>
@@ -1048,24 +1089,47 @@ function MatchView() {
       )}
 
       {/* Incoming emote pop */}
-      {incomingEmote && (
-        <div
-          className="anim-pop"
-          style={{
-            position: 'fixed',
-            top: 80,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 120,
-            fontSize: 64,
-            pointerEvents: 'none',
-            userSelect: 'none',
-            filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
-          }}
-        >
-          {incomingEmote.emote}
-        </div>
-      )}
+      {incomingEmote &&
+        (() => {
+          const sender = players.find((p) => p.id === incomingEmote.fromPlayerId)
+          const senderName = sender ? (sender.id === myPlayerId ? 'You' : sender.nickname) : null
+          return (
+            <div
+              className="anim-pop"
+              style={{
+                position: 'fixed',
+                top: 80,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 120,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 2,
+                pointerEvents: 'none',
+                userSelect: 'none',
+              }}
+            >
+              {senderName && (
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    background: 'rgba(0,0,0,0.6)',
+                    color: '#fff',
+                    padding: '2px 8px',
+                    borderRadius: 8,
+                  }}
+                >
+                  {senderName}
+                </div>
+              )}
+              <div style={{ fontSize: 64, filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))' }}>
+                {incomingEmote.emote}
+              </div>
+            </div>
+          )
+        })()}
 
       {/* Emote buttons */}
       <div
@@ -1256,6 +1320,18 @@ function MatchEndView() {
   const myScore = scores[myPlayerId] ?? 0
   const oppScore = opponent ? (scores[opponent.id] ?? 0) : 0
 
+  const [displayedScores, setDisplayedScores] = useState({ my: 0, opp: 0 })
+  useEffect(() => {
+    const duration = 600
+    const start = Date.now()
+    const tick = () => {
+      const ease = 1 - Math.pow(1 - Math.min((Date.now() - start) / duration, 1), 3)
+      setDisplayedScores({ my: Math.round(myScore * ease), opp: Math.round(oppScore * ease) })
+      if (ease < 1) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  }, [myScore, oppScore])
+
   function goHome() {
     playClick()
     disconnect()
@@ -1315,7 +1391,7 @@ function MatchEndView() {
                 lineHeight: 1,
               }}
             >
-              {myScore}
+              {displayedScores.my}
             </div>
             <div className="label">{me?.nickname ?? 'You'}</div>
           </div>
@@ -1336,7 +1412,7 @@ function MatchEndView() {
                 lineHeight: 1,
               }}
             >
-              {oppScore}
+              {displayedScores.opp}
             </div>
             <div className="label">{opponent?.nickname ?? 'Opponent'}</div>
           </div>

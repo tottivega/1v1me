@@ -37,5 +37,6 @@ export function toPlayerInfos(players: Player[]) {
     avatar: p.avatar,
     ready: p.ready,
     connected: p.connected,
+    ...(p.streak > 0 ? { streak: p.streak } : {}),
   }))
 }

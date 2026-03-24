@@ -248,7 +248,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           type: 'SET_NICKNAME',
           roomId,
           playerId: '',
-          payload: { nickname, isMobile },
+          payload: { nickname, isMobile, streak: getStreak() },
         })
       )
     }

@@ -157,6 +157,7 @@ export interface PlayerInfo {
   avatar: string
   ready: boolean
   connected: boolean
+  streak?: number
 }
 
 // ─── WebSocket Messages ───────────────────────────────────────────────────────

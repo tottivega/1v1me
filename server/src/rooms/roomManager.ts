@@ -35,7 +35,8 @@ export function joinOrCreateRoom(
   playerId: string,
   nickname: string,
   ws: WebSocket,
-  isMobile = false
+  isMobile = false,
+  streak = 0
 ): { room: Room } | { error: { code: string; message: string } } {
   let room = getRoom(roomId)
 
@@ -76,6 +77,7 @@ export function joinOrCreateRoom(
     connected: true,
     reconnectTimer: null,
     isMobile,
+    streak,
   }
 
   room.players.push(player)

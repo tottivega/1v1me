@@ -17,6 +17,7 @@ export interface Player {
   connected: boolean
   reconnectTimer: ReturnType<typeof setTimeout> | null
   isMobile: boolean
+  streak: number
 }
 
 export interface MatchState {
