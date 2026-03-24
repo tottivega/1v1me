@@ -24,6 +24,7 @@ import {
   type EmotePayload,
   type RoomConfig,
   type RoomConfigPayload,
+  type BanPhaseStartPayload,
 } from '@shared/types'
 
 // Module-level interval handle for the reconnect countdown (not reactive state)
@@ -32,6 +33,21 @@ function clearReconnectInterval() {
   if (_reconnectInterval) {
     clearInterval(_reconnectInterval)
     _reconnectInterval = null
+  }
+}
+
+// ── Anonymous user ID (localStorage) ─────────────────────────────────────────
+const USER_ID_KEY = '1v1me_userId'
+
+function getUserId(): string {
+  try {
+    const existing = localStorage.getItem(USER_ID_KEY)
+    if (existing) return existing
+    const id = crypto.randomUUID()
+    localStorage.setItem(USER_ID_KEY, id)
+    return id
+  } catch {
+    return crypto.randomUUID()
   }
 }
 
@@ -114,6 +130,12 @@ const MOCK_OPP: PlayerInfo = {
 // ── Types ─────────────────────────────────────────────────────────────────────
 type WsStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 
+export interface Toast {
+  id: string
+  message: string
+  type: 'error' | 'info' | 'success'
+}
+
 interface GameState {
   // Connection
   ws: WebSocket | null
@@ -146,8 +168,10 @@ interface GameState {
   // Reconnect countdown (seconds remaining, null when no one is disconnected)
   reconnectCountdown: number | null
 
-  // Error toast
-  errorMessage: string | null
+  // Toast notifications queue (max 3 visible, FIFO, each auto-dismisses after 4s)
+  toasts: Toast[]
+  pushToast: (message: string, type?: Toast['type']) => void
+  dismissToast: (id: string) => void
 
   // Room not found (server returned ROOM_NOT_FOUND error)
   roomNotFound: boolean
@@ -169,8 +193,12 @@ interface GameState {
   myColor: string // 'var(--blue)' or 'var(--orange)'
   oppColor: string // opposite of myColor
 
-  // Room configuration (best-of, enabled categories)
+  // Room configuration (best-of, enabled categories, ban count)
   roomConfig: RoomConfig
+
+  // Ban phase state
+  banPhasePool: MinigameId[] | null
+  banPhaseCount: number
 
   // ── Real actions ─────────────────────────────────────────────────────────
   connect: (roomId: string, nickname: string) => void
@@ -219,7 +247,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   roundHistory: [],
   minigameState: null,
   reconnectCountdown: null,
-  errorMessage: null,
+  toasts: [],
   roomNotFound: false,
   isSpectator: false,
   spectatorCount: 0,
@@ -229,6 +257,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   myColor: 'var(--blue)',
   oppColor: 'var(--orange)',
   roomConfig: { ...DEFAULT_ROOM_CONFIG },
+  banPhasePool: null,
+  banPhaseCount: 0,
 
   // ── Real: WebSocket connection ───────────────────────────────────────────
 
@@ -248,7 +278,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           type: 'SET_NICKNAME',
           roomId,
           playerId: '',
-          payload: { nickname, isMobile, streak: getStreak() },
+          payload: { nickname, isMobile, streak: getStreak(), userId: getUserId() },
         })
       )
     }
@@ -404,6 +434,12 @@ export const useGameStore = create<GameState>((set, get) => ({
         break
       }
 
+      case 'BAN_PHASE_START': {
+        const p = msg.payload as BanPhaseStartPayload
+        set({ roomStatus: 'banning', banPhasePool: p.pool, banPhaseCount: p.banCount })
+        break
+      }
+
       case 'MATCH_START': {
         const p = msg.payload as MatchStartPayload
         const scores: Record<string, number> = {}
@@ -418,6 +454,8 @@ export const useGameStore = create<GameState>((set, get) => ({
           myColor,
           oppColor,
           matchStartedAt: Date.now(),
+          banPhasePool: null,
+          banPhaseCount: 0,
         })
         break
       }
@@ -565,14 +603,18 @@ export const useGameStore = create<GameState>((set, get) => ({
         break
       }
 
+      case 'SERVER_RESTARTING': {
+        get().pushToast('Server is restarting — please refresh in a moment', 'info')
+        break
+      }
+
       case 'ERROR': {
         const { code, message } = msg.payload as { code: string; message: string }
         console.error(`[Server error] ${code}: ${message}`)
         if (code === 'ROOM_NOT_FOUND') {
           set({ roomNotFound: true })
         } else {
-          set({ errorMessage: message })
-          setTimeout(() => set({ errorMessage: null }), 4000)
+          get().pushToast(message, 'error')
         }
         break
       }
@@ -581,6 +623,16 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   sendRoomConfig: (config) => {
     get().send('SET_ROOM_CONFIG', config)
+  },
+
+  pushToast: (message, type = 'error') => {
+    const id = Math.random().toString(36).slice(2)
+    set((s) => ({ toasts: [...s.toasts, { id, message, type }].slice(-3) }))
+    setTimeout(() => get().dismissToast(id), 4000)
+  },
+
+  dismissToast: (id) => {
+    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }))
   },
 
   // ── Mock actions ─────────────────────────────────────────────────────────

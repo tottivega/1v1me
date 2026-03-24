@@ -37,6 +37,9 @@ export function makeRoom(roomId = 'test-room'): Room {
     lastActivityAt: Date.now(),
     cleanupTimer: null,
     rematchVotes: new Set(),
+    banVotes: {},
+    roomMsgCount: 0,
+    roomWindowStart: Date.now(),
   }
 }
 

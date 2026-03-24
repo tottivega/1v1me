@@ -1,6 +1,6 @@
 import { WebSocket } from 'ws'
 import { v4 as uuidv4 } from 'uuid'
-import type { ClientMessage, MinigameCategory, RoomConfig } from '@shared/types'
+import type { ClientMessage, MinigameCategory, RoomConfig, SetNicknamePayload } from '@shared/types'
 import { send, toPlayerInfos } from './broadcast'
 import { getRoom } from '../rooms/roomStore'
 import {
@@ -12,10 +12,11 @@ import {
   joinAsSpectator,
   removeSpectator,
 } from '../rooms/roomManager'
-import { handleGameInput, handleRoundReady } from '../match/matchController'
+import { handleGameInput, handleRoundReady, handleBanSubmit } from '../match/matchController'
 
-const RATE_LIMIT = 60 // max messages per window
+const RATE_LIMIT = 60 // max messages per window per connection
 const RATE_WINDOW_MS = 1000 // sliding window size
+const ROOM_RATE_LIMIT = 120 // max messages per window across all players in a room
 
 interface ConnState {
   playerId: string
@@ -56,6 +57,22 @@ export function onConnection(ws: WebSocket): void {
       return
     }
 
+    // Per-room rate limit: 120 msg/s across all players combined
+    if (conn.roomId) {
+      const room = getRoom(conn.roomId)
+      if (room) {
+        if (now - room.roomWindowStart >= RATE_WINDOW_MS) {
+          room.roomWindowStart = now
+          room.roomMsgCount = 0
+        }
+        room.roomMsgCount++
+        if (room.roomMsgCount > ROOM_RATE_LIMIT) {
+          send(ws, 'ERROR', { code: 'ROOM_RATE_LIMITED', message: 'Room message limit exceeded' })
+          return
+        }
+      }
+    }
+
     let msg: ClientMessage
     try {
       msg = JSON.parse(raw.toString()) as ClientMessage
@@ -87,14 +104,11 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
 
   switch (msg.type) {
     case 'SET_NICKNAME': {
-      const raw = (msg.payload as { nickname: string; isMobile?: boolean; streak?: number })
-        .nickname
-      const nickname = raw?.trim().replace(/\s+/g, ' ')
-      const isMobile = !!(msg.payload as { isMobile?: boolean }).isMobile
-      const streak = Math.max(
-        0,
-        Math.min(999, parseInt(String((msg.payload as { streak?: number }).streak ?? 0), 10) || 0)
-      )
+      const p = msg.payload as SetNicknamePayload
+      const nickname = p.nickname?.trim().replace(/\s+/g, ' ')
+      const isMobile = !!p.isMobile
+      const streak = Math.max(0, Math.min(999, parseInt(String(p.streak ?? 0), 10) || 0))
+      const userId = typeof p.userId === 'string' && p.userId.length <= 64 ? p.userId : undefined
       const roomId = msg.roomId
 
       if (!roomId || !nickname) {
@@ -102,7 +116,7 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
         return
       }
 
-      const result = joinOrCreateRoom(roomId, conn.playerId, nickname, ws, isMobile, streak)
+      const result = joinOrCreateRoom(roomId, conn.playerId, nickname, ws, isMobile, streak, userId)
 
       if ('error' in result) {
         send(ws, 'ERROR', result.error)
@@ -133,7 +147,7 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
       if (room.players[0]?.id !== conn.playerId) return
       if (room.status !== 'lobby' || room.players.some((p) => p.ready)) return
 
-      const { bestOf, enabledCategories } = msg.payload as Partial<RoomConfig>
+      const { bestOf, enabledCategories, banCount } = msg.payload as Partial<RoomConfig>
       const validBestOf = [3, 5, 7, 9]
       if (!bestOf || !validBestOf.includes(bestOf)) return
       if (
@@ -144,11 +158,27 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
         )
       )
         return
+      const validBanCount = [0, 1, 2, 3]
+      const resolvedBanCount = validBanCount.includes(banCount ?? -1)
+        ? (banCount as 0 | 1 | 2 | 3)
+        : 0
 
-      room.config = { bestOf, enabledCategories }
+      room.config = { bestOf, enabledCategories, banCount: resolvedBanCount }
       for (const player of room.players) {
         send(player.ws, 'ROOM_CONFIG', { config: room.config })
       }
+      break
+    }
+
+    case 'SUBMIT_BANS': {
+      if (!conn.roomId) return
+      const room = getRoom(conn.roomId)
+      if (!room) return
+      const { bannedGameIds } = msg.payload as { bannedGameIds?: unknown[] }
+      const ids = Array.isArray(bannedGameIds)
+        ? (bannedGameIds.filter((id) => typeof id === 'string') as string[])
+        : []
+      handleBanSubmit(room, conn.playerId, ids as import('@shared/types').MinigameId[])
       break
     }
 

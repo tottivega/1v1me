@@ -22,20 +22,31 @@ export default function RoomsPage() {
   const [error, setError] = useState<string | null>(null)
   const [lastRefresh, setLastRefresh] = useState(Date.now())
 
-  const fetchRooms = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/rooms`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data: OpenRoom[] = await res.json()
-      setRooms(data)
-      setError(null)
-    } catch {
-      setError('Could not reach server')
-    } finally {
-      setLoading(false)
-      setLastRefresh(Date.now())
-    }
-  }, [])
+  const [page, setPage] = useState(0)
+  const PAGE_SIZE = 20
+  const [total, setTotal] = useState(0)
+
+  const fetchRooms = useCallback(
+    async (pageNum = page) => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/rooms?limit=${PAGE_SIZE}&offset=${pageNum * PAGE_SIZE}`
+        )
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data: { rooms: OpenRoom[]; total: number } = await res.json()
+        setRooms(data.rooms)
+        setTotal(data.total)
+        setError(null)
+      } catch {
+        setError('Could not reach server')
+      } finally {
+        setLoading(false)
+        setLastRefresh(Date.now())
+      }
+       
+    },
+    [page]
+  )
 
   useEffect(() => {
     fetchRooms()
@@ -75,7 +86,7 @@ export default function RoomsPage() {
         <button className="btn btn-white" onClick={() => navigate('/')}>
           ← Back
         </button>
-        <button className="btn btn-orange" onClick={fetchRooms}>
+        <button className="btn btn-orange" onClick={() => fetchRooms()}>
           🔄 Refresh
         </button>
       </div>
@@ -143,6 +154,32 @@ export default function RoomsPage() {
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {total > PAGE_SIZE && (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button
+            className="btn btn-white btn-sm"
+            disabled={page === 0}
+            onClick={() => {
+              setPage((p) => p - 1)
+            }}
+          >
+            ← Prev
+          </button>
+          <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.6 }}>
+            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total}
+          </span>
+          <button
+            className="btn btn-white btn-sm"
+            disabled={(page + 1) * PAGE_SIZE >= total}
+            onClick={() => {
+              setPage((p) => p + 1)
+            }}
+          >
+            Next →
+          </button>
         </div>
       )}
 

@@ -30,20 +30,21 @@ export function clearAllRooms(): void {
   rooms.clear()
 }
 
-export function getOpenRooms(): Array<{
-  roomId: string
-  creatorNickname: string
-  createdAt: number
-}> {
-  const result: Array<{ roomId: string; creatorNickname: string; createdAt: number }> = []
+export function getOpenRooms(
+  limit = 20,
+  offset = 0
+): { rooms: Array<{ roomId: string; creatorNickname: string; createdAt: number }>; total: number } {
+  const all: Array<{ roomId: string; creatorNickname: string; createdAt: number }> = []
   for (const room of rooms.values()) {
     if (room.players.length === 1 && room.status === 'lobby') {
-      result.push({
+      all.push({
         roomId: room.roomId,
         creatorNickname: room.players[0]!.nickname,
         createdAt: room.createdAt,
       })
     }
   }
-  return result
+  // Sort newest-first, then paginate
+  all.sort((a, b) => b.createdAt - a.createdAt)
+  return { rooms: all.slice(offset, offset + limit), total: all.length }
 }

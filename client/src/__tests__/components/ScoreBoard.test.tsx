@@ -15,7 +15,11 @@ beforeEach(() => {
     myColor: 'var(--blue)',
     oppColor: 'var(--orange)',
     spectatorCount: 0,
-    roomConfig: { bestOf: 5, enabledCategories: ['reflex', 'math', 'luck', 'strategy', 'trivia'] },
+    roomConfig: {
+      bestOf: 5,
+      enabledCategories: ['reflex', 'math', 'luck', 'strategy', 'trivia'],
+      banCount: 0,
+    },
   })
 })
 
@@ -35,7 +39,7 @@ describe('ScoreBoard', () => {
   it('reflects bestOf=7 in round display and wins-needed', () => {
     useGameStore.setState({
       currentRound: 2,
-      roomConfig: { bestOf: 7, enabledCategories: ['reflex'] },
+      roomConfig: { bestOf: 7, enabledCategories: ['reflex'], banCount: 0 },
     })
     render(<ScoreBoard />)
     expect(screen.getByText('2/7')).toBeInTheDocument()

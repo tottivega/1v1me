@@ -3,6 +3,7 @@
 export type RoomStatus =
   | 'lobby'
   | 'ready'
+  | 'banning'
   | 'round_start'
   | 'playing'
   | 'round_end'
@@ -144,11 +145,13 @@ export type MinigameId = keyof typeof MINIGAME_CONFIGS
 export interface RoomConfig {
   bestOf: 3 | 5 | 7 | 9
   enabledCategories: MinigameCategory[]
+  banCount: 0 | 1 | 2 | 3
 }
 
 export const DEFAULT_ROOM_CONFIG: RoomConfig = {
   bestOf: 5,
   enabledCategories: ['reflex', 'math', 'luck', 'strategy', 'trivia'],
+  banCount: 0,
 }
 
 export interface PlayerInfo {
@@ -160,12 +163,23 @@ export interface PlayerInfo {
   streak?: number
 }
 
+// ─── Client Message Payloads ──────────────────────────────────────────────────
+
+export interface SetNicknamePayload {
+  nickname: string
+  isMobile?: boolean
+  streak?: number
+  /** Anonymous persistent user ID from localStorage ('1v1me_userId'). Optional — omitted by old clients. */
+  userId?: string
+}
+
 // ─── WebSocket Messages ───────────────────────────────────────────────────────
 
 // Server → Client
 export type ServerMessageType =
   | 'ROOM_JOINED'
   | 'PLAYER_READY'
+  | 'BAN_PHASE_START'
   | 'MATCH_START'
   | 'ROUND_START'
   | 'TIMER_TICK'
@@ -180,6 +194,7 @@ export type ServerMessageType =
   | 'EMOTE_RECEIVED'
   | 'REMATCH_VOTE'
   | 'ROOM_CONFIG'
+  | 'SERVER_RESTARTING'
   | 'ERROR'
 
 // Client → Server
@@ -187,6 +202,7 @@ export type ClientMessageType =
   | 'SET_NICKNAME'
   | 'SET_READY'
   | 'SET_ROOM_CONFIG'
+  | 'SUBMIT_BANS'
   | 'GAME_INPUT'
   | 'RECONNECT'
   | 'REMATCH'
@@ -223,6 +239,11 @@ export interface RoomConfigPayload {
 export interface PlayerReadyPayload {
   playerId: string
   bothReady: boolean
+}
+
+export interface BanPhaseStartPayload {
+  pool: MinigameId[]
+  banCount: number
 }
 
 export interface MatchStartPayload {

@@ -14,6 +14,8 @@ import {
   playMatchWin,
   playMatchLose,
   playTick,
+  startAmbient,
+  stopAmbient,
 } from '../utils/sounds'
 
 function getSavedSession(): { roomId: string; playerId: string } | null {
@@ -147,6 +149,7 @@ export default function RoomPage() {
         <LobbyView roomId={roomId!} />
       </>
     )
+  if (roomStatus === 'banning') return <BanPhaseView />
   if (roomStatus === 'match_end') return <MatchEndView />
 
   // Connecting overlay while WS is establishing
@@ -495,6 +498,7 @@ const CATEGORY_OVERLAY_BG: Record<MinigameCategory, string> = {
 
 const ALL_CATEGORIES: MinigameCategory[] = ['reflex', 'math', 'luck', 'strategy', 'trivia']
 const BEST_OF_OPTIONS = [3, 5, 7, 9] as const
+const BAN_COUNT_OPTIONS = [0, 1, 2, 3] as const
 
 const CATEGORY_LABEL: Record<MinigameCategory, string> = {
   reflex: '⚡ Reflex',
@@ -520,6 +524,11 @@ function RoomSettings({
   function setBestOf(n: 3 | 5 | 7 | 9) {
     if (!interactive) return
     onChange({ ...config, bestOf: n })
+  }
+
+  function setBanCount(n: 0 | 1 | 2 | 3) {
+    if (!interactive) return
+    onChange({ ...config, banCount: n })
   }
 
   function toggleCategory(cat: MinigameCategory) {
@@ -556,6 +565,30 @@ function RoomSettings({
               disabled={!interactive}
             >
               {n}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Ban count */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--black)' }}>
+          Bans per player
+          <span style={{ fontWeight: 400, fontSize: 11, opacity: 0.5, marginLeft: 6 }}>
+            each player bans N games before the match
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {BAN_COUNT_OPTIONS.map((n) => (
+            <button
+              key={n}
+              aria-label={`bans-${n === 0 ? 'off' : n}`}
+              className={`btn btn-sm ${config.banCount === n ? 'btn-orange' : 'btn-white'}`}
+              style={{ flex: 1, opacity: interactive || config.banCount === n ? 1 : 0.5 }}
+              onClick={() => setBanCount(n)}
+              disabled={!interactive}
+            >
+              {n === 0 ? 'Off' : n}
             </button>
           ))}
         </div>
@@ -603,6 +636,122 @@ function RoomSettings({
           </div>
         )
       })()}
+    </div>
+  )
+}
+
+// ── Ban Phase ─────────────────────────────────────────────────────────────────
+
+function BanPhaseView() {
+  const { banPhasePool, banPhaseCount, send, myPlayerId } = useGameStore()
+  const [selected, setSelected] = useState<string[]>([])
+  const [submitted, setSubmitted] = useState(false)
+
+  const pool = banPhasePool ?? []
+  const remaining = banPhaseCount - selected.length
+
+  function toggle(id: string) {
+    if (submitted) return
+    setSelected((prev) =>
+      prev.includes(id)
+        ? prev.filter((x) => x !== id)
+        : prev.length < banPhaseCount
+          ? [...prev, id]
+          : prev
+    )
+  }
+
+  function submit() {
+    if (submitted) return
+    setSubmitted(true)
+    send('SUBMIT_BANS', { bannedGameIds: selected })
+  }
+
+  void myPlayerId // used implicitly via send
+
+  return (
+    <div className="page" style={{ gap: 20 }}>
+      <div style={{ textAlign: 'center' }}>
+        <div
+          style={{
+            fontFamily: 'var(--font-title)',
+            fontSize: 40,
+            color: 'var(--red)',
+            WebkitTextStroke: '2px var(--black)',
+            textShadow: '3px 3px 0 var(--black)',
+          }}
+        >
+          🚫 BAN PHASE
+        </div>
+        <div className="subtitle" style={{ opacity: 0.6, marginTop: 6 }}>
+          {submitted
+            ? 'Bans submitted — waiting for opponent…'
+            : remaining > 0
+              ? `Pick up to ${banPhaseCount} game${banPhaseCount !== 1 ? 's' : ''} to ban · ${remaining} left`
+              : `${banPhaseCount} ban${banPhaseCount !== 1 ? 's' : ''} selected`}
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+          gap: 8,
+          width: '100%',
+          maxWidth: 500,
+        }}
+      >
+        {pool.map((id) => {
+          const cfg = MINIGAME_CONFIGS[id]
+          if (!cfg) return null
+          const isBanned = selected.includes(id)
+          return (
+            <button
+              key={id}
+              onClick={() => toggle(id)}
+              disabled={submitted || (!isBanned && remaining === 0)}
+              style={{
+                background: isBanned ? 'var(--red)' : 'var(--white)',
+                border: `3px solid ${isBanned ? 'var(--red)' : 'var(--black)'}`,
+                borderRadius: 12,
+                padding: '10px 8px',
+                cursor: submitted || (!isBanned && remaining === 0) ? 'default' : 'pointer',
+                opacity: submitted && !isBanned ? 0.45 : !isBanned && remaining === 0 ? 0.5 : 1,
+                transition: 'background 0.15s, opacity 0.15s',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 4,
+                boxShadow: isBanned ? 'none' : 'var(--shadow-sm)',
+              }}
+            >
+              <div style={{ fontSize: 28 }}>{isBanned ? '🚫' : cfg.emoji}</div>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 800,
+                  color: isBanned ? 'var(--white)' : 'var(--black)',
+                  textAlign: 'center',
+                  lineHeight: 1.2,
+                  textDecoration: isBanned ? 'line-through' : 'none',
+                }}
+              >
+                {cfg.label}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      {!submitted && (
+        <button className="btn btn-orange btn-lg" style={{ minWidth: 200 }} onClick={submit}>
+          {selected.length === 0
+            ? 'Skip Bans →'
+            : `Ban ${selected.length} Game${selected.length !== 1 ? 's' : ''} →`}
+        </button>
+      )}
+
+      {submitted && <div className="badge badge-yellow anim-pulse">⏳ Waiting for opponent…</div>}
     </div>
   )
 }
@@ -769,6 +918,7 @@ function MatchView() {
     roomConfig,
     send,
     incomingEmote,
+    roundHistory,
   } = useGameStore()
   const MinigameComp = currentMinigame ? MINIGAME_COMPONENTS[currentMinigame] : null
   const cfg = currentMinigame ? MINIGAME_CONFIGS[currentMinigame] : null
@@ -779,6 +929,7 @@ function MatchView() {
     cfg: typeof cfg
     matchPointFor: string | null // playerId if someone is on match point, else null
     isFinalRound: boolean
+    timesPlayed: number // how many times this game appeared in roundHistory before this round
   } | null>(null)
   const [countNum, setCountNum] = useState<number | null>(null)
   const prevRound = useRef(0)
@@ -797,7 +948,8 @@ function MatchView() {
             ? (opponent?.id ?? null)
             : null
       const isFinalRound = currentRound === roomConfig.bestOf
-      setTransitionData({ round: currentRound, cfg, matchPointFor, isFinalRound })
+      const timesPlayed = roundHistory.filter((r) => r.minigameId === currentMinigame).length
+      setTransitionData({ round: currentRound, cfg, matchPointFor, isFinalRound, timesPlayed })
       setShowTransition(true)
       setCountNum(null)
       const t1 = setTimeout(() => {
@@ -823,6 +975,16 @@ function MatchView() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRound, currentMinigame])
+
+  // Ambient sound — start when round is active, stop on round end / match end
+  useEffect(() => {
+    if (roomStatus === 'playing' && currentMinigame) {
+      startAmbient(currentMinigame)
+    } else {
+      stopAmbient()
+    }
+    return () => stopAmbient()
+  }, [roomStatus, currentMinigame])
 
   // Emote keyboard shortcuts (1/2/3/4)
   useEffect(() => {
@@ -1064,6 +1226,24 @@ function MatchView() {
             >
               {transitionData.cfg!.emoji} {transitionData.cfg!.label}
             </div>
+            {transitionData.timesPlayed > 0 && (
+              <div
+                style={{
+                  marginTop: 10,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: 'rgba(255,255,255,0.5)',
+                  letterSpacing: 1,
+                  textTransform: 'uppercase',
+                }}
+              >
+                {transitionData.timesPlayed === 1
+                  ? '2nd time this match'
+                  : transitionData.timesPlayed === 2
+                    ? '3rd time this match'
+                    : `${transitionData.timesPlayed + 1}th time this match`}
+              </div>
+            )}
           </div>
           {/* Count-in number — key forces remount so anim-count-in replays each tick */}
           <div

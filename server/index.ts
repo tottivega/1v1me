@@ -57,7 +57,10 @@ const server = createServer((req, res) => {
 
   if (url === '/rooms') {
     const cors = isProd && ALLOWED_ORIGIN ? ALLOWED_ORIGIN : '*'
-    const body = JSON.stringify(getOpenRooms())
+    const qs = new URLSearchParams(req.url?.split('?')[1] ?? '')
+    const limit = Math.min(50, Math.max(1, parseInt(qs.get('limit') ?? '20', 10) || 20))
+    const offset = Math.max(0, parseInt(qs.get('offset') ?? '0', 10) || 0)
+    const body = JSON.stringify(getOpenRooms(limit, offset))
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': cors })
     res.end(body)
     return
@@ -94,4 +97,22 @@ server.listen(PORT, () => {
 
 server.on('error', (err) => {
   console.error('[Server] Error:', err)
+})
+
+// ── Graceful shutdown (SIGTERM from Fly.io on deploy/scale) ──────────────────
+// Notify all connected clients, wait 3s for them to show a banner, then exit.
+process.on('SIGTERM', () => {
+  console.log('[Server] SIGTERM received — shutting down gracefully')
+  const notice = JSON.stringify({ type: 'SERVER_RESTARTING', payload: {} })
+  wss.clients.forEach((client) => {
+    if (client.readyState === client.OPEN) client.send(notice)
+  })
+  // Stop accepting new connections
+  server.close()
+  wss.close()
+  // Give clients 3s to show a reconnect banner before the process exits
+  setTimeout(() => {
+    console.log('[Server] Exiting after graceful drain')
+    process.exit(0)
+  }, 3000)
 })

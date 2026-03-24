@@ -75,7 +75,8 @@ function fisherYates<T>(arr: T[]): void {
 export function shuffleQueue(
   size = 5,
   categories?: MinigameCategory[],
-  excludePlatforms?: MinigamePlatform[]
+  excludePlatforms?: MinigamePlatform[],
+  excludeIds?: MinigameId[]
 ): MinigameId[] {
   let allIds = Object.keys(MINIGAME_CONFIGS) as MinigameId[]
   if (categories && categories.length > 0) {
@@ -86,6 +87,11 @@ export function shuffleQueue(
     const filtered = allIds.filter(
       (id) => !excludePlatforms.includes(MINIGAME_CONFIGS[id].platforms)
     )
+    if (filtered.length > 0) allIds = filtered
+  }
+  if (excludeIds && excludeIds.length > 0) {
+    const filtered = allIds.filter((id) => !excludeIds.includes(id))
+    // Only apply ban filter if it leaves at least 1 game
     if (filtered.length > 0) allIds = filtered
   }
 

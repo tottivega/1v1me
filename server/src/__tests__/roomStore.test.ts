@@ -21,7 +21,7 @@ describe('getRoomCount()', () => {
 
 describe('getOpenRooms()', () => {
   it('returns empty array when no rooms', () => {
-    expect(getOpenRooms()).toEqual([])
+    expect(getOpenRooms().rooms).toEqual([])
   })
 
   it('includes lobby rooms with exactly 1 player', () => {
@@ -30,17 +30,17 @@ describe('getOpenRooms()', () => {
     room.status = 'lobby'
     setRoom(room)
 
-    const open = getOpenRooms()
-    expect(open).toHaveLength(1)
-    expect(open[0]!.roomId).toBe('r1')
-    expect(open[0]!.creatorNickname).toBe('Alice')
-    expect(typeof open[0]!.createdAt).toBe('number')
+    const { rooms } = getOpenRooms()
+    expect(rooms).toHaveLength(1)
+    expect(rooms[0]!.roomId).toBe('r1')
+    expect(rooms[0]!.creatorNickname).toBe('Alice')
+    expect(typeof rooms[0]!.createdAt).toBe('number')
   })
 
   it('excludes rooms with 2 players', () => {
     // makeRoom() creates a room with 2 players by default
     setRoom(makeRoom('r2'))
-    expect(getOpenRooms()).toHaveLength(0)
+    expect(getOpenRooms().rooms).toHaveLength(0)
   })
 
   it('excludes rooms with status other than lobby', () => {
@@ -49,6 +49,6 @@ describe('getOpenRooms()', () => {
     room.status = 'playing'
     setRoom(room)
 
-    expect(getOpenRooms()).toHaveLength(0)
+    expect(getOpenRooms().rooms).toHaveLength(0)
   })
 })

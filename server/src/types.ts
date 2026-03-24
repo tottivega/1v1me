@@ -18,6 +18,8 @@ export interface Player {
   reconnectTimer: ReturnType<typeof setTimeout> | null
   isMobile: boolean
   streak: number
+  /** Anonymous persistent user ID from client localStorage. May be undefined for old clients. */
+  userId?: string
 }
 
 export interface MatchState {
@@ -51,6 +53,10 @@ export interface Room {
   lastActivityAt: number
   cleanupTimer: ReturnType<typeof setTimeout> | null
   rematchVotes: Set<string>
+  banVotes: Record<string, MinigameId[]> // playerId → banned game ids (ban phase)
+  // Per-room rate limit (120 msg/s across all players)
+  roomMsgCount: number
+  roomWindowStart: number
 }
 
 export interface MinigameModule {

@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import type { Room, Player } from '../types'
-import type { MinigameInput, MinigameResult } from '@shared/types'
+import type { MinigameInput, MinigameResult, MinigameId } from '@shared/types'
 import { MINIGAME_CONFIGS } from '@shared/types'
 import { broadcast, toPlayerInfos } from '../sync/broadcast'
 import { startTimer, stopTimer } from '../timer/timerController'
@@ -9,21 +9,42 @@ import { persistMatchResult } from '../db/index'
 
 const ROUND_READY_TIMEOUT_MS = 5000 // auto-advance if a player doesn't confirm
 
+function platformExcludes(room: Room) {
+  const anyMobile = room.players.some((p) => p.isMobile)
+  const anyDesktop = room.players.some((p) => !p.isMobile)
+  return [
+    ...(anyMobile ? (['desktop-only'] as const) : []),
+    ...(anyDesktop ? (['mobile-only'] as const) : []),
+  ]
+}
+
+/** Build the eligible pool of game ids (same filtering as shuffleQueue uses). */
+function buildPool(room: Room): MinigameId[] {
+  const { enabledCategories } = room.config
+  const excludePlatforms = platformExcludes(room)
+  let ids = Object.keys(MINIGAME_CONFIGS) as MinigameId[]
+  if (enabledCategories.length > 0) {
+    const f = ids.filter((id) => enabledCategories.includes(MINIGAME_CONFIGS[id].category))
+    if (f.length > 0) ids = f
+  }
+  if (excludePlatforms.length > 0) {
+    const f = ids.filter(
+      (id) => !(excludePlatforms as string[]).includes(MINIGAME_CONFIGS[id].platforms)
+    )
+    if (f.length > 0) ids = f
+  }
+  return ids
+}
+
 export function startMatch(room: Room): void {
   const [p1, p2] = room.players as [Player, Player]
   const matchId = uuidv4()
 
-  const { bestOf, enabledCategories } = room.config
-  const anyMobile = room.players.some((p) => p.isMobile)
-  const anyDesktop = room.players.some((p) => !p.isMobile)
-  const excludePlatforms = [
-    ...(anyMobile ? (['desktop-only'] as const) : []),
-    ...(anyDesktop ? (['mobile-only'] as const) : []),
-  ]
+  // Initialise match state — queue is filled after ban phase (or immediately)
   room.match = {
     matchId,
     scores: { [p1.id]: 0, [p2.id]: 0 },
-    minigameQueue: shuffleQueue(bestOf, enabledCategories, excludePlatforms),
+    minigameQueue: [],
     currentRound: 0,
     currentMinigame: null,
     minigameState: null,
@@ -38,10 +59,53 @@ export function startMatch(room: Room): void {
     roundReadyTimer: null,
   }
 
-  room.status = 'round_start'
-  broadcast(room, 'MATCH_START', { matchId, players: toPlayerInfos(room.players) })
+  if (room.config.banCount > 0) {
+    // Enter ban phase — MATCH_START is sent after both players submit bans
+    room.status = 'banning'
+    room.banVotes = {}
+    const pool = buildPool(room)
+    broadcast(room, 'BAN_PHASE_START', { pool, banCount: room.config.banCount })
+  } else {
+    launchMatch(room, [])
+  }
+}
 
+/** Called once ban votes are resolved (or immediately if banCount === 0). */
+function launchMatch(room: Room, bannedIds: MinigameId[]): void {
+  if (!room.match) return
+  const { bestOf, enabledCategories } = room.config
+  const excludePlatforms = platformExcludes(room)
+  room.match.minigameQueue = shuffleQueue(bestOf, enabledCategories, excludePlatforms, bannedIds)
+
+  room.status = 'round_start'
+  broadcast(room, 'MATCH_START', {
+    matchId: room.match.matchId,
+    players: toPlayerInfos(room.players),
+  })
   setTimeout(() => startRound(room), 1500)
+}
+
+/**
+ * Handle a SUBMIT_BANS message from a player.
+ * Once both players have submitted, bans are merged, duplicates removed,
+ * and the match launches.
+ */
+export function handleBanSubmit(room: Room, playerId: string, bannedIds: MinigameId[]): void {
+  if (room.status !== 'banning' || !room.match) return
+
+  // Clamp to configured banCount, validate ids
+  const validIds = (Object.keys(MINIGAME_CONFIGS) as MinigameId[]).filter((id) =>
+    bannedIds.includes(id)
+  )
+  room.banVotes[playerId] = validIds.slice(0, room.config.banCount)
+
+  // Check if both players have submitted
+  const allSubmitted = room.players.every((p) => p.id in room.banVotes)
+  if (!allSubmitted) return
+
+  // Merge all bans (union) — a game banned by either player is removed
+  const merged = Array.from(new Set(Object.values(room.banVotes).flat())) as MinigameId[]
+  launchMatch(room, merged)
 }
 
 function startRound(room: Room): void {
@@ -161,6 +225,8 @@ function endMatch(room: Room, winnerId: string, reason: 'completed' | 'forfeit')
       winnerScore: room.match.scores[winner.id] ?? 0,
       loserScore: room.match.scores[loser.id] ?? 0,
       endedReason: reason,
+      winnerUserId: winner.userId,
+      loserUserId: loser.userId,
     }).catch((err) => console.error('[DB] Persist error:', err))
   }
 }

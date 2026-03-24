@@ -36,7 +36,8 @@ export function joinOrCreateRoom(
   nickname: string,
   ws: WebSocket,
   isMobile = false,
-  streak = 0
+  streak = 0,
+  userId?: string
 ): { room: Room } | { error: { code: string; message: string } } {
   let room = getRoom(roomId)
 
@@ -53,6 +54,9 @@ export function joinOrCreateRoom(
       lastActivityAt: Date.now(),
       cleanupTimer: null,
       rematchVotes: new Set(),
+      banVotes: {},
+      roomMsgCount: 0,
+      roomWindowStart: Date.now(),
     }
     setRoom(room)
     scheduleCleanup(room)
@@ -78,6 +82,7 @@ export function joinOrCreateRoom(
     reconnectTimer: null,
     isMobile,
     streak,
+    userId,
   }
 
   room.players.push(player)
@@ -238,6 +243,7 @@ function doRematch(room: Room): void {
   room.match = null
   room.status = 'lobby'
   room.rematchVotes.clear()
+  room.banVotes = {}
   for (const player of room.players) {
     player.ready = false
   }

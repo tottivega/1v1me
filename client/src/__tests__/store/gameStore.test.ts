@@ -19,7 +19,7 @@ beforeEach(() => {
     minigameState: null,
     spectatorCount: 0,
     rematchVoting: false,
-    errorMessage: null,
+    toasts: [],
     reconnectCountdown: null,
   })
 })
@@ -147,8 +147,9 @@ describe('REMATCH_VOTE', () => {
 })
 
 describe('ERROR', () => {
-  it('sets errorMessage', () => {
+  it('pushes a toast', () => {
     dispatch({ type: 'ERROR', payload: { code: 'ROOM_FULL', message: 'Room is full' } })
-    expect(useGameStore.getState().errorMessage).toBe('Room is full')
+    expect(useGameStore.getState().toasts[0]?.message).toBe('Room is full')
+    expect(useGameStore.getState().toasts[0]?.type).toBe('error')
   })
 })
