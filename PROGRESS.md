@@ -111,15 +111,19 @@
 - [x] **Input length caps** — WordScramble guess capped at 50 chars; FastestTyper text sliced to 200 chars; Emote string capped at 10 chars
 - [x] **HTTP rate limiting** — per-IP sliding 10s window, max 30 requests; 429 returned before routing; `GET /rooms` and `GET /health` both protected
 
-### Code Quality
-- [x] **`MinigameInput` discriminated union** — 10 typed variants in `shared/types.ts`; renamed conflicting type strings (`GUESS_WORD`, `PICK_COLOR`, `PICK_DIRECTION`); `MinigameModule.handleInput` takes `MinigameInput`; single `as MinigameInput` cast in `handleGameInput` at the network boundary; all per-module `input as { type: string; ... }` casts eliminated
+### Code Quality (Scale prep)
+- [x] **`MinigameInput` open interface** — replaced 10-variant discriminated union with `{ type: string; [key: string]: unknown }`; no more `shared/types.ts` touch per game; runtime type guard in `handleGameInput`; per-module casts narrowed at point of use
+- [x] **Dynamic server module discovery** — `readdirSync` + lazy `require('./' + file)` in `loadModules()` singleton; startup assertion fails fast if any `MINIGAME_CONFIGS` key is missing a module; no manual import/export in `index.ts`
+- [x] **Global timer cleanup in tests** — `afterEach(() => vi.clearAllTimers())` in `server/src/__tests__/setup.ts`; fixes timer-leak cross-contamination between tests
+- [x] **Spectator renderer co-location** — 11 `*.spectator.tsx` files alongside game components; `spectatorRegistry.ts` auto-discovers via `import.meta.glob`; `SpectateGameState` replaced 11 if-branches with single registry lookup; shared helpers in `spectatorHelpers.tsx`
+- [x] **Category filter on HomePage** — pill buttons (ALL + 5 categories) above game gallery; active pill fills with category color; filters grid reactively
+- [x] **Broadcast security pattern in `_template.ts`** — `⚠️ SECURITY` comment with Pattern A/B examples; prevents accidental answer/secret leaks in new games
 - [x] **`clearAllRooms()`** — exported from `roomStore.ts` for test isolation; `roomStore.test.ts` uses `beforeEach(() => clearAllRooms())` instead of deleting by known ID
-- [x] **Integration tests for colorword + higherorlower** — 3 tests each in `server/src/__tests__/minigames/`; use `makeRoom` + `makeMatch` helpers; assert `onRoundDone` fires with correct winner/reason
-- [x] **`ADDING_A_GAME.md` updated** — Step 1 now includes `MinigameInput` variant; Step 2 handleInput description updated; Step 4 (spectator view) and Step 5 (integration tests) added; checklist has 8 items
+- [x] **`ADDING_A_GAME.md` updated** — server module and spectator view documented as auto-discovered; checklist reflects 4-file workflow with no manual registration steps
 
 ### Tests
 - [x] **Vitest setup** — server (node env) and client (happy-dom + React Testing Library); `npm test` works in both packages
-- [x] **Server unit + integration tests (57, 8 files)** — wordscramble (5), rockpaperscissors (4), matchController (6), roomManager (13), roomStore (4), colorword (6), higherorlower (7), router integration (10); `clearAllRooms()` for test isolation
+- [x] **Server unit + integration tests (77, 11 files)** — quickmaths (6), memorymatch (6), fastesttyper (7), wordscramble (5), rockpaperscissors (4), matchController (6), roomManager (13), roomStore (4), colorword (6), higherorlower (7), router integration (10); `clearAllRooms()` for test isolation
 - [x] **Client unit tests (20)** — gameStore (11), ScoreBoard (5), TimerBar (4)
 - [x] Test factories in `server/src/__tests__/helpers.ts` — `makeWs()`, `makePlayer()`, `makeRoom()`, `makeMatch()`
 - [x] **ESLint** — `typescript-eslint` v8 + flat config in both packages; `no-unused-vars` (error), `no-explicit-any` (warn), `react-hooks/rules-of-hooks` (error); server passes at 0 warnings

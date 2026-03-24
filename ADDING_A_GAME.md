@@ -42,17 +42,7 @@ Fill in:
 
 **Timer-based games** (timeoutMs > 0): just implement `getResult()`. The match controller calls it when the clock hits zero.
 
-Then register it:
-
-```ts
-// server/src/minigames/index.ts
-import wordrace from './wordrace'
-
-const MODULES: Record<MinigameId, MinigameModule> = {
-  // ...existing games...
-  wordrace,
-}
-```
+The server module is **auto-discovered** at startup via `readdirSync` — no manual import or registration needed. The only rule: the file must export a default object whose `id` field matches your `MINIGAME_CONFIGS` key.
 
 ---
 
@@ -73,19 +63,26 @@ The registry auto-discovers component files via `import.meta.glob` — no manual
 
 ## 4. Add a spectator view
 
-Spectators watch live at `/spectate/:roomId`. The `SpectateGameState` component in
-`client/src/pages/SpectatePage.tsx` renders a read-only view of each game from
-`minigameState`.
+Spectators watch live at `/spectate/:roomId`. Create a co-located file:
 
-Add a branch for your game:
+```
+client/src/minigames/WordRace.spectator.tsx
+```
+
+It is **auto-discovered** via glob — no registration needed. Export a default component
+that accepts `SpectatorProps`:
 
 ```tsx
-if (minigameId === 'wordrace') {
-  const s = state as { phrase?: string; progress?: Record<string, number> } | null
+import type { SpectatorProps } from './spectatorHelpers'
+import { TwoColState } from './spectatorHelpers'
+
+export default function WordRaceSpectator({ state, players }: SpectatorProps) {
+  const s = state as { progress?: Record<string, number> } | null
+  const [p1, p2] = players
   return (
     <TwoColState
-      p1={{ label: p1?.nickname ?? '…', value: s?.progress[p1?.id] ?? 0, unit: 'chars' }}
-      p2={{ label: p2?.nickname ?? '…', value: s?.progress[p2?.id] ?? 0, unit: 'chars' }}
+      p1={{ label: p1?.nickname ?? '…', value: s?.progress?.[p1?.id] ?? 0, unit: 'chars' }}
+      p2={{ label: p2?.nickname ?? '…', value: s?.progress?.[p2?.id] ?? 0, unit: 'chars' }}
       color1="var(--blue)"
       color2="var(--orange)"
     />
@@ -94,13 +91,11 @@ if (minigameId === 'wordrace') {
 ```
 
 Rules:
-- `state` is whatever the server stores in `room.match.minigameState` (the raw server
-  object, not the broadcast-filtered shape). Cast it carefully — it may be `null` if a
-  spectator joins before the first `GAME_UPDATE`.
-- **Never** show information that is private to one player (e.g. hide picks in RPS
-  until the reveal phase).
+- `state` comes from `GAME_UPDATE` broadcasts — the **client-visible** projection, not
+  the full server state. It may be `null` before the first update; guard accordingly.
+- **Never** show information private to one player (e.g. hide picks in RPS until reveal).
 - Keep it read-only — no `sendInput`, no buttons.
-- Reuse `TwoColState`, `StatPill`, or `MathsPanel` helper components when they fit.
+- Reuse `TwoColState`, `StatPill`, or `MathsPanel` from `spectatorHelpers.tsx` when they fit.
 
 ---
 
@@ -133,9 +128,9 @@ it('resolves with the first finisher as winner', () => {
 ## Checklist
 
 - [ ] Entry in `MINIGAME_CONFIGS` (shared/types.ts) — no MinigameInput changes needed
-- [ ] Server module created and added to `MODULES` (server/src/minigames/index.ts)
-- [ ] Client component created at `client/src/minigames/<PascalCaseId>.tsx` (auto-registered by glob)
-- [ ] Spectator view added to `SpectateGameState` (client/src/pages/SpectatePage.tsx)
+- [ ] Server module created at `server/src/minigames/wordrace.ts` (auto-registered by id)
+- [ ] Client component created at `client/src/minigames/WordRace.tsx` (auto-registered by glob)
+- [ ] Spectator view created at `client/src/minigames/WordRace.spectator.tsx` (auto-registered by glob)
 - [ ] Integration tests in `server/src/__tests__/minigames/wordrace.test.ts`
 - [ ] `tsc --noEmit` passes in both `client/` and `server/`
 - [ ] Tested in DevPanel (mock mode) — no server needed

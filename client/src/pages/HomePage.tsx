@@ -20,10 +20,13 @@ const CATEGORY_COLORS: Record<MinigameCategory, string> = {
 
 const DIFFICULTY_STARS = (d: number) => '★'.repeat(d) + '☆'.repeat(3 - d)
 
-const GAMES = Object.entries(MINIGAME_CONFIGS) as [
+const ALL_GAMES = Object.entries(MINIGAME_CONFIGS) as [
   string,
   (typeof MINIGAME_CONFIGS)[keyof typeof MINIGAME_CONFIGS],
 ][]
+
+const CATEGORIES = ['all', ...Object.keys(CATEGORY_COLORS)] as const
+type CategoryFilter = (typeof CATEGORIES)[number]
 
 function getSavedNickname() {
   try {
@@ -52,6 +55,7 @@ export default function HomePage() {
   // Read once on mount — these only change when a match ends (user is in a room at that point)
   const [streak] = useState(getStreak)
   const [history] = useState(getMatchHistory)
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
 
   function validate() {
     if (!nickname.trim()) {
@@ -210,8 +214,47 @@ export default function HomePage() {
       {/* Game Gallery */}
       <div style={{ width: '100%', maxWidth: 680 }}>
         <div className="label" style={{ textAlign: 'center', marginBottom: 14, fontSize: 14 }}>
-          ⚔️ {GAMES.length} MINI GAMES TO SETTLE YOUR BEEF
+          ⚔️ {ALL_GAMES.length} MINI GAMES TO SETTLE YOUR BEEF
         </div>
+
+        {/* Category filter */}
+        <div
+          style={{
+            display: 'flex',
+            gap: 6,
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            marginBottom: 14,
+          }}
+        >
+          {CATEGORIES.map((cat) => {
+            const active = categoryFilter === cat
+            const color = cat === 'all' ? 'var(--black)' : CATEGORY_COLORS[cat as MinigameCategory]
+            const isLight = cat === 'luck'
+            return (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: 6,
+                  border: '1.5px solid var(--black)',
+                  fontWeight: 900,
+                  fontSize: 11,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                  cursor: 'pointer',
+                  background: active ? color : 'var(--white)',
+                  color: active ? (isLight ? 'var(--black)' : 'var(--white)') : 'var(--black)',
+                  transition: 'background 0.12s, color 0.12s',
+                }}
+              >
+                {cat}
+              </button>
+            )
+          })}
+        </div>
+
         <div
           style={{
             display: 'grid',
@@ -219,7 +262,9 @@ export default function HomePage() {
             gap: 12,
           }}
         >
-          {GAMES.map(([id, cfg]) => (
+          {ALL_GAMES.filter(
+            ([, cfg]) => categoryFilter === 'all' || cfg.category === categoryFilter
+          ).map(([id, cfg]) => (
             <GameCard key={id} cfg={cfg} />
           ))}
         </div>

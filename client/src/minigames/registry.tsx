@@ -12,6 +12,7 @@ const modules = import.meta.glob<{ default: ComponentType }>('./*.tsx', { eager:
 export const MINIGAME_COMPONENTS = {} as Record<MinigameId, ComponentType>
 
 for (const [path, load] of Object.entries(modules)) {
+  if (path.includes('.spectator.')) continue
   const filename = path.slice(2, -4) // strip './' prefix and '.tsx' suffix
   if (filename.startsWith('_') || filename === 'registry') continue
   const id = filename.toLowerCase() as MinigameId

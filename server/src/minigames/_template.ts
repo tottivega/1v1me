@@ -2,11 +2,12 @@
  * MINIGAME SERVER MODULE TEMPLATE
  * ────────────────────────────────
  * Copy this file to a new name (e.g. `wordrace.ts`) and fill in the TODOs.
- * Then register it in three places — TypeScript will tell you if you miss one:
+ * Two files to create, one registration to make:
  *
- *   1. shared/types.ts        → add key to MINIGAME_CONFIGS
- *   2. server/src/minigames/index.ts  → import and add to MODULES
- *   3. client/src/minigames/_Template.tsx → copy the client template
+ *   1. shared/types.ts  → add entry to MINIGAME_CONFIGS
+ *   2. server/src/minigames/wordrace.ts  → this file (auto-discovered by id)
+ *   3. client/src/minigames/WordRace.tsx  → copy the client template (auto-discovered)
+ *   4. client/src/minigames/WordRace.spectator.tsx  → spectator view (auto-discovered)
  *
  * See ADDING_A_GAME.md at the repo root for the full walkthrough.
  */
@@ -28,7 +29,29 @@ interface State {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// ⚠️  SECURITY: broadcast() sends to ALL players in the room.
+// Never broadcast private fields (secrets, opponent answers, unrevealed picks).
+// Build a "client view" that omits or redacts private data, then broadcast that.
+//
+// Pattern A — always-safe state (no secrets): broadcast the full state
+//   function broadcastState(room: Room, state: State) {
+//     broadcast(room, 'GAME_UPDATE', { state })
+//   }
+//
+// Pattern B — secret exists until reveal: broadcast a public projection
+//   function broadcastPublic(room: Room, state: State) {
+//     // omit `state.secret`; include only what players should see mid-round
+//     broadcast(room, 'GAME_UPDATE', {
+//       state: { submitted: Object.keys(state.answers), scores: state.scores },
+//     })
+//   }
+//   function broadcastReveal(room: Room, state: State) {
+//     broadcast(room, 'GAME_UPDATE', { state }) // full state OK after reveal
+//   }
+
 function broadcastState(room: Room, state: State) {
+  // TODO: if State contains secrets or opponent answers, replace this with
+  // a public projection (see Pattern B above) to avoid leaking information.
   broadcast(room, 'GAME_UPDATE', { state })
 }
 

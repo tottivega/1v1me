@@ -2,9 +2,10 @@
  * MINIGAME CLIENT COMPONENT TEMPLATE
  * ────────────────────────────────────
  * Copy this file to a new name matching your MinigameId (e.g. `WordRace.tsx`).
- * Fill in the TODOs, then register it in:
- *
- *   client/src/minigames/registry.tsx  → import and add to MINIGAME_COMPONENTS
+ * Fill in the TODOs — no manual registration needed.
+ * The registry auto-discovers component files via glob.
+ * Rule: filename must match the MinigameId (case-insensitive).
+ *   WordRace.tsx → 'wordrace'
  *
  * See ADDING_A_GAME.md at the repo root for the full walkthrough.
  *
