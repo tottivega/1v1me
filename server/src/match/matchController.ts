@@ -7,7 +7,7 @@ import { startTimer, stopTimer } from '../timer/timerController'
 import { getMinigame, shuffleQueue } from '../minigames/index'
 import { persistMatchResult } from '../db/index'
 
-const ROUND_TRANSITION_MS = 2500 // delay between rounds
+const ROUND_READY_TIMEOUT_MS = 5000 // auto-advance if a player doesn't confirm
 
 export function startMatch(room: Room): void {
   const [p1, p2] = room.players
@@ -28,6 +28,8 @@ export function startMatch(room: Room): void {
     paused: false,
     roundResolved: false,
     onRoundDone: null,
+    roundReadyVotes: new Set(),
+    roundReadyTimer: null,
   }
 
   room.status = 'round_start'
@@ -105,16 +107,30 @@ export function resolveRound(room: Room, result: MinigameResult): void {
   const matchWinner = room.players.find((p) => (room.match!.scores[p.id] ?? 0) >= winsNeeded)
 
   if (matchWinner) {
-    setTimeout(() => endMatch(room, matchWinner.id, 'completed'), ROUND_TRANSITION_MS)
+    // Match over — no confirm needed, just a short visual pause
+    setTimeout(() => endMatch(room, matchWinner.id, 'completed'), 2500)
   } else if (room.match.currentRound >= bestOf) {
-    // All rounds played — whoever has more points wins
     const [p1, p2] = room.players
     const s1 = room.match.scores[p1.id] ?? 0
     const s2 = room.match.scores[p2.id] ?? 0
     const winnerId = s1 >= s2 ? p1.id : p2.id
-    setTimeout(() => endMatch(room, winnerId, 'completed'), ROUND_TRANSITION_MS)
+    setTimeout(() => endMatch(room, winnerId, 'completed'), 2500)
   } else {
-    setTimeout(() => startRound(room), ROUND_TRANSITION_MS)
+    // Wait for both players to confirm before starting next round
+    room.match.roundReadyVotes = new Set()
+    room.match.roundReadyTimer = setTimeout(() => {
+      if (room.match && room.status === 'round_end') startRound(room)
+    }, ROUND_READY_TIMEOUT_MS)
+  }
+}
+
+export function handleRoundReady(room: Room, playerId: string): void {
+  if (!room.match || room.status !== 'round_end') return
+  room.match.roundReadyVotes.add(playerId)
+  if (room.players.every((p) => room.match!.roundReadyVotes.has(p.id))) {
+    if (room.match.roundReadyTimer) clearTimeout(room.match.roundReadyTimer)
+    room.match.roundReadyTimer = null
+    startRound(room)
   }
 }
 

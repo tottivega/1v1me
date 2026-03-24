@@ -63,6 +63,8 @@ export function makeMatch(
     paused: false,
     roundResolved: false,
     onRoundDone: null,
+    roundReadyVotes: new Set(),
+    roundReadyTimer: null,
     ...overrides,
   }
 }

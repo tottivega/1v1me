@@ -12,7 +12,7 @@ import {
   joinAsSpectator,
   removeSpectator,
 } from '../rooms/roomManager'
-import { handleGameInput } from '../match/matchController'
+import { handleGameInput, handleRoundReady } from '../match/matchController'
 
 const RATE_LIMIT = 60 // max messages per window
 const RATE_WINDOW_MS = 1000 // sliding window size
@@ -188,6 +188,14 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
       for (const spec of room.spectators) {
         send(spec, 'EMOTE_RECEIVED', { fromPlayerId: conn.playerId, emote })
       }
+      break
+    }
+
+    case 'ROUND_READY': {
+      if (!conn.roomId) return
+      const room = getRoom(conn.roomId)
+      if (!room) return
+      handleRoundReady(room, conn.playerId)
       break
     }
 

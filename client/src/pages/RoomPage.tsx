@@ -1010,14 +1010,22 @@ function MatchView() {
 }
 
 function RoundEndOverlay() {
-  const { lastRoundWinnerId, myPlayerId, players, scores } = useGameStore()
+  const { lastRoundWinnerId, myPlayerId, players, scores, wsStatus, send } = useGameStore()
   const iWon = lastRoundWinnerId === myPlayerId
   const winner = players.find((p) => p.id === lastRoundWinnerId)
+  const [confirmed, setConfirmed] = useState(false)
 
   useEffect(() => {
     iWon ? playRoundWin() : playRoundLose()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  function confirm() {
+    if (confirmed) return
+    setConfirmed(true)
+    playClick()
+    send('ROUND_READY')
+  }
 
   return (
     <div
@@ -1030,7 +1038,7 @@ function RoundEndOverlay() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 16,
+        gap: 20,
       }}
     >
       <div className="anim-bounce" style={{ textAlign: 'center' }}>
@@ -1060,10 +1068,23 @@ function RoundEndOverlay() {
             </div>
           ))}
         </div>
-        <div className="subtitle" style={{ color: 'rgba(255,255,255,0.5)', marginTop: 12 }}>
+      </div>
+
+      {wsStatus === 'connected' ? (
+        confirmed ? (
+          <div className="subtitle anim-pulse" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            Waiting for opponent…
+          </div>
+        ) : (
+          <button className="btn btn-orange btn-lg" onClick={confirm} style={{ minWidth: 200 }}>
+            Next Round →
+          </button>
+        )
+      ) : (
+        <div className="subtitle" style={{ color: 'rgba(255,255,255,0.5)' }}>
           Next round starting…
         </div>
-      </div>
+      )}
     </div>
   )
 }

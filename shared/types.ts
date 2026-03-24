@@ -176,6 +176,7 @@ export type ClientMessageType =
   | 'GAME_INPUT'
   | 'RECONNECT'
   | 'REMATCH'
+  | 'ROUND_READY'
   | 'SPECTATE'
   | 'EMOTE'
 

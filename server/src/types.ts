@@ -27,6 +27,8 @@ export interface MatchState {
   // Round lifecycle
   roundResolved: boolean
   onRoundDone: ((result: MinigameResult) => void) | null
+  roundReadyVotes: Set<string>
+  roundReadyTimer: ReturnType<typeof setTimeout> | null
 }
 
 export interface Room {
