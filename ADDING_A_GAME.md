@@ -99,7 +99,24 @@ Rules:
 
 ---
 
-## 5. Add server integration tests
+## 5. Add an ambient sound loop
+
+Open `client/src/utils/sounds.ts` and add an entry to the `AMBIENT` map (around line 264):
+
+```ts
+wordrace: [
+  { type: 'noise', freq: 180, gain: 0.04, duration: 0.8, interval: 1.0 },
+  // add as many oscillator/noise layers as you need for the game's mood
+],
+```
+
+Each layer is played on a loop while the round is active. Volume is automatically scaled by the global volume setting. If no entry exists for your `minigameId`, `startAmbient()` silently does nothing — silence is fine for low-energy games.
+
+Refer to the existing entries (clickspeed, memorymatch, etc.) as templates for the layer shape.
+
+---
+
+## 6. Add server integration tests
 
 Create `server/src/__tests__/minigames/wordrace.test.ts`. At minimum:
 
@@ -125,13 +142,34 @@ it('resolves with the first finisher as winner', () => {
 
 ---
 
+## 7. Add a bot strategy for the E2E test
+
+Open `tests/e2e/helpers/gameInputs.ts` and add a strategy to the `STRATEGIES` map:
+
+```ts
+async wordrace(bot: BotPlayer): Promise<void> {
+  // Wait for the server to broadcast the word, then submit it
+  const state = await bot.waitForGameUpdate((s) => typeof s.word === 'string', 3_000)
+  bot.send('GAME_INPUT', { type: 'FINISH', word: state.word as string })
+},
+```
+
+Rules:
+- Only use `bot.waitForGameUpdate()` (matches `GAME_UPDATE` only — never consumes `ROUND_END`)
+- Wrap any timing-sensitive logic in `try/catch` — or just let the outer `playRound` catch handle it
+- If the game answer is not broadcast to clients (like `wordscramble`), do nothing and let the server timer resolve it
+
+---
+
 ## Checklist
 
-- [ ] Entry in `MINIGAME_CONFIGS` (shared/types.ts) — no MinigameInput changes needed
-- [ ] Server module created at `server/src/minigames/wordrace.ts` (auto-registered by id)
-- [ ] Client component created at `client/src/minigames/WordRace.tsx` (auto-registered by glob)
-- [ ] Spectator view created at `client/src/minigames/WordRace.spectator.tsx` (auto-registered by glob)
+- [ ] Entry in `MINIGAME_CONFIGS` (`shared/types.ts`) — no MinigameInput changes needed
+- [ ] Server module at `server/src/minigames/wordrace.ts` (auto-registered by id)
+- [ ] Client component at `client/src/minigames/WordRace.tsx` (auto-registered by glob)
+- [ ] Spectator view at `client/src/minigames/WordRace.spectator.tsx` (auto-registered by glob)
+- [ ] Ambient sound layers in `client/src/utils/sounds.ts` → `AMBIENT` map
+- [ ] Bot strategy in `tests/e2e/helpers/gameInputs.ts` → `STRATEGIES` map
 - [ ] Integration tests in `server/src/__tests__/minigames/wordrace.test.ts`
 - [ ] `tsc --noEmit` passes in both `client/` and `server/`
 - [ ] Tested in DevPanel (mock mode) — no server needed
-- [ ] Tested end-to-end in a real match
+- [ ] Tested end-to-end in a real match (`npm run test:e2e`)
