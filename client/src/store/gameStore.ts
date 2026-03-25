@@ -69,7 +69,11 @@ function startMockTimer(get: () => GameState, set: (s: Partial<GameState>) => vo
     const next = remainingMs - 1000
     if (next <= 0) {
       clearMockTimer()
-      set({ remainingMs: 0, roomStatus: 'round_end' })
+      set({ remainingMs: 0 })
+      const { players, myPlayerId } = get()
+      const opponent = players.find((p) => p.id !== myPlayerId)
+      const randomWinner = Math.random() < 0.5 ? myPlayerId : (opponent?.id ?? myPlayerId)
+      get().mockForceRoundEnd(randomWinner)
     } else {
       set({ remainingMs: next })
     }
@@ -286,6 +290,8 @@ interface GameState {
   mockSetRemainingMs: (ms: number) => void
   mockSubmitBans: (bannedIds: string[]) => void
   mockNextRound: () => void
+  mockForceRoundEnd: (winnerId: string) => void
+  mockSetBestOf: (n: 3 | 5 | 7 | 9) => void
   mockRematch: () => void
 }
 
@@ -807,12 +813,18 @@ export const useGameStore = create<GameState>((set, get) => ({
   mockSetWinner: (playerId) => set({ matchWinnerId: playerId, roomStatus: 'match_end' }),
   mockSetRemainingMs: (ms) => set({ remainingMs: ms }),
 
+  // Called from the RoundEndOverlay confirm button — scores already updated by mockForceRoundEnd
   mockNextRound: () => {
-    const { players, myPlayerId, scores, currentRound, roomConfig, currentMinigame, roundHistory } =
-      get()
-    const opponent = players.find((p) => p.id !== myPlayerId)
-    // Randomly assign round winner and update scores
-    const winnerId = Math.random() < 0.5 ? myPlayerId : (opponent?.id ?? myPlayerId)
+    const { currentRound } = get()
+    set({ currentRound: currentRound + 1, lastRoundWinnerId: null })
+    const ids = Object.keys(MINIGAME_CONFIGS) as MinigameId[]
+    get().mockSetMinigame(ids[Math.floor(Math.random() * ids.length)]!)
+  },
+
+  // Stops the timer, records the round result, and transitions to round_end or match_end
+  mockForceRoundEnd: (winnerId) => {
+    clearMockTimer()
+    const { scores, currentRound, roomConfig, currentMinigame, roundHistory } = get()
     const newScores = { ...scores, [winnerId]: (scores[winnerId] ?? 0) + 1 }
     const newHistory: RoundRecord[] = [
       ...roundHistory,
@@ -826,18 +838,21 @@ export const useGameStore = create<GameState>((set, get) => ({
         matchWinnerId: winnerId,
         roomStatus: 'match_end',
         roundHistory: newHistory,
+        remainingMs: 0,
       })
-      return
+    } else {
+      set({
+        scores: newScores,
+        lastRoundWinnerId: winnerId,
+        roomStatus: 'round_end',
+        roundHistory: newHistory,
+        remainingMs: 0,
+      })
     }
-    const nextRound = currentRound + 1
-    set({
-      scores: newScores,
-      lastRoundWinnerId: winnerId,
-      currentRound: nextRound,
-      roundHistory: newHistory,
-    })
-    const ids = Object.keys(MINIGAME_CONFIGS) as MinigameId[]
-    get().mockSetMinigame(ids[Math.floor(Math.random() * ids.length)]!)
+  },
+
+  mockSetBestOf: (n) => {
+    set({ roomConfig: { ...get().roomConfig, bestOf: n } })
   },
 
   mockRematch: () => {
