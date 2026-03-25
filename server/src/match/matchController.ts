@@ -204,6 +204,15 @@ export function resolveRound(room: Room, result: MinigameResult): void {
 
 export function handleRoundReady(room: Room, playerId: string): void {
   if (!room.match || room.status !== 'round_end') return
+
+  // Guard: if the match is already decided (endMatch scheduled), ignore late votes.
+  // Without this, stale votes from the previous round can trigger a phantom round.
+  const winsNeeded = Math.ceil(room.config.bestOf / 2)
+  const matchAlreadyWon =
+    room.players.some((p) => (room.match!.scores[p.id] ?? 0) >= winsNeeded) ||
+    room.match.currentRound >= room.config.bestOf
+  if (matchAlreadyWon) return
+
   room.match.roundReadyVotes.add(playerId)
   if (room.players.every((p) => room.match!.roundReadyVotes.has(p.id))) {
     if (room.match.roundReadyTimer) clearTimeout(room.match.roundReadyTimer)

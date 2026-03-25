@@ -28,7 +28,7 @@
 
 ### Codebase Quality
 - [x] **Stale room cleanup audit** — server tests verify: (a) host disconnects before anyone joins → room deleted after 60s idle timer, (b) both players disconnect mid-match without reconnecting → room deleted after 15s forfeit window.
-- [ ] **Playwright E2E tests** — add a `tests/` package with a single full-match E2E test: create room → join → play 3 rounds (bot inputs) → verify match-end screen. Run against a locally-started server. Add `npm run test:e2e` script.
+- [x] **Playwright E2E tests** — `tests/` package with a full-match E2E test: browser P1 creates room → WS bot P2 joins → plays all 11 minigame types via per-game strategies → verifies match-end screen. `npm run test:e2e` from root. Also fixed a server bug where stale `roundReadyVotes` could start a phantom round after the match winner was already determined.
 - [x] **Server-side game analytics** — `game_rounds` Supabase table (`match_id`, `minigame_id`, `winner_id`, `round_number`); `persistRoundResult` called after every round. Schema in `server/migrations/001_initial_schema.sql`. Zero client change.
 
 ---
