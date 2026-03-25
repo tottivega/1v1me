@@ -2,34 +2,7 @@
 
 > What's next. One task = one branch = one commit. Check PROGRESS.md for what's already done.
 > Read ARCHITECTURE.md, DESIGN.md, and CLAUDE.md before starting any task.
-> **Current focus: improve underlying systems and UX until we reach a state where we solely focus on minigame creation, polish and art style.**
-
----
-
-## 🎮 UX & Systems
-
-### Game Feel
-- [x] **"You've played X times" on round transition** — below the game title on the count-in overlay, shows how many times this specific minigame has already appeared in the current match. Pure client-side: counts occurrences in `roundHistory`.
-- [x] **Per-minigame ambient sounds** — each game plays a soft background loop/drone while active; distinct character per game (ticking for reflex, beep rhythm for math, drone pads for luck, etc.). Synth-only via Web Audio API, zero files. Low volume (`getVolume() * 0.25`), fades in/out, stops the moment the round ends.
-- [x] **Custom avatar selection** — in the lobby `PlayerSlot`, clicking your own avatar opens a small picker of the 12 emoji options. Selection saved to `localStorage` (`1v1me_avatar`), sent in `SET_NICKNAME` payload as `avatar?`. Server validates and uses it; live-updates via `SET_AVATAR` message so opponent sees the change instantly.
-
-### Room & Match Flow
-- [x] **Game ban/veto system** — P1 configures 0–3 bans per player (default 0) in `RoomSettings`. When bans > 0 and both players ready, match enters a `banning` phase: server sends `BAN_PHASE_START` with the eligible pool; each player picks up to N games to ban (simultaneous, hidden); server removes the union of bans before shuffling the queue. Types: `banCount` on `RoomConfig`, `BAN_PHASE_START`, `SUBMIT_BANS`.
-- [x] **Rematch with config change** — `RoomSettings` panel embedded on the match-end screen; P1 can adjust Best-of / categories / ban count before voting; P2 sees it read-only. Locked while `rematchVoting` is in progress.
-
-### Notifications
-- [x] **Toast notification queue** — replaced single `errorMessage` with `toasts: Toast[]` (`{ id, message, type: 'error' | 'info' | 'success' }`). Max 3 visible (FIFO), clickable to dismiss. Handles `SERVER_RESTARTING` as an info toast.
-
-### Server Systems
-- [x] **Graceful server shutdown** — `SIGTERM` handler broadcasts `SERVER_RESTARTING` to all open WebSocket clients, waits 3s for clients to show a reconnect banner, then exits. Client shows this as an info toast.
-- [x] **Per-room WebSocket rate limit** — 120 msg/s limit across all players in a room (in addition to per-connection 60 msg/s). Tracked on `Room.roomMsgCount + Room.roomWindowStart`.
-- [x] **`GET /rooms` pagination** — `?limit=N&offset=M` query params (default 20, max 50). Returns `{ rooms, total }`. `RoomsPage` shows Prev/Next controls when `total > 20`.
-- [x] **Anonymous user ID persistence** — `1v1me_userId` UUID generated on first visit, stored in `localStorage`, sent in `SET_NICKNAME`. Server stores it on `Player` and writes `winner_user_id` / `loser_user_id` to Supabase. Enables lifetime stats without auth. See `server/migrations/`.
-
-### Codebase Quality
-- [x] **Stale room cleanup audit** — server tests verify: (a) host disconnects before anyone joins → room deleted after 60s idle timer, (b) both players disconnect mid-match without reconnecting → room deleted after 15s forfeit window.
-- [x] **Playwright E2E tests** — `tests/` package with a full-match E2E test: browser P1 creates room → WS bot P2 joins → plays all 11 minigame types via per-game strategies → verifies match-end screen. `npm run test:e2e` from root. Also fixed a server bug where stale `roundReadyVotes` could start a phantom round after the match winner was already determined.
-- [x] **Server-side game analytics** — `game_rounds` Supabase table (`match_id`, `minigame_id`, `winner_id`, `round_number`); `persistRoundResult` called after every round. Schema in `server/migrations/001_initial_schema.sql`. Zero client change.
+> **Current focus: minigame creation, polish and art style.**
 
 ---
 

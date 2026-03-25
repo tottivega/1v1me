@@ -155,6 +155,33 @@
 - [x] **Public room browser** — `GET /rooms` returns open rooms (1 player, lobby status); `createdAt` on `Room`; `getOpenRooms()` in roomStore; `/rooms` React page with 5s auto-refresh; "Browse open rooms" button on HomePage
 - [x] **PWA manifest** — `client/public/manifest.json` with `standalone` display, cream background, orange theme; `<link rel="manifest">` + `<meta name="theme-color">` in `index.html`
 
+### Systems & UX Polish (post-MVP batch)
+
+**Game Feel**
+- [x] **"You've played X times" on round transition** — below game title on count-in overlay; pure client-side, counts occurrences in `roundHistory`
+- [x] **Per-minigame ambient sounds** — each game plays a distinct synth loop while active (ticking for reflex, beeps for math, drone pads for luck, etc.); zero audio files; low volume (`getVolume() * 0.25`), fades in/out, stops on round end; `AMBIENT` map in `sounds.ts` keyed by minigame ID
+- [x] **Custom avatar selection** — clicking your avatar in lobby opens a 12-emoji picker; selection saved to `1v1me_avatar` in localStorage; sent in `SET_NICKNAME` as `avatar?`; server validates + live-updates opponent via `SET_AVATAR` → re-broadcast `ROOM_JOINED`
+
+**Room & Match Flow**
+- [x] **Game ban/veto system** — P1 configures 0–3 bans per player in `RoomSettings`; match enters `banning` phase when bans > 0; server sends `BAN_PHASE_START` with eligible pool; simultaneous hidden picks; union of bans removed before queue shuffle; types: `banCount` on `RoomConfig`, `BAN_PHASE_START`, `SUBMIT_BANS`
+- [x] **Rematch with config change** — `RoomSettings` panel embedded on match-end screen; P1 can adjust Best-of / categories / ban count before voting; P2 sees it read-only; locked while `rematchVoting` in progress
+
+**Notifications**
+- [x] **Toast notification queue** — replaced single `errorMessage` with `toasts: Toast[]` (`{ id, message, type: 'error' | 'info' | 'success' }`); max 3 visible (FIFO), clickable to dismiss; `SERVER_RESTARTING` delivered as info toast
+
+**Server Systems**
+- [x] **Graceful server shutdown** — `SIGTERM` handler broadcasts `SERVER_RESTARTING` to all connected clients, waits 3s, then exits; client shows info toast and reconnect banner
+- [x] **Per-room WebSocket rate limit** — 120 msg/s aggregate across all players in a room (in addition to per-connection 60 msg/s); tracked on `Room.roomMsgCount + Room.roomWindowStart`
+- [x] **`GET /rooms` pagination** — `?limit=N&offset=M` query params (default 20, max 50); returns `{ rooms, total }`; `RoomsPage` shows Prev/Next controls when `total > 20`
+- [x] **Anonymous user ID persistence** — `1v1me_userId` UUID generated on first visit, stored in localStorage, sent in `SET_NICKNAME`; server stores on `Player`, writes `winner_user_id` / `loser_user_id` to Supabase; lifetime stats without auth; schema in `server/migrations/001_initial_schema.sql`
+- [x] **Server-side game analytics** — `game_rounds` Supabase table (`match_id`, `minigame_id`, `winner_id`, `round_number`); `persistRoundResult` called from `matchController` after every round; zero client change
+- [x] **Phantom-round bug fix** — `handleRoundReady` now guards against stale `roundReadyVotes` from a previous round triggering `startRound` during the 2.5s `endMatch` window after a match winner is determined
+
+**Codebase Quality**
+- [x] **Stale room cleanup audit** — server tests verify: (a) host disconnects before anyone joins → room deleted after 60s idle timer, (b) both players disconnect mid-match without reconnecting → room deleted after 15s forfeit window
+- [x] **Playwright E2E tests** — `tests/` package; browser P1 + WS bot P2; per-game input strategies for all 11 minigames; full create-room → lobby → match → match-end flow in ~30s; `npm run test:e2e` from root; `webServer` auto-starts server + client; 94 server + 54 client unit tests
+- [x] **`ADDING_A_GAME.md` + `REMOVING_A_GAME.md`** — checklist updated with ambient sound and E2E bot strategy steps; new removal doc covers all 8 touch-points with a "what NOT to touch" table for auto-discovered parts
+
 ---
 
 ## 🗑️ Removed
