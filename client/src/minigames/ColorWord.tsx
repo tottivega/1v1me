@@ -1,14 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { playCorrect, playWrong, playClick } from '../utils/sounds'
+import { type ColorWordColor, type ColorWordState } from '@shared/types'
 
-type Color = 'red' | 'blue' | 'green' | 'yellow' | 'orange' | 'purple'
-
-interface ServerState {
-  word: Color
-  inkColor: Color
-  winnerId?: string
-}
+type Color = ColorWordColor
 
 const COLOR_STYLES: Record<Color, { bg: string; fg: string }> = {
   red: { bg: '#e63946', fg: '#fff' },
@@ -41,7 +36,7 @@ export default function ColorWord() {
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   // Live state
-  const server = isLive ? (minigameState as ServerState | null) : null
+  const server = isLive ? (minigameState as ColorWordState | null) : null
   const liveWord = server?.word ?? null
   const liveInk = server?.inkColor ?? null
   const liveWinner = server?.winnerId ?? null

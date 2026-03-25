@@ -1,13 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { playCoinFlip, playCoinResult } from '../utils/sounds'
+import { type CoinFlipPhase, type CoinFlipState } from '@shared/types'
 
-type Phase = 'flipping' | 'result'
-
-interface ServerState {
-  phase: Phase
-  winnerId?: string
-}
+type Phase = CoinFlipPhase
 
 export default function CoinFlip() {
   const { myPlayerId, players, minigameState, wsStatus } = useGameStore()
@@ -15,7 +11,7 @@ export default function CoinFlip() {
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   // ── Live mode: driven entirely by server GAME_UPDATE ──────────────────────
-  const serverState = isLive ? (minigameState as ServerState | null) : null
+  const serverState = isLive ? (minigameState as CoinFlipState | null) : null
   const livePhase = serverState?.phase ?? 'flipping'
   const liveWinnerId = serverState?.winnerId ?? null
 

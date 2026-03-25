@@ -1,15 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { playCorrect, playWrong } from '../utils/sounds'
+import { type QuickMathsEquation, type QuickMathsState } from '@shared/types'
 
-interface Equation {
-  question: string
-  answer: number
-}
-interface ServerState {
-  equations: Record<string, Equation>
-  correct: Record<string, number>
-}
+type Equation = QuickMathsEquation
 
 type Flash = 'correct' | 'wrong' | null
 
@@ -27,7 +21,7 @@ export default function QuickMaths() {
   const prevQuestion = useRef('')
 
   // ── Live mode ─────────────────────────────────────────────────────────────
-  const serverState = isLive ? (minigameState as ServerState | null) : null
+  const serverState = isLive ? (minigameState as QuickMathsState | null) : null
   const myEquation = serverState?.equations[myPlayerId] ?? null
   const myCorrect = serverState?.correct[myPlayerId] ?? 0
   const oppCorrect = opponent ? (serverState?.correct[opponent.id] ?? 0) : 0

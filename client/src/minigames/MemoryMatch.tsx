@@ -1,15 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { playCorrect, playWrong, playClick } from '../utils/sounds'
+import { type MemoryMatchState } from '@shared/types'
 
 const SYMBOLS = ['🔴', '🔵', '🟡', '🟢', '🟠', '🟣', '⬛', '⬜']
 const SEQ_LEN = 5
 const MEMORIZE_SECS = 4
-
-interface ServerState {
-  sequence: string[]
-  submissions: Record<string, string[]>
-}
 
 export default function MemoryMatch() {
   const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
@@ -22,7 +18,7 @@ export default function MemoryMatch() {
   const [picks, setPicks] = useState<string[]>([])
 
   // Live server state — declared early so effects below can reference `sequence`
-  const serverState = isLive ? (minigameState as ServerState | null) : null
+  const serverState = isLive ? (minigameState as MemoryMatchState | null) : null
   const sequence = serverState?.sequence ?? mockSequence
   const submissions = serverState?.submissions ?? {}
 
@@ -243,25 +239,27 @@ export default function MemoryMatch() {
           >
             <SequenceDisplay sequence={sequence} revealed />
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-              {(picks.length > 0 ? picks : (submissions[myPlayerId] ?? [])).map((sym, i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: 52,
-                    height: 52,
-                    background:
-                      sym === sequence[i] ? 'rgba(68,204,68,0.15)' : 'rgba(255,51,51,0.12)',
-                    border: `3px solid ${sym === sequence[i] ? 'var(--green)' : 'var(--red)'}`,
-                    borderRadius: 12,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 28,
-                  }}
-                >
-                  {sym}
-                </div>
-              ))}
+              {(picks.length > 0 ? picks : (submissions[myPlayerId] ?? [])).map(
+                (sym: string, i: number) => (
+                  <div
+                    key={i}
+                    style={{
+                      width: 52,
+                      height: 52,
+                      background:
+                        sym === sequence[i] ? 'rgba(68,204,68,0.15)' : 'rgba(255,51,51,0.12)',
+                      border: `3px solid ${sym === sequence[i] ? 'var(--green)' : 'var(--red)'}`,
+                      borderRadius: 12,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 28,
+                    }}
+                  >
+                    {sym}
+                  </div>
+                )
+              )}
             </div>
             {myScore !== null && (
               <div

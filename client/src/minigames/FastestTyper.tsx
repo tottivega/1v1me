@@ -1,13 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { playCorrect } from '../utils/sounds'
-
-interface ServerState {
-  phrase: string
-  progress: Record<string, number>
-  resolved: boolean
-  winnerId: string | null
-}
+import { type FastestTyperState } from '@shared/types'
 
 export default function FastestTyper() {
   const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
@@ -18,7 +12,7 @@ export default function FastestTyper() {
   const [finished, setFinished] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const serverState = isLive ? (minigameState as ServerState | null) : null
+  const serverState = isLive ? (minigameState as FastestTyperState | null) : null
   const phrase = serverState?.phrase ?? MOCK_PHRASE
 
   // Mock opponent progress — advances at a random pace in dev/disconnected mode
@@ -127,7 +121,7 @@ export default function FastestTyper() {
           letterSpacing: 0.5,
         }}
       >
-        {phrase.split('').map((ch, i) => {
+        {phrase.split('').map((ch: string, i: number) => {
           const typedChar = typed[i]
           let color = 'rgba(0,0,0,0.25)'
           if (typedChar === undefined) color = 'var(--black)'

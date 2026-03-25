@@ -1,8 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { playClick, playCorrect, playWrong } from '../utils/sounds'
+import {
+  type RPSChoice,
+  type RPSThrowRecord,
+  type RockPaperScissorsState,
+  type RockPaperScissorsStatePicking,
+  type RockPaperScissorsStateReveal,
+} from '@shared/types'
 
-type Choice = 'rock' | 'paper' | 'scissors'
+type Choice = RPSChoice
 
 const CHOICES: { id: Choice; emoji: string; label: string }[] = [
   { id: 'rock', emoji: '🪨', label: 'ROCK' },
@@ -12,30 +19,6 @@ const CHOICES: { id: Choice; emoji: string; label: string }[] = [
 
 const BEATS: Record<Choice, Choice> = { rock: 'scissors', paper: 'rock', scissors: 'paper' }
 
-interface ThrowRecord {
-  picks: Record<string, Choice>
-  winnerId: string | null
-}
-
-interface ServerStatePicking {
-  phase: 'picking'
-  throwNum: number
-  submitted: string[]
-  scores: Record<string, number>
-  history: ThrowRecord[]
-}
-
-interface ServerStateReveal {
-  phase: 'reveal'
-  throwNum: number
-  picks: Record<string, Choice>
-  throwWinnerId: string | null
-  scores: Record<string, number>
-  history: ThrowRecord[]
-}
-
-type ServerState = ServerStatePicking | ServerStateReveal
-
 // ── Mock state ────────────────────────────────────────────────────────────────
 interface MockState {
   throwNum: number
@@ -44,7 +27,7 @@ interface MockState {
   revealPicks: Record<string, Choice>
   throwWinnerId: string | null
   scores: Record<string, number>
-  history: ThrowRecord[]
+  history: RPSThrowRecord[]
   finalWinnerId: string | null
 }
 
@@ -76,7 +59,7 @@ export default function RockPaperScissors() {
   // Tracks what I picked in live mode (server only echoes back who submitted, not what)
   const myLivePickRef = useRef<Choice | null>(null)
 
-  const serverState = isLive ? (minigameState as ServerState | null) : null
+  const serverState = isLive ? (minigameState as RockPaperScissorsState | null) : null
 
   // ── Reset on new round ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -128,7 +111,7 @@ export default function RockPaperScissors() {
     if (winnerId) newScores[winnerId] = (newScores[winnerId] ?? 0) + 1
 
     const revealPicks = { [myPlayerId]: myChoice, [oppId]: oppChoice }
-    const newHistory: ThrowRecord[] = [...prev.history, { picks: revealPicks, winnerId }]
+    const newHistory: RPSThrowRecord[] = [...prev.history, { picks: revealPicks, winnerId }]
 
     const matchWinner = [myPlayerId, oppId].find((id) => (newScores[id] ?? 0) >= 2)
     const allDone = newHistory.length >= 3
@@ -171,7 +154,8 @@ export default function RockPaperScissors() {
   }
 
   // ── Sound on throw reveal ──────────────────────────────────────────────────
-  const liveReveal = serverState?.phase === 'reveal' ? (serverState as ServerStateReveal) : null
+  const liveReveal =
+    serverState?.phase === 'reveal' ? (serverState as RockPaperScissorsStateReveal) : null
   const revealWinner = isLive ? liveReveal?.throwWinnerId : mock.throwWinnerId
   const revealThrowNum = isLive ? (serverState?.throwNum ?? 0) : mock.throwNum
 
@@ -191,7 +175,7 @@ export default function RockPaperScissors() {
 
   const iHavePicked = isLive
     ? serverState?.phase === 'picking' &&
-      (serverState as ServerStatePicking).submitted.includes(myPlayerId)
+      (serverState as RockPaperScissorsStatePicking).submitted.includes(myPlayerId)
     : mock.myPick !== null
 
   const revealPicks: Record<string, Choice> | null = isLive
@@ -369,7 +353,7 @@ export default function RockPaperScissors() {
       {/* Throw history dots */}
       {history.length > 0 && (
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          {history.map((record, i) => {
+          {history.map((record: RPSThrowRecord, i: number) => {
             const won = record.winnerId === myPlayerId
             const tied = record.winnerId === null
             return (

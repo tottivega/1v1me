@@ -1,12 +1,9 @@
 import { useState, useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { playClickHit } from '../utils/sounds'
+import { type ClickSpeedState } from '@shared/types'
 
 const CPS_CAP = 20
-
-interface ServerState {
-  clicks: Record<string, number>
-}
 
 interface Ripple {
   id: number
@@ -25,7 +22,7 @@ export default function ClickSpeed() {
   const clickTimestamps = useRef<number[]>([])
   const btnRef = useRef<HTMLButtonElement>(null)
 
-  const serverState = isLive ? (minigameState as ServerState | null) : null
+  const serverState = isLive ? (minigameState as ClickSpeedState | null) : null
   const myClicks = isLive
     ? Math.max(localMyClicks, serverState?.clicks[myPlayerId] ?? 0)
     : localMyClicks

@@ -1,18 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { playCorrect, playWrong, playClick } from '../utils/sounds'
-
-type Phase = 'guessing' | 'reveal'
-
-interface ServerState {
-  clue: number
-  phase: Phase
-  submitted?: string[]
-  target?: number
-  correct?: 'higher' | 'lower'
-  answers?: Record<string, 'higher' | 'lower'>
-  winnerId?: string
-}
+import { type HigherOrLowerState } from '@shared/types'
 
 export default function HigherOrLower() {
   const { myPlayerId, players, minigameState, wsStatus, sendInput } = useGameStore()
@@ -20,7 +9,7 @@ export default function HigherOrLower() {
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   // Live state
-  const server = isLive ? (minigameState as ServerState | null) : null
+  const server = isLive ? (minigameState as HigherOrLowerState | null) : null
 
   // Mock state
   const [mockClue, setMockClue] = useState<number | null>(null)

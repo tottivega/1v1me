@@ -112,6 +112,98 @@ export const MINIGAME_CONFIGS = {
 
 export type MinigameId = keyof typeof MINIGAME_CONFIGS
 
+// ─── Minigame State Types (shared between server and client) ──────────────────
+
+export interface ClickSpeedState {
+  clicks: Record<string, number>
+}
+
+export type CoinFlipPhase = 'flipping' | 'result'
+export interface CoinFlipState {
+  phase: CoinFlipPhase
+  winnerId?: string
+}
+
+export interface ReactionTestState {
+  phase: 'waiting' | 'ready' | 'result'
+  reactions?: Record<string, number>
+  penalized?: string[]
+  winnerId?: string | null
+}
+
+export interface QuickMathsEquation {
+  question: string
+  answer: number
+}
+export interface QuickMathsState {
+  equations: Record<string, QuickMathsEquation>
+  correct: Record<string, number>
+}
+
+export interface MemoryMatchState {
+  sequence: string[]
+  submissions: Record<string, string[]>
+}
+
+export interface FastestTyperState {
+  phrase: string
+  progress: Record<string, number>
+  resolved: boolean
+  winnerId: string | null
+}
+
+export type RPSChoice = 'rock' | 'paper' | 'scissors'
+export interface RPSThrowRecord {
+  picks: Record<string, RPSChoice>
+  winnerId: string | null
+}
+export interface RockPaperScissorsStatePicking {
+  phase: 'picking'
+  throwNum: number
+  submitted: string[]
+  scores: Record<string, number>
+  history: RPSThrowRecord[]
+}
+export interface RockPaperScissorsStateReveal {
+  phase: 'reveal'
+  throwNum: number
+  picks: Record<string, RPSChoice>
+  throwWinnerId: string | null
+  scores: Record<string, number>
+  history: RPSThrowRecord[]
+}
+export type RockPaperScissorsState = RockPaperScissorsStatePicking | RockPaperScissorsStateReveal
+
+export type ColorWordColor = 'red' | 'blue' | 'green' | 'yellow' | 'orange' | 'purple'
+export interface ColorWordState {
+  word: ColorWordColor
+  inkColor: ColorWordColor
+  winnerId?: string
+}
+
+export type HigherOrLowerPhase = 'guessing' | 'reveal'
+export interface HigherOrLowerState {
+  clue: number
+  phase: HigherOrLowerPhase
+  submitted?: string[]
+  target?: number
+  correct?: 'higher' | 'lower'
+  answers?: Record<string, 'higher' | 'lower'>
+  winnerId?: string
+}
+
+/** Union of all possible minigame states broadcast via GAME_UPDATE */
+export type MinigameState =
+  | ClickSpeedState
+  | CoinFlipState
+  | ReactionTestState
+  | QuickMathsState
+  | MemoryMatchState
+  | FastestTyperState
+  | RockPaperScissorsState
+  | ColorWordState
+  | HigherOrLowerState
+
 // ─── Room Config ──────────────────────────────────────────────────────────────
 
 export interface RoomConfig {

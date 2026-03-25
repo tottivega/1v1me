@@ -26,6 +26,7 @@ import {
   type RoomConfigPayload,
   type BanPhaseStartPayload,
   type MinigamePlatform,
+  type MinigameState,
 } from '@shared/types'
 
 // Returns games that are playable on the current device and within the enabled categories
@@ -219,7 +220,7 @@ interface GameState {
   roundHistory: RoundRecord[]
 
   // Opaque minigame state (from GAME_UPDATE)
-  minigameState: unknown
+  minigameState: MinigameState | null
 
   // Reconnect countdown (seconds remaining, null when no one is disconnected)
   reconnectCountdown: number | null
@@ -554,7 +555,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       case 'GAME_UPDATE': {
         const p = msg.payload as GameUpdatePayload
-        set({ minigameState: p.state })
+        set({ minigameState: p.state as MinigameState })
         break
       }
 
@@ -654,7 +655,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           updates.currentMinigame = p.match.currentMinigame as MinigameId | null
           updates.remainingMs = p.match.remainingMs
           updates.timeoutMs = p.match.timeoutMs
-          updates.minigameState = p.match.minigameState
+          updates.minigameState = p.match.minigameState as MinigameState | null
         }
         set(updates)
         break

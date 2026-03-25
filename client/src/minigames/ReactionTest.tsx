@@ -1,15 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { playReactionGo, playEarly } from '../utils/sounds'
+import { type ReactionTestState } from '@shared/types'
 
 type Phase = 'waiting' | 'ready' | 'clicked' | 'too-early' | 'result'
-
-interface ServerState {
-  phase: 'waiting' | 'ready' | 'result'
-  reactions?: Record<string, number>
-  penalized?: string[]
-  winnerId?: string | null
-}
 
 export default function ReactionTest() {
   const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
@@ -17,7 +11,7 @@ export default function ReactionTest() {
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   // ── Live mode: driven by server GAME_UPDATE ───────────────────────────────
-  const serverState = isLive ? (minigameState as ServerState | null) : null
+  const serverState = isLive ? (minigameState as ReactionTestState | null) : null
 
   // Track whether we've already sent our reaction this round
   const hasSentReaction = useRef(false)
