@@ -19,6 +19,7 @@ import { handleGameInput, handleRoundReady, handleBanSubmit } from '../match/mat
 const RATE_LIMIT = 60 // max messages per window per connection
 const RATE_WINDOW_MS = 1000 // sliding window size
 const ROOM_RATE_LIMIT = 120 // max messages per window across all players in a room
+const EMOTE_RATE_MS = 5000 // minimum ms between emotes per connection
 
 interface ConnState {
   playerId: string
@@ -28,6 +29,7 @@ interface ConnState {
   spectatorNum?: number
   msgCount: number
   windowStart: number
+  lastEmoteAt: number
 }
 
 const connections = new Map<WebSocket, ConnState>()
@@ -40,6 +42,7 @@ export function onConnection(ws: WebSocket): void {
     role: 'player',
     msgCount: 0,
     windowStart: Date.now(),
+    lastEmoteAt: 0,
   })
   console.log(`[WS] Connection opened, assigned playerId=${playerId}`)
 
@@ -247,6 +250,10 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
       if (!room) return
       const { emote } = msg.payload as { emote: string }
       if (!emote || typeof emote !== 'string' || emote.length > 10) return
+      // Rate limit: 1 emote per EMOTE_RATE_MS per connection (silently drop excess)
+      const emoteNow = Date.now()
+      if (emoteNow - conn.lastEmoteAt < EMOTE_RATE_MS) return
+      conn.lastEmoteAt = emoteNow
       // For spectators, resolve display name; for players, send playerId for client lookup
       const fromName =
         conn.role === 'spectator'

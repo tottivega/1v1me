@@ -265,4 +265,21 @@ describe('joinAsSpectator() / removeSpectator()', () => {
 
     expect(room.spectators).not.toContain(spectatorWs)
   })
+
+  it('rejects the 29th spectator with SPECTATOR_LIMIT_REACHED', () => {
+    joinOrCreateRoom(ROOM_ID, 'p1', 'Alice', makeWs())
+    // Fill up to the 28-spectator cap
+    for (let i = 0; i < 28; i++) {
+      const result = joinAsSpectator(ROOM_ID, makeWs())
+      expect('error' in result).toBe(false)
+    }
+    // The 29th attempt must be rejected
+    const overflow = joinAsSpectator(ROOM_ID, makeWs())
+    expect('error' in overflow).toBe(true)
+    if ('error' in overflow) {
+      expect(overflow.error.code).toBe('SPECTATOR_LIMIT_REACHED')
+    }
+    // Room still has exactly 28
+    expect(getRoom(ROOM_ID)!.spectators).toHaveLength(28)
+  })
 })

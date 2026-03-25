@@ -56,8 +56,8 @@ cd server && npm run dev       # tsx watch mode, port 3001
 cd client && npm run dev       # Vite dev server, port 5173
 
 # Tests
-cd server && npm test          # 86 tests
-cd client && npm test          # 45 tests
+cd server && npm test          # 82 tests
+cd client && npm test          # 87 tests
 
 # Lint / format
 npm run lint                   # from server/ or client/
@@ -250,7 +250,7 @@ Key animations: `anim-pop`, `anim-bounce`, `anim-pulse`, `anim-count-in`, `score
 ## Testing
 
 ```bash
-cd server && npm test    # 80 tests, 10 files
+cd server && npm test    # 82 tests, 10 files
 cd client && npm test    # 87 tests, 8 files
 ```
 

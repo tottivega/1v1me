@@ -243,6 +243,34 @@ describe('Unknown message type', () => {
   })
 })
 
+describe('EMOTE rate limiting', () => {
+  it('drops a second emote sent within 5 s of the first', async () => {
+    const port = getPort(httpServer)
+    const { ws: ws1, msgs: msgs1 } = await connectClient(port)
+    const { ws: ws2, msgs: msgs2 } = await connectClient(port)
+
+    send(ws1, 'SET_NICKNAME', { nickname: 'Alice' }, 'emote-room')
+    await waitForMsg(msgs1, 'ROOM_JOINED')
+    send(ws2, 'SET_NICKNAME', { nickname: 'Bob' }, 'emote-room')
+    await waitForMsg(msgs2, 'ROOM_JOINED')
+
+    // First emote — should arrive at both players
+    send(ws1, 'EMOTE', { emote: '👋' }, 'emote-room')
+    await waitForMsg(msgs2, 'EMOTE_RECEIVED')
+
+    const countBefore = msgs2.filter(
+      (m) => (m as { type: string }).type === 'EMOTE_RECEIVED'
+    ).length
+
+    // Second emote immediately — should be silently dropped
+    send(ws1, 'EMOTE', { emote: '🔥' }, 'emote-room')
+    await new Promise((r) => setTimeout(r, 80))
+
+    const countAfter = msgs2.filter((m) => (m as { type: string }).type === 'EMOTE_RECEIVED').length
+    expect(countAfter).toBe(countBefore)
+  })
+})
+
 describe('Rate limiting', () => {
   it('sends ERROR RATE_LIMITED after exceeding 60 messages per second', async () => {
     const port = getPort(httpServer)

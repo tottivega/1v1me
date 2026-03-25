@@ -12,6 +12,7 @@ import { stopTimer, pauseTimer, resumeTimer } from '../timer/timerController'
 
 const CLEANUP_IDLE_MS = 60_000
 const RECONNECT_TIMEOUT = 15_000
+const MAX_SPECTATORS = 28
 
 function touch(room: Room): void {
   room.lastActivityAt = Date.now()
@@ -214,6 +215,15 @@ export function joinAsSpectator(
 ): { room: Room } | { error: { code: string; message: string } } {
   const room = getRoom(roomId)
   if (!room) return { error: { code: 'ROOM_NOT_FOUND', message: 'Room not found' } }
+
+  if (room.spectators.length >= MAX_SPECTATORS) {
+    return {
+      error: {
+        code: 'SPECTATOR_LIMIT_REACHED',
+        message: `Spectator limit reached (max ${MAX_SPECTATORS})`,
+      },
+    }
+  }
 
   room.spectators.push(ws)
   touch(room)
