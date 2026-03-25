@@ -220,6 +220,22 @@ export default function DevPanel() {
                         {cfg.emoji} {cfg.label}
                       </span>
                       <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        {cfg.platforms !== 'all' && (
+                          <span
+                            style={{
+                              background: 'rgba(255,255,255,0.15)',
+                              color: 'rgba(255,255,255,0.7)',
+                              fontSize: 9,
+                              fontWeight: 900,
+                              padding: '2px 6px',
+                              borderRadius: 4,
+                              textTransform: 'uppercase',
+                              letterSpacing: 0.5,
+                            }}
+                          >
+                            {cfg.platforms === 'desktop-only' ? '🖥' : '📱'}
+                          </span>
+                        )}
                         <span
                           style={{
                             background: CATEGORY_COLORS[cfg.category],

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useGameStore } from '../../store/gameStore'
-import { MINIGAME_CONFIGS } from '@shared/types'
+import { MINIGAME_CONFIGS, type MinigamePlatform } from '@shared/types'
 
 const BAN_TIMEOUT_SECS = 10
+const isMobile = window.matchMedia('(pointer: coarse)').matches
 
 export default function BanPhaseView() {
   const { banPhasePool, banPhaseCount, send, isMockMatch, mockSubmitBans } = useGameStore()
@@ -12,7 +13,12 @@ export default function BanPhaseView() {
   const submittedRef = useRef(false)
   const selectedRef = useRef<string[]>([])
 
-  const pool = banPhasePool ?? []
+  const rawPool = banPhasePool ?? []
+  // Filter out games that can't run on the current platform
+  const pool = rawPool.filter((id) => {
+    const platforms = MINIGAME_CONFIGS[id].platforms as MinigamePlatform
+    return (platforms !== 'desktop-only' || !isMobile) && (platforms !== 'mobile-only' || isMobile)
+  })
   const remaining = banPhaseCount - selected.length
 
   // Keep refs in sync so the timer callback always sees latest values

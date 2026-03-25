@@ -25,7 +25,20 @@ import {
   type RoomConfig,
   type RoomConfigPayload,
   type BanPhaseStartPayload,
+  type MinigamePlatform,
 } from '@shared/types'
+
+// Returns games that are playable on the current device and within the enabled categories
+function buildMockPool(enabledCategories: string[]): MinigameId[] {
+  const mobile = window.matchMedia('(pointer: coarse)').matches
+  return (Object.keys(MINIGAME_CONFIGS) as MinigameId[]).filter((id) => {
+    const cfg = MINIGAME_CONFIGS[id]
+    const platforms = cfg.platforms as MinigamePlatform
+    if (platforms === 'desktop-only' && mobile) return false
+    if (platforms === 'mobile-only' && !mobile) return false
+    return enabledCategories.length === 0 || enabledCategories.includes(cfg.category)
+  })
+}
 
 // Module-level interval handle for the reconnect countdown (not reactive state)
 let _reconnectInterval: ReturnType<typeof setInterval> | null = null
@@ -730,11 +743,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (status === 'banning') {
       const { roomConfig } = get()
       updates.isMockMatch = true
-      updates.banPhasePool = (Object.keys(MINIGAME_CONFIGS) as MinigameId[]).filter(
-        (id) =>
-          roomConfig.enabledCategories.length === 0 ||
-          roomConfig.enabledCategories.includes(MINIGAME_CONFIGS[id].category)
-      )
+      updates.banPhasePool = buildMockPool(roomConfig.enabledCategories)
       updates.banPhaseCount = roomConfig.banCount > 0 ? roomConfig.banCount : 1
     }
     set(updates)
@@ -769,13 +778,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       setTimeout(() => {
         const { roomConfig } = get()
         if (roomConfig.banCount > 0) {
-          // Build pool from enabled categories (mirrors server buildPool logic)
-          const pool = (Object.keys(MINIGAME_CONFIGS) as MinigameId[]).filter(
-            (id) =>
-              roomConfig.enabledCategories.length === 0 ||
-              roomConfig.enabledCategories.includes(MINIGAME_CONFIGS[id].category)
-          )
-          set({ roomStatus: 'banning', banPhasePool: pool, banPhaseCount: roomConfig.banCount })
+          set({
+            roomStatus: 'banning',
+            banPhasePool: buildMockPool(roomConfig.enabledCategories),
+            banPhaseCount: roomConfig.banCount,
+          })
         } else {
           const ids = Object.keys(MINIGAME_CONFIGS) as MinigameId[]
           const id = ids[Math.floor(Math.random() * ids.length)]!
