@@ -1,5 +1,6 @@
 import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '../../store/gameStore'
 import { MINIGAME_CONFIGS, AVATARS } from '@shared/types'
 import { playClick, playReady } from '../../utils/sounds'
@@ -125,11 +126,6 @@ function PlayerSlot({
         }}
       >
         {player ? player.avatar : '❓'}
-        {onPickAvatar && (
-          <span style={{ fontSize: 12, marginLeft: 2, verticalAlign: 'super', opacity: 0.5 }}>
-            ✏️
-          </span>
-        )}
       </div>
       {/* Nickname + live dot */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -251,10 +247,12 @@ function AvatarPicker({
 }
 
 export default function LobbyView({ roomId }: { roomId: string }) {
+  const navigate = useNavigate()
   const {
     players,
     myPlayerId,
     setReady,
+    disconnect,
     mockAddOpponent,
     wsStatus,
     spectatorCount,
@@ -322,6 +320,18 @@ export default function LobbyView({ roomId }: { roomId: string }) {
 
   return (
     <div className="page">
+      {/* Back button — fixed top-left, does not affect page flow */}
+      <button
+        className="btn btn-white btn-sm"
+        onClick={() => {
+          disconnect()
+          navigate('/')
+        }}
+        style={{ position: 'fixed', top: 14, left: 14, zIndex: 200 }}
+      >
+        ← Back
+      </button>
+
       {/* Header */}
       <div style={{ textAlign: 'center' }}>
         <div
