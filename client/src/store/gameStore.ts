@@ -800,11 +800,16 @@ export const useGameStore = create<GameState>((set, get) => ({
   mockSetRemainingMs: (ms) => set({ remainingMs: ms }),
 
   mockNextRound: () => {
-    const { players, myPlayerId, scores, currentRound, roomConfig } = get()
+    const { players, myPlayerId, scores, currentRound, roomConfig, currentMinigame, roundHistory } =
+      get()
     const opponent = players.find((p) => p.id !== myPlayerId)
     // Randomly assign round winner and update scores
     const winnerId = Math.random() < 0.5 ? myPlayerId : (opponent?.id ?? myPlayerId)
     const newScores = { ...scores, [winnerId]: (scores[winnerId] ?? 0) + 1 }
+    const newHistory: RoundRecord[] = [
+      ...roundHistory,
+      { round: currentRound, minigameId: currentMinigame ?? 'clickspeed', winnerId },
+    ]
     const winsNeeded = Math.ceil(roomConfig.bestOf / 2)
     if (Object.values(newScores).some((s) => s >= winsNeeded)) {
       set({
@@ -812,11 +817,17 @@ export const useGameStore = create<GameState>((set, get) => ({
         lastRoundWinnerId: winnerId,
         matchWinnerId: winnerId,
         roomStatus: 'match_end',
+        roundHistory: newHistory,
       })
       return
     }
     const nextRound = currentRound + 1
-    set({ scores: newScores, lastRoundWinnerId: winnerId, currentRound: nextRound })
+    set({
+      scores: newScores,
+      lastRoundWinnerId: winnerId,
+      currentRound: nextRound,
+      roundHistory: newHistory,
+    })
     const ids = Object.keys(MINIGAME_CONFIGS) as MinigameId[]
     get().mockSetMinigame(ids[Math.floor(Math.random() * ids.length)]!)
   },
