@@ -210,7 +210,7 @@ export default function HomePage() {
       )}
 
       {/* Game Gallery */}
-      <div style={{ width: '100%', maxWidth: 680 }}>
+      <div style={{ width: '100%', maxWidth: 820 }}>
         <div className="label" style={{ textAlign: 'center', marginBottom: 14, fontSize: 14 }}>
           ⚔️ {ALL_GAMES.length} MINI GAMES TO SETTLE YOUR BEEF
         </div>
@@ -248,7 +248,8 @@ export default function HomePage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, 190px)',
+            justifyContent: 'center',
             gap: 12,
           }}
         >
