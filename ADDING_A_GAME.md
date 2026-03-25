@@ -116,7 +116,35 @@ Refer to the existing entries (clickspeed, memorymatch, etc.) as templates for t
 
 ---
 
-## 6. Add server integration tests
+## 6. Add a client smoke test
+
+Open `client/src/__tests__/minigames/minigames.test.tsx` and add a `describe` block for your game following the existing pattern:
+
+```ts
+describe('WordRace', () => {
+  it('renders the typing area', async () => {
+    await renderGame('WordRace')
+    expect(screen.getByRole('textbox')).toBeInTheDocument()
+  })
+
+  it('typing does not throw', async () => {
+    await renderGame('WordRace')
+    expect(() =>
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'hello' } })
+    ).not.toThrow()
+  })
+})
+```
+
+Rules:
+- Use `BASE_STATE` (already in scope) — `wsStatus: 'disconnected'`, `isMockMatch: true`
+- Test that the game renders something meaningful in mock mode
+- Test that the primary interaction (click, type, pick) does not throw
+- Do **not** test server-driven behaviour (that's what server integration tests are for)
+
+---
+
+## 7. Add server integration tests
 
 Create `server/src/__tests__/minigames/wordrace.test.ts`. At minimum:
 
@@ -142,7 +170,7 @@ it('resolves with the first finisher as winner', () => {
 
 ---
 
-## 7. Add a bot strategy for the E2E test
+## 8. Add a bot strategy for the E2E test
 
 Open `tests/e2e/helpers/gameInputs.ts` and add a strategy to the `STRATEGIES` map:
 
@@ -169,6 +197,7 @@ Rules:
 - [ ] Spectator view at `client/src/minigames/WordRace.spectator.tsx` (auto-registered by glob)
 - [ ] Ambient sound layers in `client/src/utils/sounds.ts` → `AMBIENT` map
 - [ ] Bot strategy in `tests/e2e/helpers/gameInputs.ts` → `STRATEGIES` map
+- [ ] Client smoke test in `client/src/__tests__/minigames/minigames.test.tsx`
 - [ ] Integration tests in `server/src/__tests__/minigames/wordrace.test.ts`
 - [ ] `tsc --noEmit` passes in both `client/` and `server/`
 - [ ] Tested in DevPanel (mock mode) — no server needed

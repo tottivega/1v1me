@@ -167,7 +167,7 @@ See `ADDING_A_GAME.md` and `_template.ts` / `_Template.tsx` for the full checkli
 | `server/src/match/matchController.ts` | Round flow, score tracking, `onRoundDone` callback |
 | `server/src/sync/broadcast.ts` | `send()`, `broadcast()`, `toPlayerInfos()` helpers |
 | `client/src/store/gameStore.ts` | Zustand store — all client state, WS connection, `handleServerMessage` dispatcher |
-| `client/src/pages/RoomPage.tsx` | Main game page (lobby, match, round transitions, match end, share) |
+| `client/src/pages/RoomPage/` | Main game page — split into `LobbyView`, `BanPhaseView`, `MatchView`, `MatchEndView`, `RoomSettings` |
 | `client/src/pages/SpectatePage.tsx` | Spectator view — live scoreboard, per-game state, emote buttons |
 | `client/src/pages/HomePage.tsx` | Create/join, game gallery, match history, win streak |
 | `client/src/pages/RoomsPage.tsx` | Public room browser (`/rooms`), 5s auto-refresh |
@@ -191,7 +191,7 @@ players          // PlayerInfo[] — includes avatar, streak, ready, connected
 scores           // Record<playerId, number>
 currentRound     // 1-based
 currentMinigame  // MinigameId | null
-minigameState    // unknown — typed per-game inside the component
+minigameState    // MinigameState | null — union of all 9 game state shapes (see shared/types.ts)
 remainingMs      // ms left on current round timer
 roomConfig       // { bestOf, enabledCategories }
 matchWinnerId    // set at MATCH_END
@@ -250,19 +250,21 @@ Key animations: `anim-pop`, `anim-bounce`, `anim-pulse`, `anim-count-in`, `score
 ## Testing
 
 ```bash
-cd server && npm test    # 86 tests, 12 files
-cd client && npm test    # 45 tests, 5 files
+cd server && npm test    # 80 tests, 10 files
+cd client && npm test    # 87 tests, 8 files
 ```
 
 Server test files: `quickmaths`, `memorymatch`, `fastesttyper`, `rockpaperscissors`, `colorword`, `higherorlower`, `matchController`, `roomManager`, `roomStore`, `router` (integration with real WS server).
 
-Client test files: `gameStore`, `ScoreBoard`, `TimerBar`, `HomePage`, `RoomPage`.
+Client test files: `gameStore`, `ScoreBoard`, `TimerBar`, `HomePage`, `RoomPage`, `BanPhaseView`, `RoundEndOverlay`, `minigames` (smoke tests for all 9 game components).
 
 **Test helpers:** `server/src/__tests__/helpers.ts` — always use `makePlayer({ streak: 0, ...overrides })`. `clearAllRooms()` is called in `beforeEach` for isolation.
 
 **Mocking sounds:** Every client test file mocks `../../utils/sounds` to silence Web Audio API (not available in happy-dom).
 
 **Animated UI:** If testing a component with `requestAnimationFrame`-driven animation (e.g. score counter), use `waitFor()` not a synchronous assertion.
+
+**Minigame smoke tests:** `client/src/__tests__/minigames/minigames.test.tsx` — one `describe` per game, runs in mock mode (`isMockMatch: true`, `wsStatus: 'disconnected'`). Add a block here when adding a new game; remove it when removing one.
 
 ---
 

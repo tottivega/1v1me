@@ -6,6 +6,18 @@
 
 ---
 
+## 🎮 UX / Polish
+
+- [ ] **About modal** — Add a `?` icon button next to the volume slider that opens a modal titled "About 1v1 ME". Body: `TODO: ADD` for now. Style it consistently with the rest of the UI (`.card`, border, shadow). The modal should be dismissible via backdrop click or a close button.
+
+- [ ] **Streamer / spectator safety** — Design and implement limits for the streamer use case (streamers playing 1v1 ME live with chat watching). Current state: spectator count is unbounded (`room.spectators.push(ws)` with no cap), and spectator emotes are forwarded directly to players with no rate limit. Required changes:
+  - **Hard cap**: reject `SPECTATE` joins above a per-room maximum (suggested: 50). Send `ERROR: SPECTATOR_LIMIT_REACHED` to the rejected connection and close it.
+  - **Emote rate limit**: allow at most 1 emote per spectator per 5 seconds server-side. Silently drop excess.
+  - **Verify game update frequency**: `GAME_UPDATE` is already event-driven (not polled), but confirm no game broadcasts more than ~5 updates/second — each update fans out to all spectators.
+  - **Document the scale ceiling**: a single Fly.io VM can comfortably handle ~50 spectators per room across multiple concurrent rooms. Beyond that, a fan-out proxy layer (Cloudflare DO, Redis pub-sub) would be needed. Note this in `ARCHITECTURE.md`.
+
+---
+
 ## 🔒 Pre-deploy
 
 - [ ] **Staging smoke test** — deploy to staging (separate Fly app + Vercel preview), run through the full checklist below, and verify a complete match end-to-end before touching production.

@@ -43,7 +43,13 @@ Both are auto-discovered via `import.meta.glob` — no registry to update. The f
 
 ---
 
-## 4. Delete the test file
+## 4. Remove the client smoke test
+
+Open `client/src/__tests__/minigames/minigames.test.tsx` and delete the `describe('WordRace', ...)` block.
+
+---
+
+## 5. Delete the server integration test file
 
 ```
 server/src/__tests__/minigames/wordrace.test.ts
@@ -51,7 +57,7 @@ server/src/__tests__/minigames/wordrace.test.ts
 
 ---
 
-## 5. Remove the ambient sound entry
+## 6. Remove the ambient sound entry
 
 Open `client/src/utils/sounds.ts` and delete the entry from the `AMBIENT` map:
 
@@ -65,7 +71,7 @@ If you omit this step the dead entry is harmless (TypeScript won't complain — 
 
 ---
 
-## 6. Remove the E2E bot strategy
+## 7. Remove the E2E bot strategy
 
 Open `tests/e2e/helpers/gameInputs.ts` and delete the entry from the `STRATEGIES` map:
 
@@ -79,13 +85,13 @@ Same as above — TypeScript won't enforce this, but the dead strategy will neve
 
 ---
 
-## 7. Update CLAUDE.md
+## 8. Update CLAUDE.md
 
 The **Minigame Pool** table in `CLAUDE.md` lists all games. Remove the row for the deleted game and update the count in the section header (currently "11 games").
 
 ---
 
-## 8. Verify
+## 9. Verify
 
 ```bash
 cd server && npx tsc --noEmit   # zero type errors
