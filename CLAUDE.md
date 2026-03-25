@@ -254,7 +254,7 @@ cd server && npm test    # 86 tests, 12 files
 cd client && npm test    # 45 tests, 5 files
 ```
 
-Server test files: `numberguess`, `quickmaths`, `memorymatch`, `fastesttyper`, `wordscramble`, `rockpaperscissors`, `colorword`, `higherorlower`, `matchController`, `roomManager`, `roomStore`, `router` (integration with real WS server).
+Server test files: `quickmaths`, `memorymatch`, `fastesttyper`, `rockpaperscissors`, `colorword`, `higherorlower`, `matchController`, `roomManager`, `roomStore`, `router` (integration with real WS server).
 
 Client test files: `gameStore`, `ScoreBoard`, `TimerBar`, `HomePage`, `RoomPage`.
 
@@ -266,21 +266,19 @@ Client test files: `gameStore`, `ScoreBoard`, `TimerBar`, `HomePage`, `RoomPage`
 
 ---
 
-## Minigame Pool (11 games)
+## Minigame Pool (9 games)
 
 | ID | Category | Timer | Notes |
 |---|---|---|---|
 | `clickspeed` | reflex | 5s | 20 CPS cap server-side |
 | `coinflip` | luck | instant | Pure RNG |
 | `reactiontest` | reflex | 3s window | Early click = disqualified |
-| `numberguess` | strategy | 20s | Closest to secret number |
 | `quickmaths` | math | 15s | Independent equation streams |
-| `memorymatch` | strategy | 4s recall | Server generates 5-symbol sequence |
+| `memorymatch` | strategy | 25s | Server generates 5-symbol sequence |
 | `fastesttyper` | reflex | per-phrase | Desktop-only (`platforms: 'desktop-only'`) |
-| `rockpaperscissors` | strategy | 8s/throw | Best-of-3 throws |
-| `wordscramble` | trivia | 25s | First correct answer wins |
+| `rockpaperscissors` | luck | 8s/throw | Best-of-3 throws |
 | `colorword` | reflex | 10s | Click ink color, not spelled word |
-| `higherorlower` | strategy | 10s | Simultaneous Higher/Lower pick |
+| `higherorlower` | luck | 10s | Simultaneous Higher/Lower pick |
 
 ---
 

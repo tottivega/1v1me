@@ -10,8 +10,6 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
  * (e.g. reactiontest window closes), the outer playRound() swallows the error
  * and the server resolves the round via its own timeout.
  *
- * wordscramble intentionally does nothing: the answer is never broadcast to
- * clients, so we let the 25s server timeout resolve it.
  */
 
 async function clickspeed(bot: BotPlayer): Promise<void> {
@@ -31,11 +29,6 @@ async function reactiontest(bot: BotPlayer): Promise<void> {
   // The signal fires 1.5–4s after round start; window is 3s.
   await bot.waitForGameUpdate((s) => s.phase === 'ready', 6_000)
   bot.send('GAME_INPUT', { type: 'REACT' })
-}
-
-async function numberguess(bot: BotPlayer): Promise<void> {
-  // Midpoint guess — doesn't need to win, just needs to resolve
-  bot.send('GAME_INPUT', { type: 'GUESS', value: 50 })
 }
 
 async function quickmaths(bot: BotPlayer): Promise<void> {
@@ -80,10 +73,6 @@ async function rockpaperscissors(bot: BotPlayer): Promise<void> {
   }
 }
 
-async function wordscramble(_bot: BotPlayer): Promise<void> {
-  // The answer is never broadcast — let the 25s server timeout resolve this round
-}
-
 async function colorword(bot: BotPlayer): Promise<void> {
   // Server broadcasts { word, inkColor } immediately — answer with the ink color
   const state = await bot.waitForGameUpdate((s) => typeof s.inkColor === 'string', 3_000)
@@ -100,12 +89,10 @@ const STRATEGIES: Record<string, (bot: BotPlayer) => Promise<void>> = {
   clickspeed,
   coinflip,
   reactiontest,
-  numberguess,
   quickmaths,
   memorymatch,
   fastesttyper,
   rockpaperscissors,
-  wordscramble,
   colorword,
   higherorlower,
 }

@@ -299,21 +299,6 @@ const AMBIENT: Record<string, [number, Ticker]> = {
     },
   ],
 
-  // ── NUMBER GUESS ─────────────────────────────────────────────────────────────
-  // Quirky, mischievous plinking: pentatonic scale in an irregular rhythm.
-  // Triangle wave keeps it gentle. The off-beat pauses add personality.
-  numberguess: [
-    370,
-    (mg, phase, vol) => {
-      const penta = [523, 587, 659, 784, 880, 784, 659, 587]
-      const rests = [3, 7] // skip these phases
-      if (!rests.includes(phase % 8)) {
-        const f = penta[phase % 8]!
-        aTone(mg, f, 0.13, 'triangle', vol * 0.55, 0)
-      }
-    },
-  ],
-
   // ── QUICK MATHS ──────────────────────────────────────────────────────────────
   // Calculator urgency: crisp square-wave grid, four beats with syncopation.
   // High-low alternation makes it feel like rapid mental computation.
@@ -375,18 +360,6 @@ const AMBIENT: Record<string, [number, Ticker]> = {
       const f = steps[phase % 3]!
       aTone(mg, f, 0.3, 'sawtooth', vol * 0.5, 0)
       aTone(mg, f * 2, 0.18, 'sine', vol * 0.2, 0.06) // bright overtone
-    },
-  ],
-
-  // ── WORD SCRAMBLE ────────────────────────────────────────────────────────────
-  // Bouncy letter-tumbling energy: a cheerful 8-note pentatonic melody on a
-  // triangle wave. Upbeat and light — matches the playful word-puzzle feel.
-  wordscramble: [
-    175,
-    (mg, phase, vol) => {
-      const melody = [392, 523, 659, 784, 880, 784, 659, 523]
-      const f = melody[phase % 8]!
-      aTone(mg, f, 0.1, 'triangle', vol * 0.55, 0)
     },
   ],
 

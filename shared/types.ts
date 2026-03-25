@@ -53,15 +53,6 @@ export const MINIGAME_CONFIGS = {
     difficulty: 2,
     platforms: 'all',
   },
-  numberguess: {
-    label: 'Number Guess',
-    emoji: '🎯',
-    timeoutMs: 20000,
-    category: 'luck',
-    description: 'Guess a number 1–100. Closest to the secret wins.',
-    difficulty: 1,
-    platforms: 'all',
-  },
   quickmaths: {
     label: 'Quick Maths',
     emoji: '🔢',
@@ -96,15 +87,6 @@ export const MINIGAME_CONFIGS = {
     category: 'luck',
     description: 'Best of 3 throws. Pick simultaneously — may the luckiest hand win.',
     difficulty: 1,
-    platforms: 'all',
-  },
-  wordscramble: {
-    label: 'Word Scramble',
-    emoji: '🔤',
-    timeoutMs: 25000,
-    category: 'trivia',
-    description: 'Unscramble the letters and type the word before your opponent does.',
-    difficulty: 2,
     platforms: 'all',
   },
   colorword: {
