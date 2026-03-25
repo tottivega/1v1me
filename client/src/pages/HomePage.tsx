@@ -90,7 +90,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="page" style={{ gap: 32 }}>
+    <div className="page" style={{ gap: 32, justifyContent: 'flex-start', paddingTop: 56 }}>
       {/* Hero */}
       <div style={{ textAlign: 'center' }}>
         <div className="title" style={{ fontSize: 96 }}>

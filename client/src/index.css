@@ -31,6 +31,10 @@ html, body, #root {
   width: 100%;
 }
 
+html {
+  scrollbar-gutter: stable; /* prevents layout shift when scrollbar appears/disappears */
+}
+
 body {
   font-family: var(--font-body);
   background-color: var(--bg);
