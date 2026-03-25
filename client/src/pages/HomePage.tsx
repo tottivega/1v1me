@@ -15,10 +15,8 @@ const CATEGORY_COLORS: Record<MinigameCategory, string> = {
   math: 'var(--orange)',
   luck: 'var(--yellow)',
   strategy: 'var(--green)',
-  trivia: 'var(--purple)',
+  skill: 'var(--red)',
 }
-
-const DIFFICULTY_STARS = (d: number) => '★'.repeat(d) + '☆'.repeat(3 - d)
 
 const ALL_GAMES = Object.entries(MINIGAME_CONFIGS) as [
   string,
@@ -234,19 +232,11 @@ export default function HomePage() {
             return (
               <button
                 key={cat}
+                className="filter-pill"
                 onClick={() => setCategoryFilter(cat)}
                 style={{
-                  padding: '4px 12px',
-                  borderRadius: 6,
-                  border: '1.5px solid var(--black)',
-                  fontWeight: 900,
-                  fontSize: 11,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.5,
-                  cursor: 'pointer',
                   background: active ? color : 'var(--white)',
                   color: active ? (isLight ? 'var(--black)' : 'var(--white)') : 'var(--black)',
-                  transition: 'background 0.12s, color 0.12s',
                 }}
               >
                 {cat}
@@ -359,28 +349,7 @@ function GameCard({ cfg }: { cfg: (typeof MINIGAME_CONFIGS)[keyof typeof MINIGAM
   const isLightCat = cfg.category === 'luck'
 
   return (
-    <div
-      style={{
-        background: 'var(--white)',
-        border: 'var(--border)',
-        borderRadius: 16,
-        boxShadow: 'var(--shadow-sm)',
-        padding: '16px 18px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        transition: 'transform 0.1s, box-shadow 0.1s',
-        cursor: 'default',
-      }}
-      onMouseEnter={(e) => {
-        ;(e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'
-        ;(e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow)'
-      }}
-      onMouseLeave={(e) => {
-        ;(e.currentTarget as HTMLDivElement).style.transform = ''
-        ;(e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-sm)'
-      }}
-    >
+    <div className="game-card">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 32, lineHeight: 1 }}>{cfg.emoji}</span>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
@@ -398,9 +367,6 @@ function GameCard({ cfg }: { cfg: (typeof MINIGAME_CONFIGS)[keyof typeof MINIGAM
             }}
           >
             {cfg.category}
-          </span>
-          <span style={{ fontSize: 11, color: 'var(--orange)', letterSpacing: 1 }}>
-            {DIFFICULTY_STARS(cfg.difficulty)}
           </span>
         </div>
       </div>

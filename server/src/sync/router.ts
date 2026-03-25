@@ -1,6 +1,7 @@
 import { WebSocket } from 'ws'
 import { v4 as uuidv4 } from 'uuid'
-import type { ClientMessage, MinigameCategory, RoomConfig, SetNicknamePayload } from '@shared/types'
+import { MINIGAME_CATEGORIES } from '@shared/types'
+import type { ClientMessage, RoomConfig, SetNicknamePayload } from '@shared/types'
 import { send, toPlayerInfos } from './broadcast'
 import { getRoom } from '../rooms/roomStore'
 import {
@@ -164,9 +165,7 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
       if (
         !Array.isArray(enabledCategories) ||
         enabledCategories.length === 0 ||
-        !enabledCategories.every((c) =>
-          ['reflex', 'math', 'luck', 'strategy', 'trivia'].includes(c as MinigameCategory)
-        )
+        !enabledCategories.every((c) => (MINIGAME_CATEGORIES as readonly string[]).includes(c))
       )
         return
       const validBanCount = [0, 1, 2, 3]

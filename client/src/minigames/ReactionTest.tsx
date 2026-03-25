@@ -13,7 +13,7 @@ interface ServerState {
 
 export default function ReactionTest() {
   const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
-  const isLive = wsStatus === 'connected'
+  const isLive = wsStatus === 'connected' && minigameState !== null
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   // ── Live mode: driven by server GAME_UPDATE ───────────────────────────────

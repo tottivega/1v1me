@@ -20,9 +20,9 @@ export type RoomStatus =
 //   timeoutMs   — 0 = self-resolving (module calls onRoundDone itself)
 //   category    — used for queue balancing and DevPanel filtering
 //   description — one-liner shown in game gallery and tooltips
-//   difficulty  — 1 easy / 2 medium / 3 hard (relative to each other)
 
-export type MinigameCategory = 'reflex' | 'math' | 'luck' | 'strategy' | 'trivia'
+export const MINIGAME_CATEGORIES = ['reflex', 'math', 'luck', 'strategy', 'skill'] as const
+export type MinigameCategory = (typeof MINIGAME_CATEGORIES)[number]
 export type MinigamePlatform = 'all' | 'desktop-only' | 'mobile-only'
 
 export const MINIGAME_CONFIGS = {
@@ -30,9 +30,8 @@ export const MINIGAME_CONFIGS = {
     label: 'Click Speed',
     emoji: '👆',
     timeoutMs: 5000,
-    category: 'reflex',
+    category: 'skill',
     description: 'Click as many times as you can in 5 seconds.',
-    difficulty: 1,
     platforms: 'all',
   },
   coinflip: {
@@ -41,7 +40,6 @@ export const MINIGAME_CONFIGS = {
     timeoutMs: 0,
     category: 'luck',
     description: '50/50. Pure chaos. No skill required.',
-    difficulty: 1,
     platforms: 'all',
   },
   reactiontest: {
@@ -50,7 +48,6 @@ export const MINIGAME_CONFIGS = {
     timeoutMs: 0,
     category: 'reflex',
     description: 'Wait for green, then click as fast as humanly possible.',
-    difficulty: 2,
     platforms: 'all',
   },
   quickmaths: {
@@ -59,7 +56,6 @@ export const MINIGAME_CONFIGS = {
     timeoutMs: 15000,
     category: 'math',
     description: 'Solve as many equations as you can in 15 seconds.',
-    difficulty: 2,
     platforms: 'all',
   },
   memorymatch: {
@@ -68,25 +64,22 @@ export const MINIGAME_CONFIGS = {
     timeoutMs: 25000,
     category: 'strategy',
     description: 'Memorise a sequence of symbols, then reproduce it perfectly.',
-    difficulty: 2,
     platforms: 'all',
   },
   fastesttyper: {
     label: 'Fastest Typer',
     emoji: '⌨️',
     timeoutMs: 30000,
-    category: 'reflex',
+    category: 'skill',
     description: 'Type the phrase faster than your opponent.',
-    difficulty: 2,
     platforms: 'desktop-only',
   },
   rockpaperscissors: {
     label: 'Rock Paper Scissors',
     emoji: '✂️',
     timeoutMs: 0,
-    category: 'luck',
+    category: 'strategy',
     description: 'Best of 3 throws. Pick simultaneously — may the luckiest hand win.',
-    difficulty: 1,
     platforms: 'all',
   },
   colorword: {
@@ -95,7 +88,6 @@ export const MINIGAME_CONFIGS = {
     timeoutMs: 10000,
     category: 'reflex',
     description: 'Ignore the text — click the button matching the INK color of the word.',
-    difficulty: 2,
     platforms: 'all',
   },
   higherorlower: {
@@ -104,7 +96,6 @@ export const MINIGAME_CONFIGS = {
     timeoutMs: 10000,
     category: 'luck',
     description: 'A secret number is near the clue. Is it Higher or Lower?',
-    difficulty: 1,
     platforms: 'all',
   },
 } as const satisfies Record<
@@ -115,7 +106,6 @@ export const MINIGAME_CONFIGS = {
     timeoutMs: number
     category: MinigameCategory
     description: string
-    difficulty: 1 | 2 | 3
     platforms: MinigamePlatform
   }
 >
@@ -132,7 +122,7 @@ export interface RoomConfig {
 
 export const DEFAULT_ROOM_CONFIG: RoomConfig = {
   bestOf: 5,
-  enabledCategories: ['reflex', 'math', 'luck', 'strategy', 'trivia'],
+  enabledCategories: ['reflex', 'math', 'luck', 'strategy', 'skill'],
   banCount: 0,
 }
 

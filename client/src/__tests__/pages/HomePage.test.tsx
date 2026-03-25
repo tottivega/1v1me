@@ -31,7 +31,7 @@ describe('HomePage — game gallery', () => {
     expect(screen.getByRole('button', { name: /^math$/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^luck$/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^strategy$/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /^trivia$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^skill$/i })).toBeInTheDocument()
   })
 
   it('filters to only reflex games when Reflex pill is clicked', () => {

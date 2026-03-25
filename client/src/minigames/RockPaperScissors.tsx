@@ -66,7 +66,7 @@ function getThrowWinner(c1: Choice, c2: Choice, p1Id: string, p2Id: string): str
 
 export default function RockPaperScissors() {
   const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
-  const isLive = wsStatus === 'connected'
+  const isLive = wsStatus === 'connected' && minigameState !== null
   const opponent = players.find((p) => p.id !== myPlayerId)
   const oppId = opponent?.id ?? 'opp'
 

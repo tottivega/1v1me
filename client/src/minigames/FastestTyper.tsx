@@ -11,7 +11,7 @@ interface ServerState {
 
 export default function FastestTyper() {
   const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
-  const isLive = wsStatus === 'connected'
+  const isLive = wsStatus === 'connected' && minigameState !== null
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   const [typed, setTyped] = useState('')

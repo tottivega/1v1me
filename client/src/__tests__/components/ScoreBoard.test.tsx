@@ -17,7 +17,7 @@ beforeEach(() => {
     spectatorCount: 0,
     roomConfig: {
       bestOf: 5,
-      enabledCategories: ['reflex', 'math', 'luck', 'strategy', 'trivia'],
+      enabledCategories: ['reflex', 'math', 'luck', 'strategy', 'skill'],
       banCount: 0,
     },
   })

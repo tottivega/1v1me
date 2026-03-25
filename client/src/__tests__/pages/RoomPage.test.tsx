@@ -301,7 +301,7 @@ describe('LobbyView — room settings', () => {
     expect(screen.getByRole('button', { name: /Math/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Luck/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Strategy/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Trivia/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Skill/i })).toBeInTheDocument()
   })
 
   it('settings controls are disabled for non-creator', () => {

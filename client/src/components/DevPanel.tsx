@@ -25,10 +25,8 @@ const CATEGORY_COLORS: Record<MinigameCategory, string> = {
   math: '#ff6600',
   luck: '#ffdd00',
   strategy: '#44cc44',
-  trivia: '#9933ff',
+  skill: '#ff2244',
 }
-
-const DIFFICULTY_STARS = (d: number) => '★'.repeat(d) + '☆'.repeat(3 - d)
 
 export default function DevPanel() {
   const [open, setOpen] = useState(false)
@@ -234,9 +232,6 @@ export default function DevPanel() {
                           }}
                         >
                           {cfg.category}
-                        </span>
-                        <span style={{ color: 'rgba(255,221,0,0.7)', fontSize: 10 }}>
-                          {DIFFICULTY_STARS(cfg.difficulty)}
                         </span>
                       </div>
                     </div>

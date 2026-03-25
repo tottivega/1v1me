@@ -107,16 +107,22 @@ body {
   justify-content: center;
   gap: 8px;
 }
-.btn:hover { filter: brightness(1.05); }
+.btn:hover  { filter: brightness(1.08); transform: translateY(-1px); }
+.btn:focus-visible {
+  outline: 3px solid var(--black);
+  outline-offset: 2px;
+}
 .btn:active {
-  transform: translate(3px, 3px);
-  box-shadow: 1px 1px 0px var(--black);
+  transform: translate(2px, 2px) !important;
+  box-shadow: 2px 2px 0px var(--black) !important;
+  filter: brightness(0.96);
 }
 .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: var(--shadow);
+  transform: none !important;
+  box-shadow: var(--shadow) !important;
+  filter: none;
 }
 
 .btn-orange { background: var(--orange); color: var(--white); }
@@ -254,6 +260,49 @@ body {
 .anim-pulse    { animation: pulse 1.2s ease infinite; }
 .anim-score-pop { animation: score-pop 0.4s cubic-bezier(.36,.07,.19,.97) both; }
 .anim-count-in  { animation: count-in 0.28s cubic-bezier(.36,.07,.19,.97) both; }
+
+/* ── Game card (gallery) ─────────────────────────────────────────────────────── */
+.game-card {
+  background: var(--white);
+  border: var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 100ms, box-shadow 100ms;
+  cursor: default;
+}
+.game-card:hover {
+  transform: translateY(-3px) rotate(-1.5deg);
+  box-shadow: var(--shadow);
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-card:hover { transform: none; }
+}
+
+/* ── Filter pills (category selector) ───────────────────────────────────────── */
+.filter-pill {
+  padding: 5px 13px;
+  border-radius: 6px;
+  border: 2px solid var(--black);
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 80ms, box-shadow 80ms, background 80ms, color 80ms;
+  user-select: none;
+}
+.filter-pill:hover  { transform: translateY(-1px); box-shadow: var(--shadow); }
+.filter-pill:active { transform: translate(1px, 1px); box-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+  .filter-pill:hover  { transform: none; }
+  .filter-pill:active { transform: none; }
+}
 
 /* ── Mobile ──────────────────────────────────────────────────────────────────── */
 

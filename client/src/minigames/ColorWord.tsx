@@ -37,7 +37,7 @@ function pickDifferent(base: Color): Color {
 
 export default function ColorWord() {
   const { myPlayerId, players, minigameState, wsStatus, sendInput } = useGameStore()
-  const isLive = wsStatus === 'connected'
+  const isLive = wsStatus === 'connected' && minigameState !== null
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   // Live state

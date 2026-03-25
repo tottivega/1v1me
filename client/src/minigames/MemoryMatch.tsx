@@ -13,7 +13,7 @@ interface ServerState {
 
 export default function MemoryMatch() {
   const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
-  const isLive = wsStatus === 'connected'
+  const isLive = wsStatus === 'connected' && minigameState !== null
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   // ── Phase tracking ─────────────────────────────────────────────────────────

@@ -270,13 +270,13 @@ Client test files: `gameStore`, `ScoreBoard`, `TimerBar`, `HomePage`, `RoomPage`
 
 | ID | Category | Timer | Notes |
 |---|---|---|---|
-| `clickspeed` | reflex | 5s | 20 CPS cap server-side |
+| `clickspeed` | skill | 5s | 20 CPS cap server-side |
 | `coinflip` | luck | instant | Pure RNG |
 | `reactiontest` | reflex | 3s window | Early click = disqualified |
 | `quickmaths` | math | 15s | Independent equation streams |
 | `memorymatch` | strategy | 25s | Server generates 5-symbol sequence |
-| `fastesttyper` | reflex | per-phrase | Desktop-only (`platforms: 'desktop-only'`) |
-| `rockpaperscissors` | luck | 8s/throw | Best-of-3 throws |
+| `fastesttyper` | skill | per-phrase | Desktop-only (`platforms: 'desktop-only'`) |
+| `rockpaperscissors` | strategy | 8s/throw | Best-of-3 throws |
 | `colorword` | reflex | 10s | Click ink color, not spelled word |
 | `higherorlower` | luck | 10s | Simultaneous Higher/Lower pick |
 

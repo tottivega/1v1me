@@ -11,7 +11,7 @@ interface ServerState {
 
 export default function CoinFlip() {
   const { myPlayerId, players, minigameState, wsStatus } = useGameStore()
-  const isLive = wsStatus === 'connected'
+  const isLive = wsStatus === 'connected' && minigameState !== null
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   // ── Live mode: driven entirely by server GAME_UPDATE ──────────────────────

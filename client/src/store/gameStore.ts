@@ -36,6 +36,32 @@ function clearReconnectInterval() {
   }
 }
 
+// Module-level interval handle for the mock round timer
+let _mockTimerInterval: ReturnType<typeof setInterval> | null = null
+function clearMockTimer() {
+  if (_mockTimerInterval) {
+    clearInterval(_mockTimerInterval)
+    _mockTimerInterval = null
+  }
+}
+function startMockTimer(get: () => GameState, set: (s: Partial<GameState>) => void) {
+  clearMockTimer()
+  _mockTimerInterval = setInterval(() => {
+    const { remainingMs, roomStatus } = get()
+    if (roomStatus !== 'playing') {
+      clearMockTimer()
+      return
+    }
+    const next = remainingMs - 1000
+    if (next <= 0) {
+      clearMockTimer()
+      set({ remainingMs: 0, roomStatus: 'round_end' })
+    } else {
+      set({ remainingMs: next })
+    }
+  }, 1000)
+}
+
 // ── Anonymous user ID (localStorage) ─────────────────────────────────────────
 const USER_ID_KEY = '1v1me_userId'
 
@@ -241,6 +267,7 @@ interface GameState {
   mockSetRound: (round: number) => void
   mockSetWinner: (playerId: string | null) => void
   mockSetRemainingMs: (ms: number) => void
+  mockSubmitBans: (bannedIds: string[]) => void
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────
@@ -703,6 +730,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       roomStatus: 'playing',
       minigameState: null,
     })
+    if (timeoutMs > 0) startMockTimer(get, set)
+    else clearMockTimer()
   },
 
   mockAddOpponent: () => {
@@ -712,8 +741,38 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   mockRemoveOpponent: () => set({ players: get().players.filter((p) => p.id !== 'player-2') }),
 
-  mockToggleReady: (playerId) =>
-    set({ players: get().players.map((p) => (p.id === playerId ? { ...p, ready: !p.ready } : p)) }),
+  mockToggleReady: (playerId) => {
+    const newPlayers = get().players.map((p) => (p.id === playerId ? { ...p, ready: !p.ready } : p))
+    set({ players: newPlayers })
+    if (newPlayers.length === 2 && newPlayers.every((p) => p.ready)) {
+      set({ roomStatus: 'ready' })
+      setTimeout(() => {
+        const { roomConfig } = get()
+        if (roomConfig.banCount > 0) {
+          // Build pool from enabled categories (mirrors server buildPool logic)
+          const pool = (Object.keys(MINIGAME_CONFIGS) as MinigameId[]).filter(
+            (id) =>
+              roomConfig.enabledCategories.length === 0 ||
+              roomConfig.enabledCategories.includes(MINIGAME_CONFIGS[id].category)
+          )
+          set({ roomStatus: 'banning', banPhasePool: pool, banPhaseCount: roomConfig.banCount })
+        } else {
+          const ids = Object.keys(MINIGAME_CONFIGS) as MinigameId[]
+          const id = ids[Math.floor(Math.random() * ids.length)]!
+          get().mockSetMinigame(id)
+        }
+      }, 1500)
+    }
+  },
+
+  mockSubmitBans: (bannedIds) => {
+    const pool = get().banPhasePool ?? (Object.keys(MINIGAME_CONFIGS) as MinigameId[])
+    const remaining = pool.filter((id) => !bannedIds.includes(id)) as MinigameId[]
+    const eligible =
+      remaining.length > 0 ? remaining : (Object.keys(MINIGAME_CONFIGS) as MinigameId[])
+    const id = eligible[Math.floor(Math.random() * eligible.length)]!
+    get().mockSetMinigame(id)
+  },
 
   mockSetScore: (playerId, score) => set({ scores: { ...get().scores, [playerId]: score } }),
   mockSetRound: (round) => set({ currentRound: round }),

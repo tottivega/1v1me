@@ -15,7 +15,7 @@ type Flash = 'correct' | 'wrong' | null
 
 export default function QuickMaths() {
   const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
-  const isLive = wsStatus === 'connected'
+  const isLive = wsStatus === 'connected' && minigameState !== null
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   const [inputVal, setInputVal] = useState('')

@@ -16,7 +16,7 @@ interface ServerState {
 
 export default function HigherOrLower() {
   const { myPlayerId, players, minigameState, wsStatus, sendInput } = useGameStore()
-  const isLive = wsStatus === 'connected'
+  const isLive = wsStatus === 'connected' && minigameState !== null
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   // Live state
