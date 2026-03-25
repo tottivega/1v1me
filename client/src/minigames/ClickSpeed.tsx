@@ -1,9 +1,7 @@
 import { useState, useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { playClickHit } from '../utils/sounds'
-import { type ClickSpeedState } from '@shared/types'
-
-const CPS_CAP = 20
+import { type ClickSpeedState, CLICKSPEED_CPS_CAP } from '@shared/types'
 
 interface Ripple {
   id: number
@@ -39,7 +37,7 @@ export default function ClickSpeed() {
   function handleClick(clientX = 0, clientY = 0) {
     const now = Date.now()
     clickTimestamps.current = clickTimestamps.current.filter((t) => now - t < 1000)
-    if (clickTimestamps.current.length >= CPS_CAP) return
+    if (clickTimestamps.current.length >= CLICKSPEED_CPS_CAP) return
     clickTimestamps.current.push(now)
 
     playClickHit()

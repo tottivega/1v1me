@@ -112,6 +112,9 @@ export const MINIGAME_CONFIGS = {
 
 export type MinigameId = keyof typeof MINIGAME_CONFIGS
 
+// ─── Per-game balance constants (shared so client + server stay in sync) ──────
+export const CLICKSPEED_CPS_CAP = 20
+
 // ─── Minigame State Types (shared between server and client) ──────────────────
 
 export interface ClickSpeedState {

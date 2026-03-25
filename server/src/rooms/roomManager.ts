@@ -136,6 +136,12 @@ export function setPlayerReady(room: Room, playerId: string): void {
 
   if (bothReady) {
     room.status = 'ready'
+    // Cancel the idle lobby timer — match lifecycle is now managed by the
+    // disconnect/forfeit system. A fresh timer is armed when the match ends.
+    if (room.cleanupTimer) {
+      clearTimeout(room.cleanupTimer)
+      room.cleanupTimer = null
+    }
     startMatch(room)
   }
 }
@@ -152,8 +158,8 @@ export function handleDisconnect(roomId: string, playerId: string): void {
   player.connected = false
   console.log(`[Room] ${player.nickname} disconnected from room ${roomId}`)
 
-  if (room.status === 'lobby' || room.status === 'ready') {
-    // Just remove the player; no reconnect window needed pre-match
+  if (room.status === 'lobby' || room.status === 'ready' || room.status === 'match_end') {
+    // No reconnect window needed: pre-match or match already over
     room.players = room.players.filter((p) => p.id !== playerId)
     broadcast(room, 'PLAYER_DISCONNECTED', { playerId, reconnectWindowMs: 0 })
     return

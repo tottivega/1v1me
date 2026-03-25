@@ -1,6 +1,7 @@
-import type { MinigameModule, Player } from '../types'
+import type { MinigameModule } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
+import { twoPlayers, randomWinner } from '../utils/gameUtils'
 
 const COLORS = ['red', 'blue', 'green', 'yellow', 'orange', 'purple'] as const
 type Color = (typeof COLORS)[number]
@@ -47,8 +48,8 @@ const colorword: MinigameModule = {
 
   getResult(room): MinigameResult {
     // Timeout: random winner
-    const [p1, p2] = room.players as [Player, Player]
-    const winnerId = Math.random() < 0.5 ? p1.id : p2.id
+    const [p1, p2] = twoPlayers(room)
+    const winnerId = randomWinner(p1, p2)
     broadcast(room, 'GAME_UPDATE', {
       state: {
         word: (room.match!.minigameState as State).word,

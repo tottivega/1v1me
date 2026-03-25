@@ -6,14 +6,28 @@ interface State {
   signalTime: number | null
   reactions: Record<string, number> // playerId → ms after signal
   penalized: Set<string> // clicked before signal
-  signalTimer: ReturnType<typeof setTimeout> | null
-  windowTimer: ReturnType<typeof setTimeout> | null
   resolved: boolean
 }
+
+// Per-room timer refs — kept off the state object so they don't pollute
+// the minigameState snapshot sent to spectators.
+const activeTimers = new Map<
+  string,
+  { signal: ReturnType<typeof setTimeout> | null; window: ReturnType<typeof setTimeout> | null }
+>()
 
 const REACTION_WINDOW_MS = 3000
 const MIN_DELAY_MS = 1500
 const MAX_DELAY_MS = 4000
+
+function clearTimers(roomId: string) {
+  const t = activeTimers.get(roomId)
+  if (t) {
+    if (t.signal) clearTimeout(t.signal)
+    if (t.window) clearTimeout(t.window)
+    activeTimers.delete(roomId)
+  }
+}
 
 const reactiontest: MinigameModule = {
   id: 'reactiontest',
@@ -23,8 +37,6 @@ const reactiontest: MinigameModule = {
       signalTime: null,
       reactions: {},
       penalized: new Set(),
-      signalTimer: null,
-      windowTimer: null,
       resolved: false,
     }
     room.match!.minigameState = state
@@ -32,15 +44,20 @@ const reactiontest: MinigameModule = {
     broadcast(room, 'GAME_UPDATE', { state: { phase: 'waiting' } })
 
     const delay = MIN_DELAY_MS + Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS)
+    const timers = {
+      signal: null as ReturnType<typeof setTimeout> | null,
+      window: null as ReturnType<typeof setTimeout> | null,
+    }
+    activeTimers.set(room.roomId, timers)
 
-    state.signalTimer = setTimeout(() => {
+    timers.signal = setTimeout(() => {
       if (state.resolved) return
 
       state.signalTime = Date.now()
       broadcast(room, 'GAME_UPDATE', { state: { phase: 'ready' } })
 
       // 3-second window to react
-      state.windowTimer = setTimeout(() => {
+      timers.window = setTimeout(() => {
         if (!state.resolved) resolve(room, state)
       }, REACTION_WINDOW_MS)
     }, delay)
@@ -79,14 +96,17 @@ const reactiontest: MinigameModule = {
       room.match!.minigameState as State
     )
   },
+
+  cleanup(room) {
+    clearTimers(room.roomId)
+  },
 }
 
 function resolve(room: Room, state: State): void {
   if (state.resolved) return
   state.resolved = true
 
-  clearTimeout(state.signalTimer!)
-  clearTimeout(state.windowTimer!)
+  clearTimers(room.roomId)
 
   const playerIds = room.players.map((p) => p.id)
   const result = computeResult(playerIds, state)

@@ -182,6 +182,23 @@
 - [x] **Playwright E2E tests** — `tests/` package; browser P1 + WS bot P2; per-game input strategies for all 11 minigames; full create-room → lobby → match → match-end flow in ~30s; `npm run test:e2e` from root; `webServer` auto-starts server + client; 94 server + 54 client unit tests
 - [x] **`ADDING_A_GAME.md` + `REMOVING_A_GAME.md`** — checklist updated with ambient sound and E2E bot strategy steps; new removal doc covers all 8 touch-points with a "what NOT to touch" table for auto-discovered parts
 
+### Systems hardening & codebase prep (pre-minigame-week batch)
+
+**Bug fixes**
+- [x] **Room expiration mid-match** — idle cleanup timer was firing after 60s even during active matches; fix: cancel timer at match start (`setPlayerReady`), arm a fresh 5-min post-match timer in `endMatch`; `handleDisconnect` now treats `match_end` disconnects as pre-match (no spurious forfeit on a finished game)
+- [x] **Stale game timers after match end / forfeit** — `endMatch` now nulls `onRoundDone`, sets `roundResolved = true`, and calls `cleanup()` on the active minigame before broadcasting `MATCH_END`; prevents RPS throw-timeout and ReactionTest signal/window timers from firing `resolveRound` after the match is over
+- [x] **Ban phase hangs if a player goes idle** — 30s `BAN_PHASE_TIMEOUT_MS` auto-submits empty bans for any player who hasn't submitted, so the match always launches
+
+**Minigame engine**
+- [x] **`cleanup()` on `MinigameModule`** — optional method added to interface; implemented on coinflip (flip-delay timer), reactiontest (signal + window timers), and rockpaperscissors (`throwTimers` Map); called from `endMatch` and `forfeitMatch` via `cleanupCurrentMinigame()`
+- [x] **ReactionTest timers off state** — `signalTimer`/`windowTimer` moved from the state object to a module-level Map (same pattern as RPS); spectator `minigameState` snapshots no longer contain unserializable timer refs
+- [x] **`twoPlayers(room)` + `randomWinner(p1, p2)` helpers** — `server/src/utils/gameUtils.ts`; `[Player, Player]` cast and inline `Math.random()` tie-break removed from all 9 minigame modules
+- [x] **`CLICKSPEED_CPS_CAP` to shared** — constant moved from duplicate server + client definitions into `shared/types.ts`; both sides import it
+
+**Tests**
+- [x] **Ban phase + forfeit test suite** — `banPhaseAndForfeit.test.ts` (11 tests): ban status entry, skip-if-zero, single-submit hold, both-submit merge, ban clamping, 30s auto-launch timeout, double-launch prevention, forfeit winner, `onRoundDone` null guard, no phantom `ROUND_END` after forfeit
+- [x] **`matchController.test.ts` mock coverage** — added `vi.mock('../minigames/index')` so timer-driven `endMatch` tests no longer trigger `require()` on ES minigame modules
+
 ---
 
 ## 🗑️ Removed

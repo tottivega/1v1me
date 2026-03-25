@@ -1,6 +1,7 @@
-import type { MinigameModule, Player } from '../types'
+import type { MinigameModule } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
+import { twoPlayers, randomWinner } from '../utils/gameUtils'
 
 const PHRASES = [
   'the quick brown fox',
@@ -87,13 +88,13 @@ const fastesttyper: MinigameModule = {
     const state = room.match!.minigameState as State
     if (state.winnerId) return { winnerId: state.winnerId, reason: 'completed' }
 
-    const [p1, p2] = room.players as [Player, Player]
+    const [p1, p2] = twoPlayers(room)
     const prog1 = state.progress[p1.id] ?? 0
     const prog2 = state.progress[p2.id] ?? 0
 
     if (prog1 > prog2) return { winnerId: p1.id, reason: 'timeout' }
     if (prog2 > prog1) return { winnerId: p2.id, reason: 'timeout' }
-    return { winnerId: Math.random() < 0.5 ? p1.id : p2.id, reason: 'timeout' }
+    return { winnerId: randomWinner(p1, p2), reason: 'timeout' }
   },
 }
 

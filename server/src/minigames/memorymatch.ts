@@ -1,6 +1,7 @@
-import type { MinigameModule, Room, Player } from '../types'
+import type { MinigameModule, Room } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
+import { twoPlayers, randomWinner } from '../utils/gameUtils'
 
 const SYMBOLS = ['🔴', '🔵', '🟡', '🟢', '🟠', '🟣', '⬛', '⬜']
 const SEQ_LEN = 5
@@ -75,13 +76,13 @@ const memorymatch: MinigameModule = {
 }
 
 function computeResult(room: Room, state: State): MinigameResult {
-  const [p1, p2] = room.players as [Player, Player]
+  const [p1, p2] = twoPlayers(room)
   const s1 = scoreSubmission(state.sequence, state.submissions[p1.id] ?? [])
   const s2 = scoreSubmission(state.sequence, state.submissions[p2.id] ?? [])
 
   if (s1 > s2) return { winnerId: p1.id, reason: 'completed' }
   if (s2 > s1) return { winnerId: p2.id, reason: 'completed' }
-  return { winnerId: Math.random() < 0.5 ? p1.id : p2.id, reason: 'completed' }
+  return { winnerId: randomWinner(p1, p2), reason: 'completed' }
 }
 
 export default memorymatch

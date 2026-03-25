@@ -1,6 +1,7 @@
-import type { MinigameModule, Player } from '../types'
+import type { MinigameModule } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
+import { twoPlayers, randomWinner } from '../utils/gameUtils'
 
 interface State {
   winnerId: string
@@ -12,8 +13,8 @@ const coinflip: MinigameModule = {
   id: 'coinflip',
 
   start(room) {
-    const [p1, p2] = room.players as [Player, Player]
-    const winnerId = Math.random() < 0.5 ? p1.id : p2.id
+    const [p1, p2] = twoPlayers(room)
+    const winnerId = randomWinner(p1, p2)
 
     const state: State = { winnerId, resolved: false, timer: null }
     room.match!.minigameState = state
@@ -39,6 +40,14 @@ const coinflip: MinigameModule = {
   getResult(room): MinigameResult {
     const state = room.match!.minigameState as State
     return { winnerId: state.winnerId, reason: 'completed' }
+  },
+
+  cleanup(room) {
+    const state = room.match?.minigameState as State | undefined
+    if (state?.timer) {
+      clearTimeout(state.timer)
+      state.timer = null
+    }
   },
 }
 

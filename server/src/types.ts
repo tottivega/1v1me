@@ -64,4 +64,7 @@ export interface MinigameModule {
   start(room: Room): void
   handleInput(room: Room, playerId: string, input: MinigameInput): void
   getResult(room: Room): MinigameResult
+  /** Called when the round ends for any reason (win, timeout, forfeit).
+   *  Use to cancel any module-level timers keyed on roomId. */
+  cleanup?(room: Room): void
 }

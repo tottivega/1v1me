@@ -1,6 +1,7 @@
-import type { MinigameModule, Room, Player } from '../types'
+import type { MinigameModule, Room } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
+import { twoPlayers, randomWinner } from '../utils/gameUtils'
 
 type Choice = 'rock' | 'paper' | 'scissors'
 
@@ -69,7 +70,7 @@ function resolveThrowAndAdvance(room: Room, state: State, winnerId: string | nul
   state.phase = 'reveal'
   broadcastReveal(room, state, winnerId)
 
-  const [p1, p2] = room.players as [Player, Player]
+  const [p1, p2] = twoPlayers(room)
   const matchWinner = [p1, p2].find((p) => (state.scores[p.id] ?? 0) >= THROWS_TO_WIN)
   const allDone = state.history.length >= TOTAL_THROWS
 
@@ -96,7 +97,7 @@ function startThrowTimeout(room: Room, state: State) {
     room.roomId,
     setTimeout(() => {
       if (!room.match || room.match.paused || state.resolved) return
-      const [p1, p2] = room.players as [Player, Player]
+      const [p1, p2] = twoPlayers(room)
       const p1Picked = !!state.picks[p1.id]
       const p2Picked = !!state.picks[p2.id]
       // Award throw to whoever picked; if both or neither timed out → null
@@ -110,19 +111,19 @@ function startThrowTimeout(room: Room, state: State) {
 }
 
 function computeResult(room: Room, state: State): MinigameResult {
-  const [p1, p2] = room.players as [Player, Player]
+  const [p1, p2] = twoPlayers(room)
   const s1 = state.scores[p1.id] ?? 0
   const s2 = state.scores[p2.id] ?? 0
   if (s1 > s2) return { winnerId: p1.id, reason: 'completed' }
   if (s2 > s1) return { winnerId: p2.id, reason: 'completed' }
-  return { winnerId: Math.random() < 0.5 ? p1.id : p2.id, reason: 'completed' }
+  return { winnerId: randomWinner(p1, p2), reason: 'completed' }
 }
 
 const rockpaperscissors: MinigameModule = {
   id: 'rockpaperscissors',
 
   start(room) {
-    const [p1, p2] = room.players as [Player, Player]
+    const [p1, p2] = twoPlayers(room)
     const state: State = {
       throwNum: 1,
       phase: 'picking',
@@ -152,7 +153,7 @@ const rockpaperscissors: MinigameModule = {
     const bothPicked = room.players.every((p) => state.picks[p.id] !== undefined)
     if (!bothPicked) return
 
-    const [p1, p2] = room.players as [Player, Player]
+    const [p1, p2] = twoPlayers(room)
     const winner = throwWinner(state.picks[p1.id]!, state.picks[p2.id]!, p1.id, p2.id)
     resolveThrowAndAdvance(room, state, winner)
   },
@@ -162,6 +163,12 @@ const rockpaperscissors: MinigameModule = {
     clearThrowTimer(room.roomId)
     state.resolved = true
     return computeResult(room, state)
+  },
+
+  cleanup(room) {
+    clearThrowTimer(room.roomId)
+    const state = room.match?.minigameState as State | undefined
+    if (state) state.resolved = true
   },
 }
 

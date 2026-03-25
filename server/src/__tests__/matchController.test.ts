@@ -15,6 +15,21 @@ vi.mock('../db/index', () => ({
   persistMatchResult: vi.fn().mockResolvedValue(undefined),
   persistRoundResult: vi.fn().mockResolvedValue(undefined),
 }))
+vi.mock('../minigames/index', () => ({
+  getMinigame: vi.fn(() => ({
+    id: 'clickspeed',
+    start: vi.fn(),
+    handleInput: vi.fn(),
+    getResult: vi.fn(() => ({ winnerId: null, reason: 'timeout' as const })),
+  })),
+  shuffleQueue: vi.fn(() => [
+    'clickspeed',
+    'coinflip',
+    'reactiontest',
+    'quickmaths',
+    'memorymatch',
+  ]),
+}))
 
 describe('resolveRound()', () => {
   beforeEach(() => {

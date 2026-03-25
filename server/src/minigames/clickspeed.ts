@@ -1,8 +1,9 @@
-import type { MinigameModule, Player } from '../types'
+import type { MinigameModule } from '../types'
 import type { MinigameResult } from '@shared/types'
+import { CLICKSPEED_CPS_CAP } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
+import { twoPlayers } from '../utils/gameUtils'
 
-const CPS_CAP = 20
 const WINDOW_MS = 1000
 
 interface State {
@@ -36,7 +37,7 @@ const clickspeed: MinigameModule = {
     state.timestamps[playerId] = (state.timestamps[playerId] ?? []).filter(
       (t) => now - t < WINDOW_MS
     )
-    if (state.timestamps[playerId]!.length >= CPS_CAP) return
+    if (state.timestamps[playerId]!.length >= CLICKSPEED_CPS_CAP) return
 
     state.timestamps[playerId]!.push(now)
     state.clicks[playerId] = (state.clicks[playerId] ?? 0) + 1
@@ -50,7 +51,7 @@ const clickspeed: MinigameModule = {
 
   getResult(room): MinigameResult {
     const state = room.match!.minigameState as State
-    const [p1, p2] = room.players as [Player, Player]
+    const [p1, p2] = twoPlayers(room)
     const c1 = state.clicks[p1.id] ?? 0
     const c2 = state.clicks[p2.id] ?? 0
 

@@ -1,13 +1,17 @@
 import { v4 as uuidv4 } from 'uuid'
-import type { Room, Player } from '../types'
+import type { Room } from '../types'
 import type { MinigameInput, MinigameResult, MinigameId } from '@shared/types'
 import { MINIGAME_CONFIGS } from '@shared/types'
 import { broadcast, toPlayerInfos } from '../sync/broadcast'
 import { startTimer, stopTimer } from '../timer/timerController'
 import { getMinigame, shuffleQueue } from '../minigames/index'
+import { twoPlayers } from '../utils/gameUtils'
 import { persistMatchResult, persistRoundResult } from '../db/index'
+import { deleteRoom } from '../rooms/roomStore'
 
 const ROUND_READY_TIMEOUT_MS = 5000 // auto-advance if a player doesn't confirm
+const BAN_PHASE_TIMEOUT_MS = 30_000 // auto-submit empty bans if a player goes idle
+const POST_MATCH_IDLE_MS = 5 * 60_000 // clean up a finished room after 5 min of inactivity
 
 function platformExcludes(room: Room) {
   const anyMobile = room.players.some((p) => p.isMobile)
@@ -37,7 +41,7 @@ function buildPool(room: Room): MinigameId[] {
 }
 
 export function startMatch(room: Room): void {
-  const [p1, p2] = room.players as [Player, Player]
+  const [p1, p2] = twoPlayers(room)
   const matchId = uuidv4()
 
   // Initialise match state — queue is filled after ban phase (or immediately)
@@ -65,6 +69,16 @@ export function startMatch(room: Room): void {
     room.banVotes = {}
     const pool = buildPool(room)
     broadcast(room, 'BAN_PHASE_START', { pool, banCount: room.config.banCount })
+
+    // Safety timeout: auto-submit empty bans for any player who goes idle
+    setTimeout(() => {
+      if (room.status !== 'banning' || !room.match) return
+      for (const p of room.players) {
+        if (!(p.id in room.banVotes)) room.banVotes[p.id] = []
+      }
+      const merged = Array.from(new Set(Object.values(room.banVotes).flat())) as MinigameId[]
+      launchMatch(room, merged)
+    }, BAN_PHASE_TIMEOUT_MS)
   } else {
     launchMatch(room, [])
   }
@@ -188,7 +202,7 @@ export function resolveRound(room: Room, result: MinigameResult): void {
     // Match over — no confirm needed, just a short visual pause
     setTimeout(() => endMatch(room, matchWinner.id, 'completed'), 2500)
   } else if (room.match.currentRound >= bestOf) {
-    const [p1, p2] = room.players as [Player, Player]
+    const [p1, p2] = twoPlayers(room)
     const s1 = room.match.scores[p1.id] ?? 0
     const s2 = room.match.scores[p2.id] ?? 0
     const winnerId = s1 >= s2 ? p1.id : p2.id
@@ -221,10 +235,31 @@ export function handleRoundReady(room: Room, playerId: string): void {
   }
 }
 
+/** Cancel any pending module-level timers for the active minigame. */
+function cleanupCurrentMinigame(room: Room): void {
+  if (!room.match?.currentMinigame) return
+  getMinigame(room.match.currentMinigame).cleanup?.(room)
+}
+
 function endMatch(room: Room, winnerId: string, reason: 'completed' | 'forfeit'): void {
   if (!room.match) return
 
+  // Guard against stale minigame timers firing resolveRound after the match is over:
+  // null out the callback and mark the round as resolved so both paths are blocked.
+  room.match.onRoundDone = null
+  room.match.roundResolved = true
+  cleanupCurrentMinigame(room)
+
   room.status = 'match_end'
+
+  // Arm a post-match idle cleanup so rooms don't linger if players close the browser
+  // without rematching. doRematch cancels this via touch() if they vote to replay.
+  if (room.cleanupTimer) clearTimeout(room.cleanupTimer)
+  room.cleanupTimer = setTimeout(() => {
+    console.log(`[Room] Post-match cleanup for room ${room.roomId}`)
+    deleteRoom(room.roomId)
+  }, POST_MATCH_IDLE_MS)
+
   broadcast(room, 'MATCH_END', {
     winnerId,
     scores: room.match.scores,
