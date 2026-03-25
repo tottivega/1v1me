@@ -10,6 +10,7 @@ import {
 const STATUSES: RoomStatus[] = [
   'lobby',
   'ready',
+  'banning',
   'playing',
   'round_end',
   'match_end',

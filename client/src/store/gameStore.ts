@@ -243,6 +243,9 @@ interface GameState {
   banPhasePool: MinigameId[] | null
   banPhaseCount: number
 
+  // True when the current match was started via DevPanel mock flow (not a real server match)
+  isMockMatch: boolean
+
   // ── Real actions ─────────────────────────────────────────────────────────
   connect: (roomId: string, nickname: string) => void
   disconnect: () => void
@@ -268,6 +271,8 @@ interface GameState {
   mockSetWinner: (playerId: string | null) => void
   mockSetRemainingMs: (ms: number) => void
   mockSubmitBans: (bannedIds: string[]) => void
+  mockNextRound: () => void
+  mockRematch: () => void
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────
@@ -304,6 +309,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   roomConfig: { ...DEFAULT_ROOM_CONFIG },
   banPhasePool: null,
   banPhaseCount: 0,
+  isMockMatch: false,
 
   // ── Real: WebSocket connection ───────────────────────────────────────────
 
@@ -353,10 +359,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   disconnect: () => {
     get().ws?.close()
+    clearMockTimer()
     try {
       localStorage.removeItem('1v1me_session')
     } catch {}
-    set({ ws: null, wsStatus: 'disconnected' })
+    set({ ws: null, wsStatus: 'disconnected', isMockMatch: false })
   },
 
   send: (type, payload = {}) => {
@@ -507,6 +514,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           matchStartedAt: Date.now(),
           banPhasePool: null,
           banPhaseCount: 0,
+          isMockMatch: false,
         })
         break
       }
@@ -673,6 +681,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   sendRoomConfig: (config) => {
+    set({ roomConfig: config })
     get().send('SET_ROOM_CONFIG', config)
   },
 
@@ -715,8 +724,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       updates.currentMinigame = 'clickspeed'
     }
     if (status === 'match_end') updates.matchWinnerId = 'player-1'
-    if (['round_start', 'playing', 'round_end', 'match_end'].includes(status)) {
+    if (['round_start', 'playing', 'round_end', 'match_end', 'banning'].includes(status)) {
       if (get().players.length < 2) updates.players = [get().players[0]!, MOCK_OPP]
+    }
+    if (status === 'banning') {
+      const { roomConfig } = get()
+      updates.isMockMatch = true
+      updates.banPhasePool = (Object.keys(MINIGAME_CONFIGS) as MinigameId[]).filter(
+        (id) =>
+          roomConfig.enabledCategories.length === 0 ||
+          roomConfig.enabledCategories.includes(MINIGAME_CONFIGS[id].category)
+      )
+      updates.banPhaseCount = roomConfig.banCount > 0 ? roomConfig.banCount : 1
     }
     set(updates)
   },
@@ -729,6 +748,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       remainingMs: timeoutMs,
       roomStatus: 'playing',
       minigameState: null,
+      isMockMatch: true,
     })
     if (timeoutMs > 0) startMockTimer(get, set)
     else clearMockTimer()
@@ -745,7 +765,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newPlayers = get().players.map((p) => (p.id === playerId ? { ...p, ready: !p.ready } : p))
     set({ players: newPlayers })
     if (newPlayers.length === 2 && newPlayers.every((p) => p.ready)) {
-      set({ roomStatus: 'ready' })
+      set({ roomStatus: 'ready', isMockMatch: true })
       setTimeout(() => {
         const { roomConfig } = get()
         if (roomConfig.banCount > 0) {
@@ -778,4 +798,44 @@ export const useGameStore = create<GameState>((set, get) => ({
   mockSetRound: (round) => set({ currentRound: round }),
   mockSetWinner: (playerId) => set({ matchWinnerId: playerId, roomStatus: 'match_end' }),
   mockSetRemainingMs: (ms) => set({ remainingMs: ms }),
+
+  mockNextRound: () => {
+    const { players, myPlayerId, scores, currentRound, roomConfig } = get()
+    const opponent = players.find((p) => p.id !== myPlayerId)
+    // Randomly assign round winner and update scores
+    const winnerId = Math.random() < 0.5 ? myPlayerId : (opponent?.id ?? myPlayerId)
+    const newScores = { ...scores, [winnerId]: (scores[winnerId] ?? 0) + 1 }
+    const winsNeeded = Math.ceil(roomConfig.bestOf / 2)
+    if (Object.values(newScores).some((s) => s >= winsNeeded)) {
+      set({
+        scores: newScores,
+        lastRoundWinnerId: winnerId,
+        matchWinnerId: winnerId,
+        roomStatus: 'match_end',
+      })
+      return
+    }
+    const nextRound = currentRound + 1
+    set({ scores: newScores, lastRoundWinnerId: winnerId, currentRound: nextRound })
+    const ids = Object.keys(MINIGAME_CONFIGS) as MinigameId[]
+    get().mockSetMinigame(ids[Math.floor(Math.random() * ids.length)]!)
+  },
+
+  mockRematch: () => {
+    clearMockTimer()
+    const { players } = get()
+    set({
+      roomStatus: 'lobby',
+      scores: Object.fromEntries(players.map((p) => [p.id, 0])),
+      currentRound: 1,
+      currentMinigame: null,
+      matchWinnerId: null,
+      lastRoundWinnerId: null,
+      roundHistory: [],
+      minigameState: null,
+      banPhasePool: null,
+      banPhaseCount: 0,
+      players: players.map((p) => ({ ...p, ready: false })),
+    })
+  },
 }))

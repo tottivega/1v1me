@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useGameStore } from '../../store/gameStore'
 import { MINIGAME_CONFIGS } from '@shared/types'
 
-const BAN_TIMEOUT_SECS = 30
+const BAN_TIMEOUT_SECS = 10
 
 export default function BanPhaseView() {
-  const { banPhasePool, banPhaseCount, send, wsStatus, mockSubmitBans } = useGameStore()
+  const { banPhasePool, banPhaseCount, send, isMockMatch, mockSubmitBans } = useGameStore()
   const [selected, setSelected] = useState<string[]>([])
   const [submitted, setSubmitted] = useState(false)
   const [secsLeft, setSecsLeft] = useState(BAN_TIMEOUT_SECS)
@@ -40,11 +40,11 @@ export default function BanPhaseView() {
     if (submittedRef.current) return
     submittedRef.current = true
     setSubmitted(true)
-    if (wsStatus === 'connected') {
-      send('SUBMIT_BANS', { bannedGameIds: bannedIds })
-    } else {
+    if (isMockMatch) {
       // Mock mode: opponent also "submits" instantly — game starts immediately
       mockSubmitBans(bannedIds)
+    } else {
+      send('SUBMIT_BANS', { bannedGameIds: bannedIds })
     }
   }
 
@@ -59,7 +59,7 @@ export default function BanPhaseView() {
     )
   }
 
-  const urgent = secsLeft <= 10 && !submitted
+  const urgent = secsLeft <= 5 && !submitted
 
   return (
     <div className="page" style={{ gap: 20 }}>

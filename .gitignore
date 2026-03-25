@@ -3,6 +3,7 @@ node_modules/
 .pnp
 .pnp.js
 .claude
+notes.md
 
 # Build outputs
 dist/

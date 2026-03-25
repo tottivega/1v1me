@@ -338,6 +338,8 @@ export default function MatchEndView() {
     matchStartedAt,
     roomConfig,
     sendRoomConfig,
+    isMockMatch,
+    mockRematch,
   } = useGameStore()
   const navigate = useNavigate()
   const iWon = matchWinnerId === myPlayerId
@@ -381,7 +383,11 @@ export default function MatchEndView() {
 
   function rematch() {
     playClick()
-    send('REMATCH')
+    if (isMockMatch) {
+      mockRematch()
+    } else {
+      send('REMATCH')
+    }
   }
 
   return (

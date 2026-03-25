@@ -15,7 +15,16 @@ import TimerBar from '../../components/TimerBar'
 import { CATEGORY_OVERLAY_BG, EMOTES } from './constants'
 
 function RoundEndOverlay() {
-  const { lastRoundWinnerId, myPlayerId, players, scores, wsStatus, send } = useGameStore()
+  const {
+    lastRoundWinnerId,
+    myPlayerId,
+    players,
+    scores,
+    wsStatus,
+    send,
+    isMockMatch,
+    mockNextRound,
+  } = useGameStore()
   const iWon = lastRoundWinnerId === myPlayerId
   const winner = players.find((p) => p.id === lastRoundWinnerId)
   const [confirmed, setConfirmed] = useState(false)
@@ -29,7 +38,11 @@ function RoundEndOverlay() {
     if (confirmed) return
     setConfirmed(true)
     playClick()
-    send('ROUND_READY')
+    if (isMockMatch) {
+      mockNextRound()
+    } else {
+      send('ROUND_READY')
+    }
   }
 
   return (

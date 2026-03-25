@@ -51,6 +51,7 @@ beforeEach(() => {
     players: [ME, OPP],
     roomStatus: 'banning',
     wsStatus: 'disconnected',
+    isMockMatch: true,
     roomId: 'TEST-42',
     spectatorCount: 0,
     roomConfig: { ...DEFAULT_ROOM_CONFIG, banCount: 1 },
@@ -138,7 +139,7 @@ describe('BanPhaseView — submit', () => {
 
   it('calls send(SUBMIT_BANS) when connected to server', () => {
     const send = vi.fn()
-    useGameStore.setState({ wsStatus: 'connected', send })
+    useGameStore.setState({ wsStatus: 'connected', isMockMatch: false, send })
     renderBanPhase()
 
     fireEvent.click(screen.getByText(/Skip Bans/i))
