@@ -205,63 +205,6 @@ describe('LobbyView — avatar picker', () => {
   })
 })
 
-describe('MatchEndView — config panel', () => {
-  function renderMatchEnd() {
-    return render(
-      <MemoryRouter initialEntries={['/room/TEST-42']}>
-        <Routes>
-          <Route path="/room/:roomId" element={<RoomPage />} />
-        </Routes>
-      </MemoryRouter>
-    )
-  }
-
-  beforeEach(() => {
-    useGameStore.setState({
-      myPlayerId: 'p1',
-      players: [ME, OPP],
-      roomStatus: 'match_end',
-      wsStatus: 'connected',
-      roomConfig: { ...DEFAULT_ROOM_CONFIG },
-      scores: { p1: 3, p2: 1 },
-      matchWinnerId: 'p1',
-      roundHistory: [],
-      rematchVoting: false,
-      matchStartedAt: null,
-    })
-  })
-
-  it('shows the Best-of selector on the match-end screen', () => {
-    renderMatchEnd()
-    expect(screen.getByText('Best of')).toBeInTheDocument()
-  })
-
-  it('P1 can change Best-of config', () => {
-    const sendRoomConfig = vi.fn()
-    useGameStore.setState({ sendRoomConfig })
-    renderMatchEnd()
-    fireEvent.click(screen.getByRole('button', { name: 'best-of-3' }))
-    expect(sendRoomConfig).toHaveBeenCalledWith(expect.objectContaining({ bestOf: 3 }))
-  })
-
-  it('P2 cannot change config (read-only)', () => {
-    const sendRoomConfig = vi.fn()
-    useGameStore.setState({ myPlayerId: 'p2', sendRoomConfig })
-    renderMatchEnd()
-    // Buttons are rendered but clicking them for P2 (isCreator=false) should not call sendRoomConfig
-    fireEvent.click(screen.getByRole('button', { name: 'best-of-3' }))
-    expect(sendRoomConfig).not.toHaveBeenCalled()
-  })
-
-  it('config is locked while rematch is in progress', () => {
-    const sendRoomConfig = vi.fn()
-    useGameStore.setState({ rematchVoting: true, sendRoomConfig })
-    renderMatchEnd()
-    fireEvent.click(screen.getByRole('button', { name: 'best-of-3' }))
-    expect(sendRoomConfig).not.toHaveBeenCalled()
-  })
-})
-
 describe('Rematch flash', () => {
   it('shows REMATCH! overlay when status transitions from match_end to lobby', async () => {
     useGameStore.setState({ roomStatus: 'match_end' })

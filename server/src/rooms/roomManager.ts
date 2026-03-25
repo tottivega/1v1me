@@ -14,7 +14,7 @@ const CLEANUP_IDLE_MS = 60_000
 const RECONNECT_TIMEOUT = 15_000
 const MAX_SPECTATORS = 28
 
-function touch(room: Room): void {
+export function touch(room: Room): void {
   room.lastActivityAt = Date.now()
   scheduleCleanup(room)
 }
@@ -24,6 +24,15 @@ function scheduleCleanup(room: Room): void {
   room.cleanupTimer = setTimeout(() => {
     console.log(`[Room] Cleaning up idle room ${room.roomId}`)
     stopTimer(room)
+    // Notify all connected players before the room disappears
+    for (const player of room.players) {
+      if (player.ws.readyState === WebSocket.OPEN) {
+        send(player.ws, 'ERROR', {
+          code: 'ROOM_NOT_FOUND',
+          message: 'Room closed due to inactivity',
+        })
+      }
+    }
     deleteRoom(room.roomId)
   }, CLEANUP_IDLE_MS)
 }

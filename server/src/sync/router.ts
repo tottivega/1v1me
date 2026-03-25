@@ -13,6 +13,7 @@ import {
   handleRematchVote,
   joinAsSpectator,
   removeSpectator,
+  touch,
 } from '../rooms/roomManager'
 import { handleGameInput, handleRoundReady, handleBanSubmit } from '../match/matchController'
 
@@ -30,6 +31,7 @@ interface ConnState {
   msgCount: number
   windowStart: number
   lastEmoteAt: number
+  lastPingAt: number
 }
 
 const connections = new Map<WebSocket, ConnState>()
@@ -43,6 +45,7 @@ export function onConnection(ws: WebSocket): void {
     msgCount: 0,
     windowStart: Date.now(),
     lastEmoteAt: 0,
+    lastPingAt: 0,
   })
   console.log(`[WS] Connection opened, assigned playerId=${playerId}`)
 
@@ -284,6 +287,16 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
       const room = getRoom(conn.roomId)
       if (!room) return
       handleRematchVote(room, conn.playerId)
+      break
+    }
+
+    case 'PING': {
+      if (conn.role === 'spectator' || !conn.roomId) return
+      const now = Date.now()
+      if (now - conn.lastPingAt < 10_000) return
+      conn.lastPingAt = now
+      const room = getRoom(conn.roomId)
+      if (room) touch(room)
       break
     }
 

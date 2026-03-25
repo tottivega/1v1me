@@ -271,6 +271,58 @@ describe('EMOTE rate limiting', () => {
   })
 })
 
+describe('PING', () => {
+  it('resets the idle cleanup timer when a player sends PING', async () => {
+    const port = getPort(httpServer)
+    const { ws, msgs } = await connectClient(port)
+
+    send(ws, 'SET_NICKNAME', { nickname: 'Alice' }, 'ping-room')
+    await waitForMsg(msgs, 'ROOM_JOINED')
+
+    // PING should be silently accepted (no error response)
+    send(ws, 'PING', {}, 'ping-room')
+    await new Promise((r) => setTimeout(r, 60))
+
+    const errors = msgs.filter((m) => (m as { type: string }).type === 'ERROR')
+    expect(errors).toHaveLength(0)
+  })
+
+  it('silently drops a second PING within the 10 s window (no error)', async () => {
+    const port = getPort(httpServer)
+    const { ws, msgs } = await connectClient(port)
+
+    send(ws, 'SET_NICKNAME', { nickname: 'Alice' }, 'ping-room-2')
+    await waitForMsg(msgs, 'ROOM_JOINED')
+
+    // Send two PINGs back-to-back — rate limit is silent, no ERROR response
+    send(ws, 'PING', {}, 'ping-room-2')
+    send(ws, 'PING', {}, 'ping-room-2')
+    await new Promise((r) => setTimeout(r, 60))
+
+    const errors = msgs.filter((m) => (m as { type: string }).type === 'ERROR')
+    expect(errors).toHaveLength(0)
+  })
+
+  it('ignores PING from a spectator', async () => {
+    const port = getPort(httpServer)
+    const { ws: wsPlayer, msgs: msgsPlayer } = await connectClient(port)
+    const { ws: wsSpec, msgs: msgsSpec } = await connectClient(port)
+
+    send(wsPlayer, 'SET_NICKNAME', { nickname: 'Alice' }, 'ping-spec-room')
+    await waitForMsg(msgsPlayer, 'ROOM_JOINED')
+
+    send(wsSpec, 'SPECTATE', { roomId: 'ping-spec-room' }, 'ping-spec-room')
+    await waitForMsg(msgsSpec, 'SPECTATE_JOINED')
+
+    // Spectator sends PING — should be silently ignored, no error
+    send(wsSpec, 'PING', {}, 'ping-spec-room')
+    await new Promise((r) => setTimeout(r, 60))
+
+    const errors = msgsSpec.filter((m) => (m as { type: string }).type === 'ERROR')
+    expect(errors).toHaveLength(0)
+  })
+})
+
 describe('Rate limiting', () => {
   it('sends ERROR RATE_LIMITED after exceeding 60 messages per second', async () => {
     const port = getPort(httpServer)

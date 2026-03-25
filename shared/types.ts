@@ -291,6 +291,7 @@ export type ClientMessageType =
   | 'ROUND_READY'
   | 'SPECTATE'
   | 'EMOTE'
+  | 'PING'
 
 export interface ServerMessage {
   type: ServerMessageType

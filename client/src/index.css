@@ -279,7 +279,7 @@ body {
   cursor: default;
 }
 .game-card:hover {
-  transform: translateY(-3px) rotate(-1.5deg);
+  transform: translateY(-3px);
   box-shadow: var(--shadow);
 }
 @media (prefers-reduced-motion: reduce) {

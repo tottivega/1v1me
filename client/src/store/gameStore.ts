@@ -500,6 +500,9 @@ export const useGameStore = create<GameState>((set, get) => ({
             JSON.stringify({ roomId: p.roomId, playerId: p.playerId })
           )
         } catch {}
+        // Persist avatar so reload re-uses the same one
+        const myAvatar = p.players.find((pl) => pl.id === p.playerId)?.avatar
+        if (myAvatar) saveAvatar(myAvatar)
         break
       }
 
@@ -692,6 +695,22 @@ export const useGameStore = create<GameState>((set, get) => ({
         console.error(`[Server error] ${code}: ${message}`)
         if (code === 'ROOM_NOT_FOUND') {
           set({ roomNotFound: true })
+        } else if (code === 'PLAYER_NOT_FOUND') {
+          // Lobby reload: server removed our slot on disconnect (no pre-match reconnect window).
+          // Fall back to a fresh join with the saved nickname instead of showing an error.
+          const { roomId } = get()
+          const nickname = (() => {
+            try {
+              return localStorage.getItem('nickname') ?? ''
+            } catch {
+              return ''
+            }
+          })()
+          if (roomId && nickname) {
+            get().connect(roomId, nickname)
+          } else {
+            get().pushToast(message, 'error')
+          }
         } else {
           get().pushToast(message, 'error')
         }

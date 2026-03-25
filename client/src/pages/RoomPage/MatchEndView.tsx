@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useGameStore, getStreak } from '../../store/gameStore'
 import { MINIGAME_CONFIGS } from '@shared/types'
 import { playClick, playMatchWin, playMatchLose } from '../../utils/sounds'
-import RoomSettings from './RoomSettings'
 
 function Confetti() {
   const COLORS = [
@@ -274,11 +273,19 @@ function ShareButton({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
-      <button className="btn btn-white" onClick={share}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        alignItems: 'center',
+        width: '100%',
+      }}
+    >
+      <button className="btn btn-white btn-lg" style={{ width: '100%' }} onClick={share}>
         {saved ? '✓ Copied!' : '🔗 Share Result'}
       </button>
-      <div style={{ display: 'flex', gap: 6 }}>
+      <div style={{ display: 'flex', gap: 6, width: '100%', justifyContent: 'space-between' }}>
         <a
           className="btn btn-sm btn-white"
           href={twitterUrl}
@@ -286,7 +293,7 @@ function ShareButton({
           rel="noreferrer"
           onClick={() => playClick()}
           title="Share on X / Twitter"
-          style={{ fontSize: 12 }}
+          style={{ fontSize: 12, flex: 1 }}
         >
           𝕏
         </a>
@@ -297,7 +304,7 @@ function ShareButton({
           rel="noreferrer"
           onClick={() => playClick()}
           title="Share on WhatsApp"
-          style={{ fontSize: 12 }}
+          style={{ fontSize: 12, flex: 1 }}
         >
           WA
         </a>
@@ -308,7 +315,7 @@ function ShareButton({
           rel="noreferrer"
           onClick={() => playClick()}
           title="Share on Reddit"
-          style={{ fontSize: 12 }}
+          style={{ fontSize: 12, flex: 1 }}
         >
           Reddit
         </a>
@@ -316,7 +323,7 @@ function ShareButton({
           className="btn btn-sm btn-white"
           onClick={copyDiscord}
           title="Copy for Discord"
-          style={{ fontSize: 12 }}
+          style={{ fontSize: 12, flex: 1 }}
         >
           {discordCopied ? '✓' : 'Discord'}
         </button>
@@ -336,14 +343,11 @@ export default function MatchEndView() {
     roundHistory,
     rematchVoting,
     matchStartedAt,
-    roomConfig,
-    sendRoomConfig,
     isMockMatch,
     mockRematch,
   } = useGameStore()
   const navigate = useNavigate()
   const iWon = matchWinnerId === myPlayerId
-  const isCreator = players[0]?.id === myPlayerId
 
   const matchDuration = matchStartedAt
     ? (() => {
@@ -529,38 +533,35 @@ export default function MatchEndView() {
         )}
       </div>
 
-      <RoomSettings
-        config={roomConfig}
-        isCreator={isCreator}
-        locked={rematchVoting}
-        onChange={sendRoomConfig}
-      />
-
-      <div className="match-end-actions" style={{ display: 'flex', gap: 12 }}>
+      <div
+        className="match-end-actions"
+        style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 420 }}
+      >
         {rematchVoting ? (
-          <>
-            <button className="btn btn-orange btn-lg anim-pulse" disabled>
-              ⏳ Waiting for opponent…
-            </button>
-            <button
-              className="btn btn-white"
-              onClick={() => {
-                playClick()
-                disconnect()
-                navigate('/')
-              }}
-            >
-              ✕ Cancel
-            </button>
-          </>
+          <button className="btn btn-orange btn-lg anim-pulse" style={{ width: '100%' }} disabled>
+            ⏳ Waiting for opponent…
+          </button>
         ) : (
-          <button className="btn btn-orange btn-lg" onClick={rematch}>
+          <button className="btn btn-orange btn-lg" style={{ width: '100%' }} onClick={rematch}>
             🔁 Rematch
           </button>
         )}
-        <button className="btn btn-white" onClick={goHome}>
-          🏠 Home
+        <button
+          className="btn btn-white btn-lg"
+          style={{ width: '100%' }}
+          onClick={
+            rematchVoting
+              ? () => {
+                  playClick()
+                  disconnect()
+                  navigate('/')
+                }
+              : goHome
+          }
+        >
+          {rematchVoting ? '✕ Cancel' : '🏠 Home'}
         </button>
+        <div style={{ marginTop: 8 }} />
         <ShareButton
           iWon={iWon}
           myNickname={me?.nickname ?? 'Player'}

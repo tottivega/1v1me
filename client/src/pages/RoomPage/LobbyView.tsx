@@ -31,14 +31,10 @@ function LobbyGamePreview() {
         {games.map(([id, cfg]) => (
           <div
             key={id}
+            className="game-card"
             style={{
-              background: 'var(--white)',
-              border: 'var(--border)',
               borderRadius: 12,
-              boxShadow: 'var(--shadow-sm)',
               padding: '10px 12px',
-              display: 'flex',
-              flexDirection: 'column',
               gap: 4,
             }}
           >
@@ -259,12 +255,23 @@ export default function LobbyView({ roomId }: { roomId: string }) {
     roomConfig,
     sendRoomConfig,
     sendSetAvatar,
+    send,
   } = useGameStore()
   const me = players.find((p) => p.id === myPlayerId)
   const opponent = players.find((p) => p.id !== myPlayerId)
   const isCreator = players[0]?.id === myPlayerId
   const locked = !!(me?.ready || opponent?.ready)
   const inviteUrl = `${window.location.origin}/room/${roomId}`
+
+  // Ping throttle — mirrors server-side 10s rate limit
+  const lastPingRef = useRef(0)
+  function pingActivity() {
+    const now = Date.now()
+    if (now - lastPingRef.current < 10_000) return
+    lastPingRef.current = now
+    send('PING', {})
+    resetIdleTimer()
+  }
 
   // Avatar picker
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false)
@@ -319,7 +326,7 @@ export default function LobbyView({ roomId }: { roomId: string }) {
   }, [opponent, me?.ready, setReady])
 
   return (
-    <div className="page">
+    <div className="page" onClick={pingActivity}>
       {/* Back button — fixed top-left, does not affect page flow */}
       <button
         className="btn btn-white btn-sm"
@@ -348,17 +355,6 @@ export default function LobbyView({ roomId }: { roomId: string }) {
         <div className="subtitle" style={{ opacity: 0.6, marginTop: 4 }}>
           Share the link to challenge someone!
         </div>
-      </div>
-
-      {/* Connection badge */}
-      <div
-        className={`badge ${wsStatus === 'connected' ? 'badge-green' : wsStatus === 'connecting' ? 'badge-yellow' : 'badge-red'}`}
-      >
-        {wsStatus === 'connected'
-          ? '🟢 Connected'
-          : wsStatus === 'connecting'
-            ? '⏳ Connecting…'
-            : '🔴 Disconnected'}
       </div>
 
       {/* Room code */}
@@ -477,7 +473,7 @@ export default function LobbyView({ roomId }: { roomId: string }) {
       {/* Idle timeout warning */}
       {idleSecsLeft !== null && (
         <div className="badge badge-red anim-pulse" style={{ fontSize: 13 }}>
-          ⏰ Room expires in {idleSecsLeft}s
+          ⏰ Room expires in {idleSecsLeft}s due to inactivity
         </div>
       )}
 
