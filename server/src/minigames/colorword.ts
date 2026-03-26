@@ -32,7 +32,8 @@ const colorword: MinigameModule = {
   handleInput(room, playerId, input) {
     if (input.type !== 'PICK_COLOR') return
 
-    const state = room.match!.minigameState as State
+    const state = room.match!.minigameState as State | null
+    if (!state) return // input arrived after round resolved
     if (state.resolved) return
     if (room.match!.roundResolved) return
 

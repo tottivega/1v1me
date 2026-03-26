@@ -140,7 +140,8 @@ const rockpaperscissors: MinigameModule = {
   handleInput(room, playerId, input) {
     if (input.type !== 'PICK') return
 
-    const state = room.match!.minigameState as State
+    const state = room.match!.minigameState as State | null
+    if (!state) return // input arrived after round resolved
     if (state.resolved || state.phase !== 'picking') return
     if (state.picks[playerId]) return // already picked this throw
 

@@ -35,7 +35,8 @@ const higherorlower: MinigameModule = {
   handleInput(room, playerId, input) {
     if (input.type !== 'PICK_DIRECTION') return
 
-    const state = room.match!.minigameState as State
+    const state = room.match!.minigameState as State | null
+    if (!state) return // input arrived after round resolved
     if (state.answers[playerId] !== undefined) return // already answered
 
     state.answers[playerId] = input.answer as 'higher' | 'lower'

@@ -30,7 +30,8 @@ const clickspeed: MinigameModule = {
   handleInput(room, playerId, input) {
     if (input.type !== 'CLICK') return
 
-    const state = room.match!.minigameState as State
+    const state = room.match!.minigameState as State | null
+    if (!state) return // click arrived after round resolved
     const now = Date.now()
 
     // CPS cap

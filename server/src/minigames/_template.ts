@@ -81,7 +81,8 @@ const template: MinigameModule = {
   handleInput(room, playerId, input) {
     if (input.type !== 'YOUR_INPUT_TYPE') return
 
-    const state = room.match!.minigameState as State
+    const state = room.match!.minigameState as State | null
+    if (!state) return // input arrived after round resolved
     // TODO: validate and apply input, then broadcast updated state
 
     broadcastState(room, state)

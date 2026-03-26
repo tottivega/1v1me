@@ -46,7 +46,8 @@ const memorymatch: MinigameModule = {
   handleInput(room, playerId, input) {
     if (input.type !== 'SUBMIT') return
 
-    const state = room.match!.minigameState as State
+    const state = room.match!.minigameState as State | null
+    if (!state) return // input arrived after round resolved
     if (state.resolved) return
     if (state.submissions[playerId]) return // already submitted
 

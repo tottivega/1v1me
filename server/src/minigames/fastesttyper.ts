@@ -50,7 +50,8 @@ const fastesttyper: MinigameModule = {
   handleInput(room, playerId, input) {
     if (input.type !== 'TYPE') return
 
-    const state = room.match!.minigameState as State
+    const state = room.match!.minigameState as State | null
+    if (!state) return // input arrived after round resolved
     if (state.resolved) return
 
     const typed = typeof input.text === 'string' ? input.text.slice(0, 200) : ''

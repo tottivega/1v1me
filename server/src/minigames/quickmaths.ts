@@ -61,7 +61,8 @@ const quickmaths: MinigameModule = {
   handleInput(room, playerId, input) {
     if (input.type !== 'ANSWER') return
 
-    const state = room.match!.minigameState as State
+    const state = room.match!.minigameState as State | null
+    if (!state) return // input arrived after round resolved
     if (!state.equations[playerId]) return
 
     const submitted = Number(input.answer)
