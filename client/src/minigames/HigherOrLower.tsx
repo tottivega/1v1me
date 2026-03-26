@@ -4,8 +4,8 @@ import { playCorrect, playWrong, playClick } from '../utils/sounds'
 import { type HigherOrLowerState } from '@shared/types'
 
 export default function HigherOrLower() {
-  const { myPlayerId, players, minigameState, wsStatus, sendInput } = useGameStore()
-  const isLive = wsStatus === 'connected' && minigameState !== null
+  const { myPlayerId, players, minigameState, isMockMatch, sendInput } = useGameStore()
+  const isLive = !isMockMatch
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   // Live state
@@ -83,8 +83,79 @@ export default function HigherOrLower() {
 
   if (clue === null) {
     return (
-      <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <p className="subtitle anim-pulse">Loading…</p>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 28,
+          flex: 1,
+          padding: 32,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: 'var(--font-title)',
+            fontSize: 36,
+            color: 'var(--black)',
+            textAlign: 'center',
+          }}
+        >
+          HIGHER OR LOWER? 📊
+        </div>
+        <p
+          style={{
+            fontSize: 13,
+            color: 'rgba(0,0,0,0.5)',
+            fontWeight: 700,
+            margin: 0,
+            textAlign: 'center',
+          }}
+        >
+          The secret number is close to the clue. Is it <strong>Higher</strong> or{' '}
+          <strong>Lower</strong>?
+        </p>
+        <div
+          style={{
+            background: 'var(--white)',
+            border: 'var(--border)',
+            borderRadius: 16,
+            boxShadow: '4px 4px 0 var(--black)',
+            padding: '24px 48px',
+            textAlign: 'center',
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: 2,
+              opacity: 0.4,
+            }}
+          >
+            Clue number
+          </div>
+          <div
+            style={{
+              fontFamily: 'var(--font-title)',
+              fontSize: 80,
+              lineHeight: 1,
+              color: 'rgba(0,0,0,0.15)',
+            }}
+          >
+            ?
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          <button className="btn btn-green btn-lg" disabled style={{ minWidth: 130, opacity: 0.3 }}>
+            ⬆️ Higher
+          </button>
+          <button className="btn btn-red btn-lg" disabled style={{ minWidth: 130, opacity: 0.3 }}>
+            ⬇️ Lower
+          </button>
+        </div>
       </div>
     )
   }

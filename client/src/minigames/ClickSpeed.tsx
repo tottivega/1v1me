@@ -10,8 +10,8 @@ interface Ripple {
 }
 
 export default function ClickSpeed() {
-  const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
-  const isLive = wsStatus === 'connected' && minigameState !== null
+  const { myPlayerId, players, sendInput, minigameState, isMockMatch } = useGameStore()
+  const isLive = !isMockMatch
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   const [localMyClicks, setLocalMyClicks] = useState(0)

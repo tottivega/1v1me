@@ -8,8 +8,8 @@ const SEQ_LEN = 5
 const MEMORIZE_SECS = 4
 
 export default function MemoryMatch() {
-  const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
-  const isLive = wsStatus === 'connected' && minigameState !== null
+  const { myPlayerId, players, sendInput, minigameState, isMockMatch } = useGameStore()
+  const isLive = !isMockMatch
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   // ── Phase tracking ─────────────────────────────────────────────────────────
@@ -19,7 +19,8 @@ export default function MemoryMatch() {
 
   // Live server state — declared early so effects below can reference `sequence`
   const serverState = isLive ? (minigameState as MemoryMatchState | null) : null
-  const sequence = serverState?.sequence ?? mockSequence
+  const sequence =
+    serverState?.sequence ?? (isLive ? Array.from({ length: SEQ_LEN }, () => '?') : mockSequence)
   const submissions = serverState?.submissions ?? {}
 
   const iSubmitted = !!submissions[myPlayerId]

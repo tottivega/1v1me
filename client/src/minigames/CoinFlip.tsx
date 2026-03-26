@@ -6,8 +6,8 @@ import { type CoinFlipPhase, type CoinFlipState } from '@shared/types'
 type Phase = CoinFlipPhase
 
 export default function CoinFlip() {
-  const { myPlayerId, players, minigameState, wsStatus } = useGameStore()
-  const isLive = wsStatus === 'connected' && minigameState !== null
+  const { myPlayerId, players, minigameState, isMockMatch } = useGameStore()
+  const isLive = !isMockMatch
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   // ── Live mode: driven entirely by server GAME_UPDATE ──────────────────────

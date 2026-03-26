@@ -4,8 +4,8 @@ import { playCorrect } from '../utils/sounds'
 import { type FastestTyperState } from '@shared/types'
 
 export default function FastestTyper() {
-  const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
-  const isLive = wsStatus === 'connected' && minigameState !== null
+  const { myPlayerId, players, sendInput, minigameState, isMockMatch } = useGameStore()
+  const isLive = !isMockMatch
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   const [typed, setTyped] = useState('')
@@ -13,7 +13,7 @@ export default function FastestTyper() {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const serverState = isLive ? (minigameState as FastestTyperState | null) : null
-  const phrase = serverState?.phrase ?? MOCK_PHRASE
+  const phrase = serverState?.phrase ?? (isLive ? '' : MOCK_PHRASE)
 
   // Mock opponent progress — advances at a random pace in dev/disconnected mode
   const [mockOppProg, setMockOppProg] = useState(0)

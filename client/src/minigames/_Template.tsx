@@ -12,13 +12,13 @@
  * DUAL MODE
  * Every component must work in two modes:
  *
- *   Live mode   (wsStatus === 'connected')
+ *   Live mode   (isMockMatch === false)
  *     — read game state from `minigameState` (set by GAME_UPDATE messages)
  *     — use `state.kind === 'yourgameid'` to narrow MinigameState safely
  *     — send player actions via `sendInput({ type: 'YOUR_TYPE', ...data })`
  *     — never run local timers; trust the server
  *
- *   Mock mode   (wsStatus !== 'connected', used by DevPanel)
+ *   Mock mode   (isMockMatch === true, used by DevPanel)
  *     — simulate the game locally so it can be tested without a server
  *     — calls to sendInput() are no-ops in this mode; that's fine
  *     — simulate a real opponent response (setTimeout/interval + cleanup)
@@ -40,8 +40,8 @@ interface ServerState {
 }
 
 export default function Template() {
-  const { myPlayerId, players, minigameState, wsStatus, sendInput } = useGameStore()
-  const isLive = wsStatus === 'connected' && minigameState !== null
+  const { myPlayerId, players, minigameState, isMockMatch, sendInput } = useGameStore()
+  const isLive = !isMockMatch
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   // ── Live mode ─────────────────────────────────────────────────────────────

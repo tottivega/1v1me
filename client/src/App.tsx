@@ -7,8 +7,10 @@ import DevPanel from './components/DevPanel'
 import ErrorToast from './components/ErrorToast'
 import SoundToggle from './components/SoundToggle'
 import LandscapeWarning from './components/LandscapeWarning'
+import { useGameStore } from './store/gameStore'
 
 export default function App() {
+  const wsStatus = useGameStore((s) => s.wsStatus)
   return (
     <>
       <Routes>
@@ -17,7 +19,7 @@ export default function App() {
         <Route path="/room/:roomId" element={<RoomPage />} />
         <Route path="/spectate/:roomId" element={<SpectatePage />} />
       </Routes>
-      {import.meta.env.DEV && <DevPanel />}
+      {import.meta.env.DEV && wsStatus !== 'connected' && <DevPanel />}
       <ErrorToast />
       <SoundToggle />
       <LandscapeWarning />

@@ -8,8 +8,8 @@ type Equation = QuickMathsEquation
 type Flash = 'correct' | 'wrong' | null
 
 export default function QuickMaths() {
-  const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
-  const isLive = wsStatus === 'connected' && minigameState !== null
+  const { myPlayerId, players, sendInput, minigameState, isMockMatch } = useGameStore()
+  const isLive = !isMockMatch
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   const [inputVal, setInputVal] = useState('')
@@ -30,6 +30,15 @@ export default function QuickMaths() {
   useEffect(() => {
     if (!isLive || !myEquation) return
     if (myEquation.question === prevQuestion.current) return // no change yet
+
+    if (prevQuestion.current === '') {
+      // First equation arriving — initialize tracking refs without triggering flash
+      prevCorrect.current = myCorrect
+      prevQuestion.current = myEquation.question
+      setInputVal('')
+      inputRef.current?.focus()
+      return
+    }
 
     const wasCorrect = myCorrect > prevCorrect.current
     triggerFlash(wasCorrect ? 'correct' : 'wrong')

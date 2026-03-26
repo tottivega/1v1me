@@ -6,8 +6,8 @@ import { type ReactionTestState } from '@shared/types'
 type Phase = 'waiting' | 'ready' | 'clicked' | 'too-early' | 'result'
 
 export default function ReactionTest() {
-  const { myPlayerId, players, sendInput, minigameState, wsStatus } = useGameStore()
-  const isLive = wsStatus === 'connected' && minigameState !== null
+  const { myPlayerId, players, sendInput, minigameState, isMockMatch } = useGameStore()
+  const isLive = !isMockMatch
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   // ── Live mode: driven by server GAME_UPDATE ───────────────────────────────

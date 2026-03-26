@@ -31,8 +31,8 @@ function pickDifferent(base: Color): Color {
 }
 
 export default function ColorWord() {
-  const { myPlayerId, players, minigameState, wsStatus, sendInput } = useGameStore()
-  const isLive = wsStatus === 'connected' && minigameState !== null
+  const { myPlayerId, players, minigameState, isMockMatch, sendInput } = useGameStore()
+  const isLive = !isMockMatch
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   // Live state
@@ -92,8 +92,80 @@ export default function ColorWord() {
 
   if (!word || !inkColor) {
     return (
-      <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <p className="subtitle anim-pulse">Loading…</p>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 32,
+          flex: 1,
+          padding: 32,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: 'var(--font-title)',
+            fontSize: 36,
+            color: 'var(--black)',
+            textAlign: 'center',
+          }}
+        >
+          CLICK THE INK COLOR 🎨
+        </div>
+        <p
+          style={{
+            fontSize: 13,
+            color: 'rgba(0,0,0,0.5)',
+            fontWeight: 700,
+            margin: 0,
+            textAlign: 'center',
+          }}
+        >
+          What color is the <em>text itself</em>? (Not the word it spells)
+        </p>
+        <div
+          style={{
+            fontFamily: 'var(--font-title)',
+            fontSize: 72,
+            color: 'rgba(0,0,0,0.12)',
+            letterSpacing: 4,
+            userSelect: 'none',
+          }}
+        >
+          COLOR
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 10,
+            justifyContent: 'center',
+            maxWidth: 340,
+          }}
+        >
+          {ALL_COLORS.map((color) => (
+            <button
+              key={color}
+              disabled
+              style={{
+                width: 90,
+                height: 52,
+                borderRadius: 8,
+                border: '3px solid var(--black)',
+                background: COLOR_STYLES[color].bg,
+                color: COLOR_STYLES[color].fg,
+                fontWeight: 900,
+                fontSize: 13,
+                textTransform: 'uppercase',
+                opacity: 0.3,
+                cursor: 'default',
+              }}
+            >
+              {color}
+            </button>
+          ))}
+        </div>
       </div>
     )
   }

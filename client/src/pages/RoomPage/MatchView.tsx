@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, Suspense } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '../../store/gameStore'
 import { MINIGAME_CONFIGS } from '@shared/types'
 import { MINIGAME_COMPONENTS } from '../../minigames/registry'
@@ -108,6 +109,7 @@ function RoundEndOverlay() {
 }
 
 export default function MatchView() {
+  const navigate = useNavigate()
   const {
     currentMinigame,
     roomStatus,
@@ -118,11 +120,14 @@ export default function MatchView() {
     scores,
     roomConfig,
     send,
+    disconnect,
     incomingEmote,
     roundHistory,
+    isMockMatch,
   } = useGameStore()
   const MinigameComp = currentMinigame ? MINIGAME_COMPONENTS[currentMinigame] : null
   const cfg = currentMinigame ? MINIGAME_CONFIGS[currentMinigame] : null
+  const isMatchOver = Object.values(scores).some((s) => s >= Math.ceil(roomConfig.bestOf / 2))
 
   const [showTransition, setShowTransition] = useState(false)
   const [transitionData, setTransitionData] = useState<{
@@ -216,6 +221,18 @@ export default function MatchView() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh' }}>
       <ScoreBoard />
 
+      {/* Forfeit button */}
+      <button
+        className="btn btn-white btn-sm"
+        onClick={() => {
+          disconnect()
+          navigate('/')
+        }}
+        style={{ position: 'fixed', top: 12, left: 12, zIndex: 95 }}
+      >
+        ← Leave
+      </button>
+
       {/* Minigame label banner */}
       {cfg && (
         <div
@@ -285,7 +302,7 @@ export default function MatchView() {
       {cfg && cfg.timeoutMs > 0 && <TimerBar />}
 
       {/* Round transition overlay */}
-      {roomStatus === 'round_end' && <RoundEndOverlay />}
+      {roomStatus === 'round_end' && !isMatchOver && <RoundEndOverlay />}
 
       {/* Reconnect waiting overlay */}
       {roomStatus === 'reconnecting' &&
@@ -580,7 +597,7 @@ export default function MatchView() {
         ) : (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="subtitle" style={{ opacity: 0.5 }}>
-              Select a minigame in the dev panel →
+              {isMockMatch ? 'Select a minigame in the dev panel →' : 'Loading…'}
             </div>
           </div>
         )}

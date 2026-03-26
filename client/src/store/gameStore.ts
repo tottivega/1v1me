@@ -353,7 +353,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   // ── Real: WebSocket connection ───────────────────────────────────────────
 
   connect: (roomId, nickname) => {
-    // Close any existing connection
+    // Close any existing connection and stop any lingering mock timer
+    clearMockTimer()
     get().ws?.close()
 
     const wsUrl = getWsUrl()
