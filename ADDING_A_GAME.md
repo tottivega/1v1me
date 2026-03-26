@@ -1,6 +1,6 @@
 # Adding a New Minigame
 
-Three files to create, three registrations to make. TypeScript enforces all three — if you miss one, `tsc` will error before the server or client even starts.
+Four files to create, zero manual registrations. The server module and client components are auto-discovered at startup — no import lists to update. TypeScript enforces the `shared/types.ts` entries; if you miss the `MINIGAME_CONFIGS` entry or `MinigameState` union addition, `tsc` will error.
 
 ---
 
@@ -23,7 +23,25 @@ Set `platforms` to `'desktop-only'` if the game requires a physical keyboard (li
 
 `MinigameId` is derived automatically from these keys.
 
-That's all you need to touch in `shared/types.ts`. `MinigameInput` is an open interface — no union to extend.
+**Also in `shared/types.ts`**: add a state interface for your game and add it to the `MinigameState` union. The `kind` discriminant is what enables safe narrowing in the client component (`if (state.kind === 'wordrace') { ... }`).
+
+```ts
+// State interface — mirror the fields your server module broadcasts
+export interface WordRaceState {
+  kind: 'wordrace'
+  progress: Record<string, number>
+  winnerId: string | null
+}
+
+// Add to the MinigameState union at the bottom of the union block
+export type MinigameState =
+  | ClickSpeedState
+  | CoinFlipState
+  | ...
+  | WordRaceState  // ← add here
+```
+
+`MinigameInput` is an open interface — no changes needed there.
 
 ---
 
@@ -135,11 +153,40 @@ describe('WordRace', () => {
 })
 ```
 
+Also add a **live-state test** that sets `minigameState` with the `kind` discriminant and verifies the UI reflects server state:
+
+```ts
+describe('WordRace', () => {
+  it('renders the typing area', async () => {
+    await renderGame('WordRace')
+    expect(screen.getByRole('textbox')).toBeInTheDocument()
+  })
+
+  it('typing does not throw', async () => {
+    await renderGame('WordRace')
+    expect(() =>
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'hello' } })
+    ).not.toThrow()
+  })
+
+  it('shows live progress from server state', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: { kind: 'wordrace', progress: { [ME]: 5 }, winnerId: null },
+    })
+    await renderGame('WordRace')
+    expect(screen.getByText('5')).toBeInTheDocument() // adapt to your game's UI
+  })
+})
+```
+
 Rules:
-- Use `BASE_STATE` (already in scope) — `wsStatus: 'disconnected'`, `isMockMatch: true`
+- Mock-mode tests use `BASE_STATE` (`wsStatus: 'disconnected'`, `isMockMatch: true`)
+- Live-state tests set `wsStatus: 'connected'`, `isMockMatch: false`, and `minigameState` with the `kind` discriminant
 - Test that the game renders something meaningful in mock mode
 - Test that the primary interaction (click, type, pick) does not throw
-- Do **not** test server-driven behaviour (that's what server integration tests are for)
+- Do **not** test server-driven behaviour in client tests (that's what server integration tests are for)
 
 ---
 
@@ -190,13 +237,14 @@ Rules:
 
 ## Checklist
 
-- [ ] Entry in `MINIGAME_CONFIGS` (`shared/types.ts`) — no MinigameInput changes needed
+- [ ] Entry in `MINIGAME_CONFIGS` (`shared/types.ts`)
+- [ ] State interface + `MinigameState` union entry in `shared/types.ts`
 - [ ] Server module at `server/src/minigames/wordrace.ts` (auto-registered by id)
 - [ ] Client component at `client/src/minigames/WordRace.tsx` (auto-registered by glob)
 - [ ] Spectator view at `client/src/minigames/WordRace.spectator.tsx` (auto-registered by glob)
 - [ ] Ambient sound layers in `client/src/utils/sounds.ts` → `AMBIENT` map
 - [ ] Bot strategy in `tests/e2e/helpers/gameInputs.ts` → `STRATEGIES` map
-- [ ] Client smoke test in `client/src/__tests__/minigames/minigames.test.tsx`
+- [ ] Client smoke test + live-state test in `client/src/__tests__/minigames/minigames.test.tsx`
 - [ ] Integration tests in `server/src/__tests__/minigames/wordrace.test.ts`
 - [ ] `tsc --noEmit` passes in both `client/` and `server/`
 - [ ] Tested in DevPanel (mock mode) — no server needed

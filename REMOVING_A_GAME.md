@@ -87,7 +87,7 @@ Same as above — TypeScript won't enforce this, but the dead strategy will neve
 
 ## 8. Update CLAUDE.md
 
-The **Minigame Pool** table in `CLAUDE.md` lists all games. Remove the row for the deleted game and update the count in the section header (currently "11 games").
+The **Minigame Pool** table in `CLAUDE.md` lists all games. Remove the row for the deleted game and update the count in the section header.
 
 ---
 

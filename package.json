@@ -9,7 +9,8 @@
     "prepare": "husky",
     "format": "prettier --write \"server/src/**/*.ts\" \"client/src/**/*.{ts,tsx}\" \"shared/**/*.ts\"",
     "format:check": "prettier --check \"server/src/**/*.ts\" \"client/src/**/*.{ts,tsx}\" \"shared/**/*.ts\"",
-    "test:e2e": "npm install --prefix tests && npm test --prefix tests"
+    "test:e2e": "npm install --prefix tests && npm test --prefix tests",
+    "new-game": "node scripts/new-game.mjs"
   },
   "lint-staged": {
     "server/src/**/*.ts": [

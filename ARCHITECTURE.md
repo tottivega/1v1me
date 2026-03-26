@@ -275,13 +275,13 @@ Lobby
 
 ## 7. Minigames
 
-**Current pool (9 games):** ClickSpeed, CoinFlip, ReactionTest, NumberGuess, QuickMaths, MemoryMatch, FastestTyper, RockPaperScissors, WordScramble
+**Current pool (9 games):** ClickSpeed, CoinFlip, ReactionTest, QuickMaths, MemoryMatch, FastestTyper, RockPaperScissors, ColorWord, HigherOrLower
 
 ### Shared Rules
 - Minigame order is randomized at match start (Fisher-Yates shuffle, category-balanced: no two consecutive same-category).
 - No minigame repeats within a single match.
 - Server resolves all outcomes. Client input is validated server-side before any state change.
-- Each minigame is a 3-file change: entry in `shared/types.ts` MINIGAME_CONFIGS + server module in `server/src/minigames/` + client component in `client/src/minigames/`. See `ADDING_A_GAME.md`.
+- Each minigame is a 4-file change: entry in `shared/types.ts` + server module + client component + spectator view. See `ADDING_A_GAME.md` for the full checklist.
 
 ---
 
@@ -311,15 +311,6 @@ Lobby
 
 ---
 
-### 7.4 NumberGuess
-**Type:** Independent simultaneous guess  
-**Timer:** 20 seconds  
-**Rules:** Server secretly generates a number 1–100. Both players independently submit one guess (`{ type: 'GUESS', value: number }`). Player closest to the secret number wins. Ties (equidistant) are broken randomly by the server. Players cannot see each other's guess until round end.  
-**Server tracks:** Secret number, guesses per player (only first guess accepted).  
-**Client UX:** Show a number input (1–100) and a submit button. Lock input after submission. Reveal both guesses and the secret number at round end.
-
----
-
 ## 8. Anti-Cheat
 
 | Mechanism | Detail |
@@ -328,8 +319,8 @@ Lobby
 | Input validation | All `GAME_INPUT` messages are validated for type, range, and turn order |
 | CPS cap | ClickSpeed: max ~20 clicks/second accepted per player |
 | Pre-signal rejection | ReactionTest: input before `REACT_NOW` = disqualification |
-| Single submission | NumberGuess, ReactionTest: only first input accepted |
-| Answer hiding | RockPaperScissors/WordScramble: server withholds opponent picks/answers until resolved |
+| Single submission | ReactionTest: only first input accepted per round |
+| Answer hiding | RockPaperScissors, ColorWord, HigherOrLower: server withholds opponent picks until both submit or round ends |
 | Timeout enforcement | All timers are server-side; client cannot extend or skip them |
 
 ---
@@ -343,20 +334,22 @@ Lobby
 
 ---
 
-## 10. Development Roadmap
+## 10. Current Status & Roadmap
 
-| Week | Focus | Deliverables |
-|---|---|---|
-| 1 | Project setup + Room system | Monorepo scaffold, WebSocket server, room create/join, nickname flow, basic lobby UI |
-| 2 | Match controller + Timer | State machine, round flow, score tracking, server timer + tick broadcast |
-| 3 | Minigame engine + 3 games | Minigame interface, ClickSpeed, TicTacToe, ReactionTest |
-| 4 | Remaining games + Polish + Deploy | CoinFlip, NumberGuess, UI polish, Vercel + Fly.io deploy, Supabase wiring |
+**Status:** MVP complete. Infrastructure, UX, and systems are production-ready. Pre-deploy focus on hardening and scaling the minigame roster.
+
+| Phase | Focus |
+|---|---|
+| Week 0 (current) | Skeleton polish — documentation, dev tooling, test infrastructure |
+| Week 1+ | Minigame creation — expand from 9 to 50 games |
+| April | Deploy to production (Fly.io + Vercel + Supabase) |
+
+See `TODO.md` for the detailed deploy runbook.
 
 ---
 
-## 11. Future Features (Post-MVP)
+## 11. Future Features (Post-Launch)
 
-- Mega matches (Best of 3 / 7 / 9 — configurable room settings, partially planned)
 - Poll voting on minigame selection
 - Player rankings and stats (requires auth layer)
 - Redis for horizontal scaling (see Section 9)
@@ -371,4 +364,4 @@ Lobby
 - **Rooms are ephemeral.** Do not over-engineer persistence. Only `match_results` is written to Supabase.
 - **Shared types live in `/shared/types.ts`.** Both client and server import from here. Keep them in sync.
 - **One WebSocket connection per player.** Reconnect reuses the same `playerId` UUID; the server must re-attach the new socket to the existing player slot.
-- **Draw handling is per-minigame.** TicTacToe and ReactionTest have explicit draw rules. Default draw resolution is server-side random assignment.
+- **Draw handling is per-minigame.** ReactionTest has an explicit draw rule. Default draw resolution is server-side random assignment.

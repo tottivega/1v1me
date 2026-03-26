@@ -56,6 +56,7 @@ export default function DevPanel() {
     mockForceRoundEnd,
     mockSetBestOf,
     mockNextRound,
+    minigameState,
   } = useGameStore()
 
   const opponent = players.find((p) => p.id !== myPlayerId)
@@ -499,6 +500,36 @@ export default function DevPanel() {
                 </DevBtn>
               )}
             </div>
+          </Section>
+
+          {/* ── Raw minigameState ────────────────────────────────────── */}
+          <Section label="minigameState (raw)">
+            {minigameState === null ? (
+              <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, fontStyle: 'italic' }}>
+                null
+              </div>
+            ) : (
+              <pre
+                style={{
+                  margin: 0,
+                  padding: '8px 10px',
+                  background: 'rgba(0,0,0,0.4)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 6,
+                  fontSize: 10,
+                  color: 'rgba(255,255,255,0.75)',
+                  overflowX: 'auto',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all',
+                  lineHeight: 1.5,
+                  fontFamily: 'monospace',
+                  maxHeight: 200,
+                  overflowY: 'auto',
+                }}
+              >
+                {JSON.stringify(minigameState, null, 2)}
+              </pre>
+            )}
           </Section>
         </div>
       )}
