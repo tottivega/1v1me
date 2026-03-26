@@ -80,18 +80,37 @@ function startMockTimer(get: () => GameState, set: (s: Partial<GameState>) => vo
   }, 1000)
 }
 
+// ── WebSocket URL ─────────────────────────────────────────────────────────────
+// In production VITE_WS_URL is set explicitly (e.g. wss://my-app.fly.dev).
+// In dev, fall back to the Vite proxy path so the phone can connect same-origin.
+function getWsUrl(): string {
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL as string
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${proto}//${window.location.host}/ws`
+}
+
 // ── Anonymous user ID (localStorage) ─────────────────────────────────────────
 const USER_ID_KEY = '1v1me_userId'
+
+// crypto.randomUUID() requires a secure context (HTTPS / localhost).
+// Fall back to Math.random when accessing via a local network IP over HTTP.
+function randomUUID(): string {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+  })
+}
 
 function getUserId(): string {
   try {
     const existing = localStorage.getItem(USER_ID_KEY)
     if (existing) return existing
-    const id = crypto.randomUUID()
+    const id = randomUUID()
     localStorage.setItem(USER_ID_KEY, id)
     return id
   } catch {
-    return crypto.randomUUID()
+    return randomUUID()
   }
 }
 
@@ -337,7 +356,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     // Close any existing connection
     get().ws?.close()
 
-    const wsUrl = import.meta.env.VITE_WS_URL ?? 'ws://localhost:3001'
+    const wsUrl = getWsUrl()
     const ws = new WebSocket(wsUrl)
     set({ ws, wsStatus: 'connecting', myNickname: nickname, roomId, roomNotFound: false })
 
@@ -410,7 +429,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   spectate: (roomId) => {
     get().ws?.close()
-    const wsUrl = import.meta.env.VITE_WS_URL ?? 'ws://localhost:3001'
+    const wsUrl = getWsUrl()
     const ws = new WebSocket(wsUrl)
     set({ ws, wsStatus: 'connecting', roomId, isSpectator: true })
 
@@ -446,7 +465,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   reconnectSaved: (roomId, playerId) => {
     get().ws?.close()
-    const wsUrl = import.meta.env.VITE_WS_URL ?? 'ws://localhost:3001'
+    const wsUrl = getWsUrl()
     const ws = new WebSocket(wsUrl)
     set({ ws, wsStatus: 'connecting', roomId, isSpectator: false })
     ws.onopen = () => {
@@ -693,7 +712,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       case 'ERROR': {
         const { code, message } = msg.payload as { code: string; message: string }
         console.error(`[Server error] ${code}: ${message}`)
-        if (code === 'ROOM_NOT_FOUND') {
+        if (code === 'ROOM_NOT_FOUND' && !get().isMockMatch) {
           set({ roomNotFound: true })
         } else if (code === 'PLAYER_NOT_FOUND') {
           // Lobby reload: server removed our slot on disconnect (no pre-match reconnect window).

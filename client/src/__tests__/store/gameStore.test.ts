@@ -152,4 +152,15 @@ describe('ERROR', () => {
     expect(useGameStore.getState().toasts[0]?.message).toBe('Room is full')
     expect(useGameStore.getState().toasts[0]?.type).toBe('error')
   })
+
+  it('sets roomNotFound when ROOM_NOT_FOUND and not in mock match', () => {
+    dispatch({ type: 'ERROR', payload: { code: 'ROOM_NOT_FOUND', message: 'gone' } })
+    expect(useGameStore.getState().roomNotFound).toBe(true)
+  })
+
+  it('does not set roomNotFound when ROOM_NOT_FOUND during mock match', () => {
+    useGameStore.setState({ isMockMatch: true, roomNotFound: false })
+    dispatch({ type: 'ERROR', payload: { code: 'ROOM_NOT_FOUND', message: 'gone' } })
+    expect(useGameStore.getState().roomNotFound).toBe(false)
+  })
 })

@@ -69,7 +69,7 @@ npm run format:check           # Prettier check (CI)
 
 `client/.env.local`:
 ```
-VITE_WS_URL=ws://localhost:3001
+# VITE_WS_URL unset in dev — Vite proxies /ws → localhost:3001 automatically
 VITE_APP_URL=https://1v1me.vercel.app   # used in share links
 # VITE_SENTRY_DSN=...                   # optional — omit to disable Sentry
 ```

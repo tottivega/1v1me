@@ -127,6 +127,9 @@ export default function RoomPage() {
     } else if (myNickname) {
       connect(roomId, myNickname)
     }
+    return () => {
+      useGameStore.getState().ws?.close()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId])
 

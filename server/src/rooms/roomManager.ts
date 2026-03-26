@@ -20,8 +20,15 @@ export function touch(room: Room): void {
 }
 
 function scheduleCleanup(room: Room): void {
+  // Only arm the idle timer in pre-match states.
+  // Active match lifecycle is managed by endMatch (POST_MATCH_IDLE_MS).
+  // Calling touch() during a match (reconnect, spectator join) must not
+  // reset the timer to the short 60s lobby timeout.
+  if (room.status !== 'lobby' && room.status !== 'ready') return
   if (room.cleanupTimer) clearTimeout(room.cleanupTimer)
   room.cleanupTimer = setTimeout(() => {
+    // Re-check status: the room may have started a match since this was scheduled.
+    if (room.status !== 'lobby' && room.status !== 'ready') return
     console.log(`[Room] Cleaning up idle room ${room.roomId}`)
     stopTimer(room)
     // Notify all connected players before the room disappears

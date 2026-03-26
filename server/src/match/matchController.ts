@@ -11,7 +11,7 @@ import { deleteRoom } from '../rooms/roomStore'
 
 const ROUND_READY_TIMEOUT_MS = 5000 // auto-advance if a player doesn't confirm
 const BAN_PHASE_TIMEOUT_MS = 30_000 // auto-submit empty bans if a player goes idle
-const POST_MATCH_IDLE_MS = 5 * 60_000 // clean up a finished room after 5 min of inactivity
+const POST_MATCH_IDLE_MS = 2 * 60_000 // clean up a finished room after 2 min of inactivity
 
 function platformExcludes(room: Room) {
   const anyMobile = room.players.some((p) => p.isMobile)

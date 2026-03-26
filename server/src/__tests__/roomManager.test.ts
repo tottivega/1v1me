@@ -168,6 +168,23 @@ describe('handleRematchVote()', () => {
 })
 
 describe('stale room cleanup', () => {
+  it('does not delete a room mid-match when a player reconnects (scheduleCleanup guard)', () => {
+    joinOrCreateRoom(ROOM_ID, 'p1', 'Alice', makeWs())
+    joinOrCreateRoom(ROOM_ID, 'p2', 'Bob', makeWs())
+    const room = getRoom(ROOM_ID)!
+    room.status = 'playing'
+    room.match = makeMatch('p1', 'p2')
+
+    // Reconnect triggers touch() → scheduleCleanup(); the guard must prevent
+    // the 60s idle timer from firing and deleting a live room.
+    handleDisconnect(ROOM_ID, 'p1')
+    handleReconnect(ROOM_ID, 'p1', makeWs())
+
+    vi.advanceTimersByTime(60_001)
+
+    expect(getRoom(ROOM_ID)).toBeDefined()
+  })
+
   it('deletes a room when the host disconnects before anyone joins and idle timer fires', () => {
     joinOrCreateRoom(ROOM_ID, 'p1', 'Alice', makeWs())
     handleDisconnect(ROOM_ID, 'p1')

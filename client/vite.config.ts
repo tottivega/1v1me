@@ -9,4 +9,10 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, '../shared'),
     },
   },
+  server: {
+    host: true,
+    proxy: {
+      '/ws': { target: 'http://localhost:3001', ws: true },
+    },
+  },
 })
