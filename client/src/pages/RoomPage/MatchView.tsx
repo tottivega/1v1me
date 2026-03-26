@@ -212,12 +212,6 @@ export default function MatchView() {
   useEffect(() => {
     setShowTooltip(false)
   }, [currentMinigame])
-  useEffect(() => {
-    if (!showTooltip) return
-    const t = setTimeout(() => setShowTooltip(false), 4000)
-    return () => clearTimeout(t)
-  }, [showTooltip])
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh' }}>
       <ScoreBoard />

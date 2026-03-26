@@ -205,7 +205,31 @@ function AvatarPicker({
           gap: 16,
         }}
       >
-        <p style={{ fontWeight: 900, fontSize: 16, margin: 0 }}>Pick your avatar</p>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+          }}
+        >
+          <p style={{ fontWeight: 900, fontSize: 16, margin: 0 }}>Pick your avatar</p>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: 18,
+              cursor: 'pointer',
+              lineHeight: 1,
+              padding: 4,
+              color: 'rgba(0,0,0,0.4)',
+            }}
+          >
+            ✕
+          </button>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
           {AVATARS.map((emoji) => (
             <button

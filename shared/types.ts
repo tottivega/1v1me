@@ -209,20 +209,30 @@ export interface HigherOrLowerState {
 }
 
 /**
+ * Maps every MinigameId to its live state type.
+ * To add a game: add one entry here — MinigameState is derived automatically.
+ * TypeScript will error on `MinigameState` below if a MinigameId has no entry.
+ */
+export type MinigameStateMap = {
+  clickspeed: ClickSpeedState
+  coinflip: CoinFlipState
+  reactiontest: ReactionTestState
+  quickmaths: QuickMathsState
+  memorymatch: MemoryMatchState
+  fastesttyper: FastestTyperState
+  rockpaperscissors: RockPaperScissorsState
+  colorword: ColorWordState
+  higherorlower: HigherOrLowerState
+}
+
+/**
  * Discriminated union of all minigame states broadcast via GAME_UPDATE.
  * The `kind` field is injected by the client store on receipt — server modules
  * do not need to include it. Narrow with `state.kind === 'clickspeed'` etc.
+ *
+ * Do not edit this type directly — add entries to MinigameStateMap above.
  */
-export type MinigameState =
-  | ClickSpeedState
-  | CoinFlipState
-  | ReactionTestState
-  | QuickMathsState
-  | MemoryMatchState
-  | FastestTyperState
-  | RockPaperScissorsState
-  | ColorWordState
-  | HigherOrLowerState
+export type MinigameState = MinigameStateMap[MinigameId]
 
 // ─── Room Config ──────────────────────────────────────────────────────────────
 

@@ -1,6 +1,28 @@
 # Adding a New Minigame
 
-Four files to create, zero manual registrations. The server module and client components are auto-discovered at startup — no import lists to update. TypeScript enforces the `shared/types.ts` entries; if you miss the `MINIGAME_CONFIGS` entry or `MinigameState` union addition, `tsc` will error.
+Four files to create, zero manual registrations. The server module and client components are auto-discovered at startup — no import lists to update. TypeScript enforces the `shared/types.ts` entries; if you miss the `MINIGAME_CONFIGS` entry or `MinigameStateMap` addition, `tsc` will error.
+
+## Quick start — scaffold command
+
+Run this from the repo root before doing anything else:
+
+```bash
+npm run new-game -- <id> [ComponentName]
+# example:
+npm run new-game -- wordrace WordRace
+```
+
+This creates the three game files and patches two shared files automatically:
+
+| File | Action |
+|---|---|
+| `server/src/minigames/wordrace.ts` | Created from `_template.ts` |
+| `client/src/minigames/WordRace.tsx` | Created from `_Template.tsx` (shared type pre-imported) |
+| `client/src/minigames/WordRace.spectator.tsx` | Created from `_Template.spectator.tsx` |
+| `shared/types.ts` | `WordRaceState` interface stub + `wordrace: WordRaceState` entry in `MinigameStateMap` inserted |
+| `client/src/__tests__/minigames/minigames.test.tsx` | Base smoke-test `describe` block appended |
+
+After running it, follow steps 1–8 below to fill in the game logic.
 
 ---
 
@@ -23,22 +45,22 @@ Set `platforms` to `'desktop-only'` if the game requires a physical keyboard (li
 
 `MinigameId` is derived automatically from these keys.
 
-**Also in `shared/types.ts`**: add a state interface for your game and add it to the `MinigameState` union. The `kind` discriminant is what enables safe narrowing in the client component (`if (state.kind === 'wordrace') { ... }`).
+**Also in `shared/types.ts`**: fill in the `WordRaceState` interface stub (inserted by the scaffold) and add one entry to `MinigameStateMap`. The `kind` discriminant is what enables safe narrowing in the client component (`if (state.kind === 'wordrace') { ... }`).
 
 ```ts
-// State interface — mirror the fields your server module broadcasts
+// Fill in the stub the scaffold created — mirror your server module's broadcast fields
 export interface WordRaceState {
   kind: 'wordrace'
   progress: Record<string, number>
   winnerId: string | null
 }
 
-// Add to the MinigameState union at the bottom of the union block
-export type MinigameState =
-  | ClickSpeedState
-  | CoinFlipState
-  | ...
-  | WordRaceState  // ← add here
+// The scaffold already added this line to MinigameStateMap — no action needed
+export type MinigameStateMap = {
+  // ...existing games...
+  wordrace: WordRaceState  // ← inserted automatically
+}
+// MinigameState union is derived from the map — do not edit it directly
 ```
 
 `MinigameInput` is an open interface — no changes needed there.
@@ -47,7 +69,7 @@ export type MinigameState =
 
 ## 2. Create the server module
 
-Copy `server/src/minigames/_template.ts` → `server/src/minigames/wordrace.ts`.
+`server/src/minigames/wordrace.ts` is created by the scaffold. Open it and fill in the TODOs.
 
 Fill in:
 - `id` — must match your key in `MINIGAME_CONFIGS`
@@ -65,7 +87,7 @@ The server module is **auto-discovered** at startup via `readdirSync` — no man
 
 ## 3. Create the client component
 
-Copy `client/src/minigames/_Template.tsx` → `client/src/minigames/WordRace.tsx`.
+`client/src/minigames/WordRace.tsx` is created by the scaffold with `WordRaceState` already imported from `@shared/types`. Open it and fill in the TODOs.
 
 Key rules:
 - Check `wsStatus === 'connected'` to switch between live and mock mode
@@ -80,11 +102,7 @@ The registry auto-discovers component files via `import.meta.glob` — no manual
 
 ## 4. Add a spectator view
 
-Spectators watch live at `/spectate/:roomId`. Create a co-located file:
-
-```
-client/src/minigames/WordRace.spectator.tsx
-```
+Spectators watch live at `/spectate/:roomId`. `client/src/minigames/WordRace.spectator.tsx` is created by the scaffold. Open it and wire up the layout:
 
 It is **auto-discovered** via glob — no registration needed. Export a default component
 that accepts `SpectatorProps`:
@@ -135,7 +153,7 @@ Refer to the existing entries (clickspeed, memorymatch, etc.) as templates for t
 
 ## 6. Add a client smoke test
 
-Open `client/src/__tests__/minigames/minigames.test.tsx` and add a `describe` block for your game following the existing pattern:
+The scaffold appends a base `describe` block to `client/src/__tests__/minigames/minigames.test.tsx` with two passing tests (mock render + live state render). Expand it to cover game-specific interactions:
 
 ```ts
 describe('WordRace', () => {
@@ -237,15 +255,18 @@ Rules:
 
 ## Checklist
 
-- [ ] Entry in `MINIGAME_CONFIGS` (`shared/types.ts`)
-- [ ] State interface + `MinigameState` union entry in `shared/types.ts`
-- [ ] Server module at `server/src/minigames/wordrace.ts` (auto-registered by id)
-- [ ] Client component at `client/src/minigames/WordRace.tsx` (auto-registered by glob)
-- [ ] Spectator view at `client/src/minigames/WordRace.spectator.tsx` (auto-registered by glob)
+**Run `npm run new-game -- <id> [Name]` first — it handles the ✅ items automatically.**
+
+- ✅ `${Name}State` interface stub in `shared/types.ts` — fill in the fields
+- ✅ `${id}: ${Name}State` entry in `MinigameStateMap` (`shared/types.ts`)
+- ✅ Server module created at `server/src/minigames/${id}.ts` — fill in logic
+- ✅ Client component created at `client/src/minigames/${Name}.tsx` — build the UI
+- ✅ Spectator view created at `client/src/minigames/${Name}.spectator.tsx` — wire layout
+- ✅ Base smoke test block appended to `minigames.test.tsx` — expand with real assertions
+- [ ] Entry in `MINIGAME_CONFIGS` (`shared/types.ts`) — label, emoji, timeoutMs, category, description, platforms
 - [ ] Ambient sound layers in `client/src/utils/sounds.ts` → `AMBIENT` map
 - [ ] Bot strategy in `tests/e2e/helpers/gameInputs.ts` → `STRATEGIES` map
-- [ ] Client smoke test + live-state test in `client/src/__tests__/minigames/minigames.test.tsx`
-- [ ] Integration tests in `server/src/__tests__/minigames/wordrace.test.ts`
+- [ ] Integration tests in `server/src/__tests__/minigames/${id}.test.ts`
 - [ ] `tsc --noEmit` passes in both `client/` and `server/`
 - [ ] Tested in DevPanel (mock mode) — no server needed
 - [ ] Tested end-to-end in a real match (`npm run test:e2e`)

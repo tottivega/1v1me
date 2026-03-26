@@ -7,10 +7,12 @@
  *   ComponentName PascalCase display name            (e.g. WordRace)
  *                 Defaults to id with first letter capitalised if omitted.
  *
- * Creates three files (skips any that already exist):
- *   server/src/minigames/<id>.ts
- *   client/src/minigames/<ComponentName>.tsx
- *   client/src/minigames/<ComponentName>.spectator.tsx
+ * Creates / modifies these files (skips file creation if dest already exists):
+ *   server/src/minigames/<id>.ts                          — server module
+ *   client/src/minigames/<ComponentName>.tsx              — client component
+ *   client/src/minigames/<ComponentName>.spectator.tsx    — spectator view
+ *   shared/types.ts                                       — state interface + MinigameStateMap entry
+ *   client/src/__tests__/minigames/minigames.test.tsx     — smoke test block
  *
  * Then prints the remaining manual steps from ADDING_A_GAME.md.
  */
@@ -66,6 +68,18 @@ const files = [
       return src
         .replaceAll("'yourgameid'", `'${id}'`)
         .replace('export default function Template()', `export default function ${name}()`)
+        // Activate the shared type import
+        .replace(
+          "// import { type YourGameState } from '@shared/types'",
+          `import { type ${name}State } from '@shared/types'`,
+        )
+        // Remove the now-unnecessary local empty interface
+        .replace(
+          "\n// eslint-disable-next-line @typescript-eslint/no-empty-object-type\ninterface ServerState {\n  // TODO: match the server module's State fields\n  // example: score: Record<string, number>\n}\n",
+          '\n',
+        )
+        // Use the shared type in the cast
+        .replace('(minigameState as ServerState)', `(minigameState as ${name}State)`)
     },
   },
   {
@@ -105,21 +119,74 @@ if (anySkipped) {
   console.log('Some files were skipped. Remove them first if you want to regenerate.')
 }
 
+// ── Patch shared/types.ts ──────────────────────────────────────────────────────
+
+const typesPath = resolve(root, 'shared/types.ts')
+let types = readFileSync(typesPath, 'utf8')
+
+const stateInterface = `\nexport interface ${name}State {\n  kind: '${id}'\n  // TODO: add state fields\n}\n`
+const mapEntry = `  ${id}: ${name}State\n`
+
+if (types.includes(`interface ${name}State`)) {
+  console.warn(`⚠  Skipping shared/types.ts state interface — ${name}State already exists`)
+} else {
+  // Insert state interface just before MinigameStateMap
+  types = types.replace('\nexport type MinigameStateMap = {', stateInterface + '\nexport type MinigameStateMap = {')
+  // Insert entry into the map body (before the closing })
+  types = types.replace(/(export type MinigameStateMap = \{[^}]+)(\})/, (_, body, close) => `${body}${mapEntry}${close}`)
+  writeFileSync(typesPath, types)
+  console.log(`✅ Patched shared/types.ts  (${name}State + MinigameStateMap entry)`)
+}
+
+// ── Append smoke test ──────────────────────────────────────────────────────────
+
+const testPath = resolve(root, 'client/src/__tests__/minigames/minigames.test.tsx')
+let testSrc = readFileSync(testPath, 'utf8')
+
+const describeMarker = `describe('${name}',`
+
+if (testSrc.includes(describeMarker)) {
+  console.warn(`⚠  Skipping minigames.test.tsx — describe('${name}', ...) already exists`)
+} else {
+  const sep = '─'.repeat(Math.max(0, 78 - name.length - 5))
+  const block = `
+// ── ${name} ${sep}
+
+describe('${name}', () => {
+  it('renders without crashing', async () => {
+    await renderGame('${name}')
+    expect(document.body).toBeTruthy()
+  })
+
+  it('renders live state from server', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: { kind: '${id}' },
+    })
+    await renderGame('${name}')
+    expect(document.body).toBeTruthy()
+  })
+})
+`
+  writeFileSync(testPath, testSrc.trimEnd() + '\n' + block)
+  console.log(`✅ Appended smoke test to minigames.test.tsx`)
+}
+
 // ── Next steps ─────────────────────────────────────────────────────────────────
 
 console.log()
 console.log(`🎮 Next steps for '${id}' (see ADDING_A_GAME.md for the full walkthrough):`)
 console.log()
 console.log(`  1. shared/types.ts`)
-console.log(`       → Add '${id}' entry to MINIGAME_CONFIGS`)
-console.log(`       → Add a ${name}State interface (with kind: '${id}')`)
-console.log(`       → Add ${name}State to the MinigameState union`)
+console.log(`       → Add '${id}' entry to MINIGAME_CONFIGS (label, emoji, timeoutMs, category, description, platforms)`)
+console.log(`       → Fill in ${name}State fields  (interface already inserted)`)
 console.log()
 console.log(`  2. server/src/minigames/${id}.ts`)
 console.log(`       → Fill in State fields, start(), handleInput(), getResult()`)
 console.log()
 console.log(`  3. client/src/minigames/${name}.tsx`)
-console.log(`       → Build live + mock game UI; verify kind check uses '${id}'`)
+console.log(`       → Build live + mock game UI; ${name}State is already imported`)
 console.log()
 console.log(`  4. client/src/minigames/${name}.spectator.tsx`)
 console.log(`       → Wire up TwoColState or a custom spectator layout`)
@@ -127,13 +194,10 @@ console.log()
 console.log(`  5. client/src/utils/sounds.ts  → AMBIENT map`)
 console.log(`       → Add ambient sound layers for '${id}'`)
 console.log()
-console.log(`  6. client/src/__tests__/minigames/minigames.test.tsx`)
-console.log(`       → Add mock-mode smoke test + live-state test`)
-console.log()
-console.log(`  7. server/src/__tests__/minigames/${id}.test.ts`)
+console.log(`  6. server/src/__tests__/minigames/${id}.test.ts`)
 console.log(`       → Unit + integration tests  (makeRoom + makeMatch helpers)`)
 console.log()
-console.log(`  8. tests/e2e/helpers/gameInputs.ts  → STRATEGIES map`)
+console.log(`  7. tests/e2e/helpers/gameInputs.ts  → STRATEGIES map`)
 console.log(`       → Add bot strategy for E2E test`)
 console.log()
 console.log(`  ✔  cd client && npx tsc --noEmit`)
