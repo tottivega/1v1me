@@ -116,18 +116,24 @@ export type MinigameId = keyof typeof MINIGAME_CONFIGS
 export const CLICKSPEED_CPS_CAP = 20
 
 // ─── Minigame State Types (shared between server and client) ──────────────────
+// Every state has a `kind` discriminant injected by the client store when it
+// receives GAME_UPDATE. Use it to narrow MinigameState without duck-typing:
+//   if (state.kind === 'clickspeed') { /* state is ClickSpeedState */ }
 
 export interface ClickSpeedState {
+  kind: 'clickspeed'
   clicks: Record<string, number>
 }
 
 export type CoinFlipPhase = 'flipping' | 'result'
 export interface CoinFlipState {
+  kind: 'coinflip'
   phase: CoinFlipPhase
   winnerId?: string
 }
 
 export interface ReactionTestState {
+  kind: 'reactiontest'
   phase: 'waiting' | 'ready' | 'result'
   reactions?: Record<string, number>
   penalized?: string[]
@@ -139,16 +145,19 @@ export interface QuickMathsEquation {
   answer: number
 }
 export interface QuickMathsState {
+  kind: 'quickmaths'
   equations: Record<string, QuickMathsEquation>
   correct: Record<string, number>
 }
 
 export interface MemoryMatchState {
+  kind: 'memorymatch'
   sequence: string[]
   submissions: Record<string, string[]>
 }
 
 export interface FastestTyperState {
+  kind: 'fastesttyper'
   phrase: string
   progress: Record<string, number>
   resolved: boolean
@@ -161,6 +170,7 @@ export interface RPSThrowRecord {
   winnerId: string | null
 }
 export interface RockPaperScissorsStatePicking {
+  kind: 'rockpaperscissors'
   phase: 'picking'
   throwNum: number
   submitted: string[]
@@ -168,6 +178,7 @@ export interface RockPaperScissorsStatePicking {
   history: RPSThrowRecord[]
 }
 export interface RockPaperScissorsStateReveal {
+  kind: 'rockpaperscissors'
   phase: 'reveal'
   throwNum: number
   picks: Record<string, RPSChoice>
@@ -179,6 +190,7 @@ export type RockPaperScissorsState = RockPaperScissorsStatePicking | RockPaperSc
 
 export type ColorWordColor = 'red' | 'blue' | 'green' | 'yellow' | 'orange' | 'purple'
 export interface ColorWordState {
+  kind: 'colorword'
   word: ColorWordColor
   inkColor: ColorWordColor
   winnerId?: string
@@ -186,6 +198,7 @@ export interface ColorWordState {
 
 export type HigherOrLowerPhase = 'guessing' | 'reveal'
 export interface HigherOrLowerState {
+  kind: 'higherorlower'
   clue: number
   phase: HigherOrLowerPhase
   submitted?: string[]
@@ -195,7 +208,11 @@ export interface HigherOrLowerState {
   winnerId?: string
 }
 
-/** Union of all possible minigame states broadcast via GAME_UPDATE */
+/**
+ * Discriminated union of all minigame states broadcast via GAME_UPDATE.
+ * The `kind` field is injected by the client store on receipt — server modules
+ * do not need to include it. Narrow with `state.kind === 'clickspeed'` etc.
+ */
 export type MinigameState =
   | ClickSpeedState
   | CoinFlipState

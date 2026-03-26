@@ -146,7 +146,7 @@ playing → reconnecting → playing (on reconnect)
 
 ## Adding a Minigame (4-file change)
 
-1. **`shared/types.ts`** — add entry to `MINIGAME_CONFIGS` (id, label, emoji, category, timeoutMs, description, platforms, difficulty)
+1. **`shared/types.ts`** — add entry to `MINIGAME_CONFIGS` (id, label, emoji, category, timeoutMs, description, platforms)
 2. **`server/src/minigames/<name>.ts`** — implement `MinigameModule` interface: `start()`, `handleInput()`, auto-discovered via `readdirSync` in `index.ts`
 3. **`client/src/minigames/<Name>.tsx`** — React component, receives game state from store `minigameState`, sends input via `send('GAME_INPUT', { type, ... })`
 4. **`client/src/minigames/<Name>.spectator.tsx`** — read-only spectator view, auto-discovered via `import.meta.glob` in `spectatorRegistry.ts`

@@ -583,7 +583,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       case 'GAME_UPDATE': {
         const p = msg.payload as GameUpdatePayload
-        set({ minigameState: p.state as MinigameState })
+        const kind = get().currentMinigame
+        set({ minigameState: { ...(p.state as object), kind } as MinigameState })
         break
       }
 
@@ -683,7 +684,10 @@ export const useGameStore = create<GameState>((set, get) => ({
           updates.currentMinigame = p.match.currentMinigame as MinigameId | null
           updates.remainingMs = p.match.remainingMs
           updates.timeoutMs = p.match.timeoutMs
-          updates.minigameState = p.match.minigameState as MinigameState | null
+          const snapKind = p.match.currentMinigame as MinigameId | null
+          updates.minigameState = p.match.minigameState
+            ? ({ ...(p.match.minigameState as object), kind: snapKind } as MinigameState)
+            : null
         }
         set(updates)
         break

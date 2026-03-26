@@ -14,54 +14,103 @@
  *
  *   Live mode   (wsStatus === 'connected')
  *     — read game state from `minigameState` (set by GAME_UPDATE messages)
+ *     — use `state.kind === 'yourgameid'` to narrow MinigameState safely
  *     — send player actions via `sendInput({ type: 'YOUR_TYPE', ...data })`
  *     — never run local timers; trust the server
  *
  *   Mock mode   (wsStatus !== 'connected', used by DevPanel)
  *     — simulate the game locally so it can be tested without a server
  *     — calls to sendInput() are no-ops in this mode; that's fine
+ *     — simulate a real opponent response (setTimeout/interval + cleanup)
  */
 
 import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
-// import { playCorrect, playWrong } from '../utils/sounds'  // uncomment when wiring sounds
+// import { playCorrect, playWrong, playClick } from '../utils/sounds'
 
 // ── Server state shape ────────────────────────────────────────────────────────
-// Mirror the `State` interface from the server module.
+// Mirror the State interface from the server module.
+// Import the shared type instead of duplicating if it exists in shared/types.ts.
+// import { type YourGameState } from '@shared/types'
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface ServerState {
   // TODO: match the server module's State fields
+  // example: score: Record<string, number>
 }
 
 export default function Template() {
-  const { myPlayerId, players, minigameState, wsStatus } = useGameStore()
+  const { myPlayerId, players, minigameState, wsStatus, sendInput } = useGameStore()
   const isLive = wsStatus === 'connected' && minigameState !== null
   const opponent = players.find((p) => p.id !== myPlayerId)
 
   // ── Live mode ─────────────────────────────────────────────────────────────
-  const serverState = isLive ? (minigameState as ServerState | null) : null
-  void serverState // TODO: read fields from serverState
+  // Narrow via the `kind` discriminant — replace 'quickmaths' with your id.
+  const server =
+    isLive && minigameState?.kind === 'quickmaths' ? (minigameState as ServerState) : null
 
-  // Reset local state on new round (minigameState is null on ROUND_START)
-  useEffect(() => {
-    if (minigameState === null) {
-      // TODO: reset any local state here
-    }
-  }, [minigameState])
+  // TODO: derive display values from live state
+  // const myScore = server?.score[myPlayerId] ?? 0
 
   // ── Mock mode ─────────────────────────────────────────────────────────────
-  // TODO: local state for dev/mock simulation
-  const [mockValue, setMockValue] = useState(0)
-  void setMockValue // remove when used
+  // Initialise local state that mirrors what the server would provide.
+  const [mockResolved, setMockResolved] = useState(false)
+  const [mockWinnerId, setMockWinnerId] = useState<string | null>(null)
 
-  // ── Shared render values ──────────────────────────────────────────────────
-  // Derive display values from either server or mock state
-  void opponent // may be undefined in solo dev mode
+  // Reset mock state when a new round starts (minigameState goes null on ROUND_START).
+  useEffect(() => {
+    if (isLive) return
+    setMockResolved(false)
+    setMockWinnerId(null)
+    // TODO: reset any other local mock state here
+  }, [isLive, minigameState])
+
+  // Simulate opponent action after a realistic delay, then resolve the round.
+  useEffect(() => {
+    if (isLive || mockResolved) return
+    const delay = 1500 + Math.random() * 3000
+    const t = setTimeout(() => {
+      const winner = Math.random() < 0.5 ? myPlayerId : (opponent?.id ?? myPlayerId)
+      setMockWinnerId(winner)
+      setMockResolved(true)
+    }, delay)
+    return () => clearTimeout(t) // always clean up
+  }, [isLive, mockResolved, myPlayerId, opponent?.id])
+
+  // ── Shared derived values ─────────────────────────────────────────────────
+  // Pick live or mock values for the render below.
+  const resolved = isLive
+    ? false // TODO: replace with live resolved condition e.g. server?.winnerId != null
+    : mockResolved
+  const winnerId = isLive
+    ? null // TODO: replace with e.g. server?.winnerId ?? null
+    : mockWinnerId
+  const iWon = winnerId === myPlayerId
+
+  // Play sounds when the round resolves.
+  useEffect(() => {
+    if (!resolved) return
+    // if (iWon) playCorrect()
+    // else playWrong()
+  }, [resolved, iWon])
 
   function handleAction() {
-    // TODO: implement player action — no changes to shared/types.ts needed
-    // sendInput({ type: 'YOUR_INPUT_TYPE', ...extraFields })
+    if (resolved) return
+    // TODO: local optimistic state update if needed
+    sendInput({ type: 'YOUR_INPUT_TYPE' /* ...extra fields */ })
+    // In mock mode sendInput() is a no-op; handle mock feedback here instead.
+    if (!isLive) {
+      // TODO: apply local mock feedback (e.g. setMockScore(s => s + 1))
+    }
+  }
+
+  // Show a loading indicator until state arrives.
+  if (isLive && !server) {
+    return (
+      <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <p className="subtitle anim-pulse">Loading…</p>
+      </div>
+    )
   }
 
   return (
@@ -90,17 +139,41 @@ export default function Template() {
 
       {/* TODO: main game UI */}
       <div className="card" style={{ textAlign: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-title)', fontSize: 48 }}>{mockValue}</div>
+        <div style={{ fontFamily: 'var(--font-title)', fontSize: 48 }}>
+          {/* render game content here */}
+        </div>
       </div>
 
-      {/* Action button */}
-      <button className="btn btn-orange btn-lg" onClick={handleAction}>
-        Do thing {/* TODO: replace */}
-      </button>
+      {/* Primary action — hidden once resolved */}
+      {!resolved && (
+        <button className="btn btn-orange btn-lg" onClick={handleAction}>
+          Do thing {/* TODO: replace */}
+        </button>
+      )}
 
       <div className="label" style={{ opacity: 0.45 }}>
-        Instruction text here
+        Instruction text here {/* TODO: replace */}
       </div>
+
+      {/* Result overlay */}
+      {resolved && (
+        <div className="anim-bounce" style={{ textAlign: 'center' }}>
+          <div
+            style={{
+              fontFamily: 'var(--font-title)',
+              fontSize: 52,
+              color: iWon ? 'var(--green)' : 'var(--red)',
+              WebkitTextStroke: '2px var(--black)',
+              textShadow: '3px 3px 0 var(--black)',
+            }}
+          >
+            {iWon ? 'YOU WIN! 🎉' : 'YOU LOSE 😤'}
+          </div>
+          <div className="subtitle" style={{ opacity: 0.6, marginTop: 8 }}>
+            {iWon ? 'Well played!' : `${opponent?.nickname ?? 'Opponent'} beat you.`}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

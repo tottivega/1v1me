@@ -9,7 +9,7 @@
 ### Infrastructure
 - [x] Monorepo scaffold (`client/`, `server/`, `shared/`)
 - [x] Shared TypeScript types (`shared/types.ts`)
-- [x] `MINIGAME_CONFIGS` registry — `as const satisfies`, `category`, `description`, `difficulty`; 3-file change to add any game, TS enforces completeness everywhere else
+- [x] `MINIGAME_CONFIGS` registry — `as const satisfies`, `category`, `description`; 4-file change to add any game, TS enforces completeness everywhere else
 - [x] Path aliases (`@shared/*`) working in both client (Vite) and server (tsx)
 - [x] Category-balanced queue algorithm — no consecutive same-category; refills pool via Fisher-Yates when exhausted
 - [x] Minigame templates — `_template.ts`, `_Template.tsx`, `ADDING_A_GAME.md` checklist
@@ -36,7 +36,7 @@
 - [x] `HomePage` — create/join, persistent nickname (`localStorage`), game gallery from `MINIGAME_CONFIGS`
 - [x] `RoomPage` — lobby, match, round transition banner, round-end overlay, match-end breakdown
 - [x] `SpectatePage` — `/spectate/:roomId`, per-minigame live views, mid-match join via snapshot
-- [x] `DevPanel` v2 — search, category filter tabs, difficulty stars, description per game
+- [x] `DevPanel` v2 — search, category filter tabs, description per game
 - [x] Error toast — `errorMessage` auto-clears after 4s
 - [x] Sound effects — Web Audio API synth, zero files; 12 distinct sounds, all check `isMuted()`
 - [x] Sound toggle — 🔊/🔇 fixed top-right, persisted in `localStorage`
@@ -56,16 +56,14 @@
 - [x] Win streak tracker — `localStorage`-persisted counter (`1v1me_streak`); increments on win, resets on loss; `🔥 X win streak` badge on HomePage when streak ≥ 2
 - [x] Match history on home page — last 5 results in `localStorage` (`1v1me_history`); compact Recent Matches section below game gallery
 
-### Minigames (11 total)
+### Minigames (9 total)
 - [x] **Click Speed** — 5s, 20 CPS cap, optimistic clicks, simulated opponent in mock mode
 - [x] **Coin Flip** — instant server RNG, 2s spin animation, mock simulation
 - [x] **Reaction Test** — random delay 1.5–4s, early-click penalty, server-driven phases, full mock mode
-- [x] **Number Guess** — 20s, closest wins, server-revealed result, full mock mode
 - [x] **Quick Maths** — 15s, independent equation streams, correct/wrong flash, full mock mode
 - [x] **Memory Match** — server generates 5-symbol sequence; 4s memorize → recall → score; mock opponent submits after delay
 - [x] **Fastest Typer** — server picks phrase from pool of 15; per-keystroke server tracking; mock opponent advances via interval
 - [x] **Rock Paper Scissors** — best-of-3 throws; simultaneous picks; server hides picks until both submit; per-throw 8s timeout; throw history dots; full mock mode with staged opponent pick
-- [x] **Word Scramble** — server picks from pool of 32 words, shuffles letters; first correct guess wins; wrong-guess counter broadcast to both; answer revealed on resolve; mock opponent solves at 30–75% of timer
 - [x] **Color Word** — server picks word + different ink color (6 colors); click the ink color button, not the spelled word; first correct click wins; 10s timeout; full mock mode
 - [x] **Higher or Lower** — server picks target + clue offset by 1–20; both players pick Higher/Lower simultaneously; correct picker wins; 10s timeout; full mock mode
 
@@ -136,8 +134,8 @@
 
 ### Tests
 - [x] **Vitest setup** — server (node env) and client (happy-dom + React Testing Library); `npm test` works in both packages
-- [x] **Server unit + integration tests (86, 12 files)** — numberguess (8), quickmaths (6), memorymatch (6), fastesttyper (7), wordscramble (5), rockpaperscissors (4), matchController (6), roomManager (13), roomStore (4), colorword (6), higherorlower (7), router integration (10); `clearAllRooms()` for test isolation
-- [x] **Client unit tests (45, 5 files)** — gameStore (11), ScoreBoard (6), TimerBar (4), HomePage (6), RoomPage (18); sounds + WebSocket actions mocked in RoomPage tests
+- [x] **Server unit + integration tests (97, 11 files)** — quickmaths (7), memorymatch (6), fastesttyper (7), rockpaperscissors (4), colorword (6), higherorlower (7), matchController (9), roomManager (20), roomStore (6), banPhaseAndForfeit (11), router integration (14); `clearAllRooms()` for test isolation
+- [x] **Client unit tests (98, 8 files)** — gameStore (11), ScoreBoard (6), TimerBar (4), HomePage (6), RoomPage (23), BanPhaseView (10), minigames (29 — smoke + live-state tests for all 9 games); sounds + WebSocket actions mocked in RoomPage tests
 - [x] **`noUncheckedIndexedAccess`** — enabled in both `client/tsconfig.json` and `server/tsconfig.json`; all `[p1, p2] = arr` destructures cast as `[T, T]`, array random-index access guarded with `!`, `Record<K,V>` access uses `?? fallback` where appropriate; zero TS errors in both packages
 - [x] Test factories in `server/src/__tests__/helpers.ts` — `makeWs()`, `makePlayer()`, `makeRoom()`, `makeMatch()`
 - [x] **ESLint** — `typescript-eslint` v8 + flat config in both packages; `no-unused-vars` (error), `no-explicit-any` (warn), `react-hooks/rules-of-hooks` (error); server passes at 0 warnings
@@ -199,7 +197,24 @@
 - [x] **Ban phase + forfeit test suite** — `banPhaseAndForfeit.test.ts` (11 tests): ban status entry, skip-if-zero, single-submit hold, both-submit merge, ban clamping, 30s auto-launch timeout, double-launch prevention, forfeit winner, `onRoundDone` null guard, no phantom `ROUND_END` after forfeit
 - [x] **`matchController.test.ts` mock coverage** — added `vi.mock('../minigames/index')` so timer-driven `endMatch` tests no longer trigger `require()` on ES minigame modules
 
+### Skeleton week (week 0 polish batch)
+
+**Architecture**
+- [x] **`MinigameState` discriminated union** — added `kind: MinigameId` to every state interface; the client store injects it on `GAME_UPDATE` from `currentMinigame`, so no server modules need touching and new games get it automatically; eliminates duck-typing at 50 games
+
+**Content**
+- [x] **AboutModal content** — filled in the placeholder `TODO: ADD` with real copy
+- [x] **`difficulty` field deprecated** — removed from `ADDING_A_GAME.md`, `CLAUDE.md`, and `PROGRESS.md`; was never in the `satisfies` constraint so no runtime change
+
+**Templates**
+- [x] **`_Template.tsx` hardened** — now shows: `kind` discriminant narrowing, `sendInput` in destructure, mock opponent simulation with `setTimeout` + cleanup (`return () => clearTimeout`), loading state guard, result/win overlay, sound import pattern; matches the structure of real game components
+
+**Tests**
+- [x] **Minigame live-state test coverage** — added live-mode tests for all 9 games: each sets `minigameState` with the `kind` discriminant and `wsStatus: 'connected'`, then asserts the UI reflects server state; total client tests: 45 → 98
+
 ---
 
 ## 🗑️ Removed
 - **TicTacToe** — removed from game pool
+- **Number Guess** — removed from game pool
+- **Word Scramble** — removed from game pool

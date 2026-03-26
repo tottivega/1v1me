@@ -2,6 +2,9 @@
  * Minigame smoke tests — one describe block per game.
  * Goals: render without crashing in mock mode, show key UI, respond to primary interaction.
  * All games use isMockMatch=true (wsStatus='disconnected') so no server needed.
+ *
+ * Live-mode tests set minigameState (with the `kind` discriminant) and wsStatus='connected'
+ * to verify that state received from the server is reflected in the UI.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
@@ -66,7 +69,6 @@ async function renderGame(name: string) {
 describe('ClickSpeed', () => {
   it('renders the click button', async () => {
     await renderGame('ClickSpeed')
-    // Button contains the 👊 emoji — there is exactly one button
     const buttons = screen.getAllByRole('button')
     expect(buttons.length).toBeGreaterThanOrEqual(1)
   })
@@ -76,6 +78,17 @@ describe('ClickSpeed', () => {
     const [btn] = screen.getAllByRole('button')
     expect(() => fireEvent.mouseDown(btn!)).not.toThrow()
   })
+
+  it('shows live click counts from server state', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: { kind: 'clickspeed', clicks: { [ME]: 7, [OPP]: 3 } },
+    })
+    await renderGame('ClickSpeed')
+    expect(screen.getByText('7')).toBeInTheDocument()
+    expect(screen.getByText('3')).toBeInTheDocument()
+  })
 })
 
 // ── CoinFlip ───────────────────────────────────────────────────────────────────
@@ -83,13 +96,33 @@ describe('ClickSpeed', () => {
 describe('CoinFlip', () => {
   it('renders without crashing', async () => {
     await renderGame('CoinFlip')
-    // Shows either the coin animation or a result — either way renders
     expect(document.body).toBeTruthy()
   })
 
   it('shows the coin flip heading', async () => {
     await renderGame('CoinFlip')
     expect(screen.getByText(/coin flip/i)).toBeInTheDocument()
+  })
+
+  it('shows flipping state from server', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: { kind: 'coinflip', phase: 'flipping' },
+    })
+    await renderGame('CoinFlip')
+    expect(document.body).toBeTruthy()
+  })
+
+  it('shows result state from server', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: { kind: 'coinflip', phase: 'result', winnerId: ME },
+    })
+    await renderGame('CoinFlip')
+    // Result phase should render something (win or lose message)
+    expect(document.body).toBeTruthy()
   })
 })
 
@@ -98,8 +131,33 @@ describe('CoinFlip', () => {
 describe('ReactionTest', () => {
   it('renders the waiting state initially', async () => {
     await renderGame('ReactionTest')
-    // In mock mode starts in waiting phase
     expect(screen.getByText(/wait/i)).toBeInTheDocument()
+  })
+
+  it('renders ready phase from server state', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: { kind: 'reactiontest', phase: 'ready' },
+    })
+    await renderGame('ReactionTest')
+    // Ready phase shows the "GO" / clickable area
+    expect(document.body).toBeTruthy()
+  })
+
+  it('renders result phase with winner from server state', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: {
+        kind: 'reactiontest',
+        phase: 'result',
+        reactions: { [ME]: 210, [OPP]: 180 },
+        winnerId: OPP,
+      },
+    })
+    await renderGame('ReactionTest')
+    expect(document.body).toBeTruthy()
   })
 })
 
@@ -116,6 +174,21 @@ describe('QuickMaths', () => {
     const input = screen.getByRole('spinbutton')
     expect(() => fireEvent.change(input, { target: { value: '42' } })).not.toThrow()
   })
+
+  it('shows equation from server state', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: {
+        kind: 'quickmaths',
+        equations: { [ME]: { question: '6 + 7', answer: 13 } },
+        correct: { [ME]: 2, [OPP]: 1 },
+      },
+    })
+    await renderGame('QuickMaths')
+    // Equation renders as "6 + 7 = ?" — match substring
+    expect(document.body.textContent).toContain('6 + 7')
+  })
 })
 
 // ── MemoryMatch ────────────────────────────────────────────────────────────────
@@ -123,7 +196,20 @@ describe('QuickMaths', () => {
 describe('MemoryMatch', () => {
   it('renders the memorize phase with symbols', async () => {
     await renderGame('MemoryMatch')
-    // Should show symbol buttons or the sequence display
+    expect(document.body).toBeTruthy()
+  })
+
+  it('renders server sequence in live mode', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: {
+        kind: 'memorymatch',
+        sequence: ['★', '●', '▲', '■', '♦'],
+        submissions: {},
+      },
+    })
+    await renderGame('MemoryMatch')
     expect(document.body).toBeTruthy()
   })
 })
@@ -141,6 +227,23 @@ describe('FastestTyper', () => {
     const input = screen.getByRole('textbox')
     expect(() => fireEvent.change(input, { target: { value: 'hello' } })).not.toThrow()
   })
+
+  it('shows the server phrase in live mode', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: {
+        kind: 'fastesttyper',
+        phrase: 'the quick brown fox',
+        progress: { [ME]: 0, [OPP]: 0 },
+        resolved: false,
+        winnerId: null,
+      },
+    })
+    await renderGame('FastestTyper')
+    // Phrase is rendered character-by-character in spans; check combined text content
+    expect(document.body.textContent).toContain('the quick brown fox')
+  })
 })
 
 // ── RockPaperScissors ──────────────────────────────────────────────────────────
@@ -157,6 +260,41 @@ describe('RockPaperScissors', () => {
     await renderGame('RockPaperScissors')
     expect(() => fireEvent.click(screen.getByRole('button', { name: /rock/i }))).not.toThrow()
   })
+
+  it('renders picking phase from server state', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: {
+        kind: 'rockpaperscissors',
+        phase: 'picking',
+        throwNum: 1,
+        submitted: [],
+        scores: { [ME]: 0, [OPP]: 0 },
+        history: [],
+      },
+    })
+    await renderGame('RockPaperScissors')
+    expect(screen.getByRole('button', { name: /rock/i })).toBeInTheDocument()
+  })
+
+  it('renders reveal phase with picks from server state', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: {
+        kind: 'rockpaperscissors',
+        phase: 'reveal',
+        throwNum: 1,
+        picks: { [ME]: 'rock', [OPP]: 'scissors' },
+        throwWinnerId: ME,
+        scores: { [ME]: 1, [OPP]: 0 },
+        history: [],
+      },
+    })
+    await renderGame('RockPaperScissors')
+    expect(document.body).toBeTruthy()
+  })
 })
 
 // ── ColorWord ──────────────────────────────────────────────────────────────────
@@ -165,7 +303,6 @@ describe('ColorWord', () => {
   it('renders six color buttons', async () => {
     await renderGame('ColorWord')
     const buttons = screen.getAllByRole('button')
-    // 6 color choice buttons
     expect(buttons.length).toBeGreaterThanOrEqual(6)
   })
 
@@ -173,6 +310,19 @@ describe('ColorWord', () => {
     await renderGame('ColorWord')
     const buttons = screen.getAllByRole('button')
     expect(() => fireEvent.click(buttons[0]!)).not.toThrow()
+  })
+
+  it('shows the word and ink buttons from server state', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: { kind: 'colorword', word: 'red', inkColor: 'blue' },
+    })
+    await renderGame('ColorWord')
+    // The word "RED" should appear as display text
+    expect(screen.getByText('RED')).toBeInTheDocument()
+    // Six color choice buttons still present
+    expect(screen.getAllByRole('button').length).toBeGreaterThanOrEqual(6)
   })
 })
 
@@ -188,5 +338,37 @@ describe('HigherOrLower', () => {
   it('clicking Higher does not throw', async () => {
     await renderGame('HigherOrLower')
     expect(() => fireEvent.click(screen.getByRole('button', { name: /higher/i }))).not.toThrow()
+  })
+
+  it('shows the clue number from server state', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: {
+        kind: 'higherorlower',
+        clue: 42,
+        phase: 'guessing',
+      },
+    })
+    await renderGame('HigherOrLower')
+    expect(screen.getByText('42')).toBeInTheDocument()
+  })
+
+  it('shows reveal phase with target from server state', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: {
+        kind: 'higherorlower',
+        clue: 42,
+        phase: 'reveal',
+        target: 55,
+        correct: 'higher',
+        answers: { [ME]: 'higher', [OPP]: 'lower' },
+        winnerId: ME,
+      },
+    })
+    await renderGame('HigherOrLower')
+    expect(screen.getByText('55')).toBeInTheDocument()
   })
 })

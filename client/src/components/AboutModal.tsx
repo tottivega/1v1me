@@ -39,10 +39,21 @@ export default function AboutModal({ onClose }: Props) {
         >
           ×
         </button>
-        <h2 className="font-title" style={{ marginBottom: 12 }}>
+        <h2 className="font-title" style={{ marginBottom: 16 }}>
           About 1v1 ME
         </h2>
-        <p>TODO: ADD</p>
+        <p style={{ marginBottom: 12 }}>
+          Settle it the only fair way — a best-of series of random minigames. No login, no download.
+          Just send a link and fight.
+        </p>
+        <p style={{ marginBottom: 12 }}>
+          Each match pulls from a pool of quick challenges: reflex tests, math sprints, luck flips,
+          memory puzzles, and more. Win enough rounds and the dispute is officially settled. Loser
+          has no excuses.
+        </p>
+        <p style={{ opacity: 0.5, fontSize: 13 }}>
+          Made for fun. Play responsibly. Results are binding.
+        </p>
       </div>
     </div>
   )

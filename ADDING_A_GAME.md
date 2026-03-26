@@ -13,9 +13,8 @@ wordrace: {
   label: 'Word Race',       // shown in UI banners and DevPanel
   emoji: '📝',              // shown everywhere
   timeoutMs: 20000,         // set to 0 if your module calls onRoundDone() itself
-  category: 'strategy',    // 'reflex' | 'math' | 'luck' | 'strategy' | 'trivia'
+  category: 'strategy',    // 'reflex' | 'math' | 'luck' | 'strategy' | 'skill'
   description: 'Type a word faster than your opponent.', // shown in game gallery
-  difficulty: 2,            // 1 easy / 2 medium / 3 hard
   platforms: 'all',         // 'all' | 'desktop-only' | 'mobile-only'
 },
 ```
