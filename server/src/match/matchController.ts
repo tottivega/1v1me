@@ -12,6 +12,7 @@ import { deleteRoom } from '../rooms/roomStore'
 const ROUND_READY_TIMEOUT_MS = 5000 // auto-advance if a player doesn't confirm
 const BAN_PHASE_TIMEOUT_MS = 30_000 // auto-submit empty bans if a player goes idle
 const POST_MATCH_IDLE_MS = 2 * 60_000 // clean up a finished room after 2 min of inactivity
+const COUNT_IN_MS = 2500 // must be >= client count-in overlay duration (2300ms)
 
 function platformExcludes(room: Room) {
   const anyMobile = room.players.some((p) => p.isMobile)
@@ -144,19 +145,24 @@ function startRound(room: Room): void {
     timeoutMs,
   })
 
-  // Give each module the callback to call when the round is done
-  room.match.onRoundDone = (result) => resolveRound(room, result)
+  // Delay game start until the client count-in overlay has finished (2300ms).
+  // Without this, self-resolving games (coin flip, reaction test) can resolve
+  // while the overlay is still blocking the player.
+  setTimeout(() => {
+    if (!room.match || room.match.roundResolved) return
 
-  module.start(room)
+    room.match.onRoundDone = (result) => resolveRound(room, result)
+    module.start(room)
 
-  // Start the main countdown timer only for modules that don't self-resolve
-  if (timeoutMs > 0) {
-    startTimer(room, () => {
-      if (room.match && !room.match.roundResolved) {
-        resolveRound(room, module.getResult(room))
-      }
-    })
-  }
+    // Start the main countdown timer only for modules that don't self-resolve
+    if (timeoutMs > 0) {
+      startTimer(room, () => {
+        if (room.match && !room.match.roundResolved) {
+          resolveRound(room, module.getResult(room))
+        }
+      })
+    }
+  }, COUNT_IN_MS)
 }
 
 export function resolveRound(room: Room, result: MinigameResult): void {
