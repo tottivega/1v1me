@@ -304,7 +304,7 @@ export default function LobbyView({ roomId }: { roomId: string }) {
   const [copied, setCopied] = useState(false)
   const [qrOpen, setQrOpen] = useState(false)
   function copyLink() {
-    navigator.clipboard.writeText(inviteUrl)
+    navigator.clipboard?.writeText(inviteUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }
@@ -427,7 +427,7 @@ export default function LobbyView({ roomId }: { roomId: string }) {
             className="btn btn-white btn-sm"
             onClick={() => {
               playClick()
-              navigator.clipboard.writeText(`${window.location.origin}/spectate/${roomId}`)
+              navigator.clipboard?.writeText(`${window.location.origin}/spectate/${roomId}`)
             }}
             title="Copy spectator link"
           >
