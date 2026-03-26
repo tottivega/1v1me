@@ -6,12 +6,6 @@
 
 ---
 
-## 🎮 UX / Polish
-
-- [ ] **Fill in About modal** — The modal shell exists (`AboutModal.tsx`) with a `TODO: ADD` placeholder. Write the actual copy and design the layout when ready.
-
----
-
 ## 🔒 Pre-deploy
 
 - [ ] **Staging smoke test** — deploy to staging (separate Fly app + Vercel preview), run through the full checklist below, and verify a complete match end-to-end before touching production.

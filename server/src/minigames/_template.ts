@@ -13,7 +13,7 @@
  */
 
 import type { MinigameModule, Room, Player } from '../types'
-import type { MinigameResult } from '@shared/types'
+import type { MinigameResult, MinigameId } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ function broadcastState(room: Room, state: State) {
 // ── Module ────────────────────────────────────────────────────────────────────
 
 const template: MinigameModule = {
-  id: 'quickmaths', // TODO: replace with your MinigameId key
+  id: 'yourgameid' as MinigameId, // TODO: replace with your MinigameId key (must match MINIGAME_CONFIGS)
 
   // Called once when the round starts. Set up initial state, store it on
   // room.match.minigameState, and broadcast it so clients can render immediately.

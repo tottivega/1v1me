@@ -46,8 +46,11 @@ export default function Template() {
 
   // ── Live mode ─────────────────────────────────────────────────────────────
   // Narrow via the `kind` discriminant — replace 'quickmaths' with your id.
+  // TODO: replace 'yourgameid' with your MinigameId key (must match MINIGAME_CONFIGS)
   const server =
-    isLive && minigameState?.kind === 'quickmaths' ? (minigameState as ServerState) : null
+    isLive && (minigameState as { kind: string } | null)?.kind === 'yourgameid'
+      ? (minigameState as ServerState)
+      : null
 
   // TODO: derive display values from live state
   // const myScore = server?.score[myPlayerId] ?? 0

@@ -208,6 +208,8 @@
 
 **Templates**
 - [x] **`_Template.tsx` hardened** — now shows: `kind` discriminant narrowing, `sendInput` in destructure, mock opponent simulation with `setTimeout` + cleanup (`return () => clearTimeout`), loading state guard, result/win overlay, sound import pattern; matches the structure of real game components
+- [x] **`_Template.spectator.tsx` created** — the missing 4th template file for the 4-file workflow; typed `State` interface, `SpectatorProps`, `TwoColState` wired up with TODO markers; excluded from registry (starts with `_`)
+- [x] **Template placeholder names fixed** — `_Template.tsx` and `_template.ts` both used hardcoded `'quickmaths'` as the `kind`/`id` placeholder; replaced with `'yourgameid'` + TODO comments to prevent silent copy-paste bugs
 
 **Tests**
 - [x] **Minigame live-state test coverage** — added live-mode tests for all 9 games: each sets `minigameState` with the `kind` discriminant and `wsStatus: 'connected'`, then asserts the UI reflects server state; total client tests: 45 → 98
