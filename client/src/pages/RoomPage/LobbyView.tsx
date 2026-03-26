@@ -180,6 +180,7 @@ function AvatarPicker({
 }) {
   return (
     <div
+      data-testid="avatar-picker-backdrop"
       onClick={onClose}
       style={{
         position: 'fixed',

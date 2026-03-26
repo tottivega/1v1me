@@ -193,7 +193,7 @@ describe('LobbyView — avatar picker', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Change avatar' }))
     expect(screen.getByText('Pick your avatar')).toBeInTheDocument()
     // Click the backdrop (the fixed overlay div)
-    const backdrop = screen.getByText('Pick your avatar').closest('div')!.parentElement!
+    const backdrop = screen.getByTestId('avatar-picker-backdrop')
     fireEvent.click(backdrop)
     await waitFor(() => expect(screen.queryByText('Pick your avatar')).not.toBeInTheDocument())
   })
