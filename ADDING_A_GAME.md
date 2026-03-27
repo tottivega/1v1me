@@ -81,6 +81,8 @@ Fill in:
 
 **Timer-based games** (timeoutMs > 0): just implement `getResult()`. The match controller calls it when the clock hits zero.
 
+**Games with cancelable per-room timeouts** (e.g. a throw timer that cancels when both players act): use `RoomTimerManager` instead of a raw `Map` + `clearTimeout`. See the comment at the top of `_template.ts` and the RPS module for a real example.
+
 The server module is **auto-discovered** at startup via `readdirSync` — no manual import or registration needed. The only rule: the file must export a default object whose `id` field matches your `MINIGAME_CONFIGS` key.
 
 ---
@@ -93,6 +95,7 @@ Key rules:
 - Check `wsStatus === 'connected'` to switch between live and mock mode
 - In live mode: read `minigameState` (cast to your `ServerState` shape), send actions via `sendInput()`
 - In mock mode: simulate the game locally so it works in DevPanel without a server
+- Use `randomDelay(minMs, maxMs, fn)` from `mockUtils.ts` to schedule opponent actions — it returns a cleanup function you can return directly from `useEffect`
 - Reset local state in a `useEffect` that watches `minigameState === null` (set on `ROUND_START`)
 - Wire sounds from `utils/sounds.ts` for feedback moments
 

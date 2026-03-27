@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { playCorrect, playWrong, playClick } from '../utils/sounds'
 import { type HigherOrLowerState } from '@shared/types'
+import { randomDelay } from './mockUtils'
 
 export default function HigherOrLower() {
   const { myPlayerId, players, minigameState, isMockMatch, sendInput } = useGameStore()
@@ -33,13 +34,11 @@ export default function HigherOrLower() {
   // Mock opponent answers after delay
   useEffect(() => {
     if (isLive || mockClue === null || mockTarget === null) return
-    const delay = 1500 + Math.random() * 3000
-    const t = setTimeout(() => {
+    return randomDelay(1500, 4500, () => {
       const oppAnswer: 'higher' | 'lower' =
         Math.random() < 0.6 ? mockCorrect! : mockCorrect === 'higher' ? 'lower' : 'higher'
       setMockAnswers((prev) => ({ ...prev, [opponent?.id ?? 'opp']: oppAnswer }))
-    }, delay)
-    return () => clearTimeout(t)
+    })
   }, [isLive, mockClue, mockTarget, mockCorrect, opponent?.id])
 
   // Resolve mock when both answered

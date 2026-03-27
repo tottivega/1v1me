@@ -25,28 +25,20 @@ import { TwoColState } from './spectatorHelpers'
 
 // TODO: define the shape of the client-visible state your server broadcasts.
 // Mirror only the fields your spectator view actually uses.
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface State {
-  // example: score: Record<string, number>
+  score: Record<string, number> // TODO: replace with your game's broadcast fields
 }
 
 export default function TemplateSpectator({ state, players }: SpectatorProps) {
   const s = state as State | null
   const [p1, p2] = players as [SpectatorPlayer | undefined, SpectatorPlayer | undefined]
 
-  // TODO: replace with your game's actual state fields.
-  // This default wires up a simple two-column view. For more complex layouts,
-  // replace TwoColState with your own JSX (see RockPaperScissors.spectator.tsx).
-  void s // remove once you use `s`
-
+  // TODO: wire up your state fields. For complex layouts (phase indicators, pick
+  // reveals, etc.) replace TwoColState with custom JSX — see RockPaperScissors.spectator.tsx.
   return (
     <TwoColState
-      p1={{
-        label: p1?.nickname ?? '…',
-        value: 0 /* TODO: e.g. s?.score[p1?.id ?? ''] ?? 0 */,
-        unit: 'pts',
-      }}
-      p2={{ label: p2?.nickname ?? '…', value: 0 /* TODO: */, unit: 'pts' }}
+      p1={{ label: p1?.nickname ?? '…', value: s?.score[p1?.id ?? ''] ?? 0, unit: 'pts' }}
+      p2={{ label: p2?.nickname ?? '…', value: s?.score[p2?.id ?? ''] ?? 0, unit: 'pts' }}
       color1="var(--blue)"
       color2="var(--orange)"
     />

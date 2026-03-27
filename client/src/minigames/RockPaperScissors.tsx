@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { playClick, playCorrect, playWrong } from '../utils/sounds'
+import { randomDelay } from './mockUtils'
 import {
   type RPSChoice,
   type RPSThrowRecord,
@@ -73,8 +74,7 @@ export default function RockPaperScissors() {
   useEffect(() => {
     if (isLive || mock.phase !== 'picking' || mock.finalWinnerId !== null) return
     stagedOppPick.current = null
-    const delay = 700 + Math.random() * 1500
-    const t = setTimeout(() => {
+    return randomDelay(700, 2200, () => {
       const oppChoice = CHOICES[Math.floor(Math.random() * 3)]!.id
       stagedOppPick.current = oppChoice
       // If player already picked, resolve immediately
@@ -82,8 +82,7 @@ export default function RockPaperScissors() {
         if (prev.phase !== 'picking' || prev.myPick === null) return prev
         return resolveMockThrow(prev, prev.myPick, oppChoice)
       })
-    }, delay)
-    return () => clearTimeout(t)
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mock.phase, mock.throwNum, isLive])
 

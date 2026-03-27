@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { playCorrect, playWrong, playClick } from '../utils/sounds'
 import { type ColorWordColor, type ColorWordState } from '@shared/types'
+import { randomDelay } from './mockUtils'
 
 type Color = ColorWordColor
 
@@ -54,13 +55,11 @@ export default function ColorWord() {
     setMockWord(word)
     setMockInk(ink)
     // Mock opponent picks randomly after 2–5s
-    const delay = 2000 + Math.random() * 3000
-    const t = setTimeout(() => {
+    return randomDelay(2000, 5000, () => {
       const oppPick = Math.random() < 0.6 ? ink : pickDifferent(ink)
       if (oppPick === ink) setMockWinner(opponent?.id ?? '')
       else setMockWinner(myPlayerId)
-    }, delay)
-    return () => clearTimeout(t)
+    })
   }, [isLive, myPlayerId, opponent?.id])
 
   const word = isLive ? liveWord : mockWord

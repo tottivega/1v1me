@@ -15,6 +15,12 @@
 import type { MinigameModule, Room, Player } from '../types'
 import type { MinigameResult, MinigameId } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
+// If your game needs cancelable per-room timeouts (e.g. a throw timer that clears
+// when both players act), import RoomTimerManager instead of a raw Map:
+// import { RoomTimerManager } from './timerManager'
+// const myTimer = new RoomTimerManager()
+// myTimer.set(room.roomId, DELAY_MS, () => { ... })  // auto-cancels previous
+// myTimer.clear(room.roomId)                          // cancel early
 
 // ── State ─────────────────────────────────────────────────────────────────────
 // Define the shape of the live game state.

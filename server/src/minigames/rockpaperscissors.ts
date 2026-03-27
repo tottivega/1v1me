@@ -2,6 +2,7 @@ import type { MinigameModule, Room } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 import { twoPlayers, randomWinner } from '../utils/gameUtils'
+import { RoomTimerManager } from './timerManager'
 
 type Choice = 'rock' | 'paper' | 'scissors'
 
@@ -12,7 +13,7 @@ const THROWS_TO_WIN = 2
 const TOTAL_THROWS = 3
 
 // Per-room throw timers — not serializable, never broadcast
-const throwTimers = new Map<string, ReturnType<typeof setTimeout>>()
+const throwTimer = new RoomTimerManager()
 
 interface State {
   throwNum: number
@@ -21,14 +22,6 @@ interface State {
   scores: Record<string, number>
   history: Array<{ picks: Record<string, Choice>; winnerId: string | null }>
   resolved: boolean
-}
-
-function clearThrowTimer(roomId: string) {
-  const t = throwTimers.get(roomId)
-  if (t) {
-    clearTimeout(t)
-    throwTimers.delete(roomId)
-  }
 }
 
 export function throwWinner(c1: Choice, c2: Choice, p1Id: string, p2Id: string): string | null {
@@ -62,7 +55,7 @@ function broadcastReveal(room: Room, state: State, winnerId: string | null) {
 }
 
 function resolveThrowAndAdvance(room: Room, state: State, winnerId: string | null) {
-  clearThrowTimer(room.roomId)
+  throwTimer.clear(room.roomId)
   if (state.resolved) return
 
   if (winnerId) state.scores[winnerId] = (state.scores[winnerId] ?? 0) + 1
@@ -92,22 +85,18 @@ function resolveThrowAndAdvance(room: Room, state: State, winnerId: string | nul
 }
 
 function startThrowTimeout(room: Room, state: State) {
-  clearThrowTimer(room.roomId)
-  throwTimers.set(
-    room.roomId,
-    setTimeout(() => {
-      if (!room.match || room.match.paused || state.resolved) return
-      const [p1, p2] = twoPlayers(room)
-      const p1Picked = !!state.picks[p1.id]
-      const p2Picked = !!state.picks[p2.id]
-      // Award throw to whoever picked; if both or neither timed out → null
-      const timeoutWinnerId = p1Picked && !p2Picked ? p1.id : p2Picked && !p1Picked ? p2.id : null
-      // Fill in missing picks for history display
-      if (!state.picks[p1.id]) state.picks[p1.id] = 'rock' // placeholder
-      if (!state.picks[p2.id]) state.picks[p2.id] = 'rock'
-      resolveThrowAndAdvance(room, state, timeoutWinnerId)
-    }, THROW_TIMEOUT_MS)
-  )
+  throwTimer.set(room.roomId, THROW_TIMEOUT_MS, () => {
+    if (!room.match || room.match.paused || state.resolved) return
+    const [p1, p2] = twoPlayers(room)
+    const p1Picked = !!state.picks[p1.id]
+    const p2Picked = !!state.picks[p2.id]
+    // Award throw to whoever picked; if both or neither timed out → null
+    const timeoutWinnerId = p1Picked && !p2Picked ? p1.id : p2Picked && !p1Picked ? p2.id : null
+    // Fill in missing picks for history display
+    if (!state.picks[p1.id]) state.picks[p1.id] = 'rock' // placeholder
+    if (!state.picks[p2.id]) state.picks[p2.id] = 'rock'
+    resolveThrowAndAdvance(room, state, timeoutWinnerId)
+  })
 }
 
 function computeResult(room: Room, state: State): MinigameResult {
@@ -161,13 +150,13 @@ const rockpaperscissors: MinigameModule = {
 
   getResult(room): MinigameResult {
     const state = room.match!.minigameState as State
-    clearThrowTimer(room.roomId)
+    throwTimer.clear(room.roomId)
     state.resolved = true
     return computeResult(room, state)
   },
 
   cleanup(room) {
-    clearThrowTimer(room.roomId)
+    throwTimer.clear(room.roomId)
     const state = room.match?.minigameState as State | undefined
     if (state) state.resolved = true
   },

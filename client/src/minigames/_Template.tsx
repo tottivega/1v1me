@@ -26,6 +26,7 @@
 
 import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
+import { randomDelay } from './mockUtils'
 // import { playCorrect, playWrong, playClick } from '../utils/sounds'
 
 // ── Server state shape ────────────────────────────────────────────────────────
@@ -71,13 +72,11 @@ export default function Template() {
   // Simulate opponent action after a realistic delay, then resolve the round.
   useEffect(() => {
     if (isLive || mockResolved) return
-    const delay = 1500 + Math.random() * 3000
-    const t = setTimeout(() => {
+    return randomDelay(1500, 4500, () => {
       const winner = Math.random() < 0.5 ? myPlayerId : (opponent?.id ?? myPlayerId)
       setMockWinnerId(winner)
       setMockResolved(true)
-    }, delay)
-    return () => clearTimeout(t) // always clean up
+    })
   }, [isLive, mockResolved, myPlayerId, opponent?.id])
 
   // ── Shared derived values ─────────────────────────────────────────────────
