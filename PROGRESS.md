@@ -214,6 +214,15 @@
 **Tests**
 - [x] **Minigame live-state test coverage** — added live-mode tests for all 9 games: each sets `minigameState` with the `kind` discriminant and `wsStatus: 'connected'`, then asserts the UI reflects server state; total client tests: 45 → 98
 
+**Shared utilities (scaling prep)**
+- [x] **`randomDelay()` in `mockUtils.ts`** — replaces the inline `setTimeout` + `return () => clearTimeout` pattern in every mock opponent effect; takes `(minMs, maxMs, fn)` and returns a cleanup function directly; refactored ColorWord, HigherOrLower, RockPaperScissors, and `_Template.tsx` to use it; documented in `ADDING_A_GAME.md` step 3
+- [x] **`RoomTimerManager` in `timerManager.ts`** — replaces module-level `Map<roomId, setTimeout>` + manual `clearThrowTimer` helper pattern; `set(roomId, delay, fn)` auto-cancels any previous timer for that room; `clear(roomId)` cancels explicitly; refactored `rockpaperscissors.ts` to use it; documented in `_template.ts` and `ADDING_A_GAME.md` step 2
+- [x] **`_Template.spectator.tsx` polished** — removed `void s` lint-suppression hack; replaced placeholder `0` values with a concrete working `s?.score[p1?.id ?? ''] ?? 0` example that compiles as-is
+
+---
+
+> ✅ **Week 0 complete.** Infrastructure, UX polish, and scale-prep done. Next: minigame creation sprint (week 1).
+
 ---
 
 ## 🗑️ Removed
