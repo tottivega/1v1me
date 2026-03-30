@@ -282,6 +282,8 @@ interface GameState {
 
   // True when the current match was started via DevPanel mock flow (not a real server match)
   isMockMatch: boolean
+  // When sandbox mode is active: the game being looped. null = normal mock (random games)
+  mockSandboxGame: MinigameId | null
 
   // ── Real actions ─────────────────────────────────────────────────────────
   connect: (roomId: string, nickname: string) => void
@@ -312,6 +314,7 @@ interface GameState {
   mockForceRoundEnd: (winnerId: string) => void
   mockSetBestOf: (n: 3 | 5 | 7 | 9) => void
   mockRematch: () => void
+  mockStartSandbox: (id: MinigameId) => void
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────
@@ -349,6 +352,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   banPhasePool: null,
   banPhaseCount: 0,
   isMockMatch: false,
+  mockSandboxGame: null,
 
   // ── Real: WebSocket connection ───────────────────────────────────────────
 
@@ -403,7 +407,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     try {
       localStorage.removeItem('1v1me_session')
     } catch {}
-    set({ ws: null, wsStatus: 'disconnected', isMockMatch: false })
+    set({ ws: null, wsStatus: 'disconnected', isMockMatch: false, mockSandboxGame: null })
   },
 
   send: (type, payload = {}) => {
@@ -558,6 +562,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           banPhasePool: null,
           banPhaseCount: 0,
           isMockMatch: false,
+          mockSandboxGame: null,
         })
         break
       }
@@ -858,23 +863,30 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // Called from the RoundEndOverlay confirm button — scores already updated by mockForceRoundEnd
   mockNextRound: () => {
-    const { currentRound } = get()
+    const { currentRound, mockSandboxGame } = get()
     set({ currentRound: currentRound + 1, lastRoundWinnerId: null })
-    const ids = Object.keys(MINIGAME_CONFIGS) as MinigameId[]
-    get().mockSetMinigame(ids[Math.floor(Math.random() * ids.length)]!)
+    if (mockSandboxGame) {
+      get().mockSetMinigame(mockSandboxGame)
+    } else {
+      const ids = Object.keys(MINIGAME_CONFIGS) as MinigameId[]
+      get().mockSetMinigame(ids[Math.floor(Math.random() * ids.length)]!)
+    }
   },
 
   // Stops the timer, records the round result, and transitions to round_end or match_end
   mockForceRoundEnd: (winnerId) => {
     clearMockTimer()
-    const { scores, currentRound, roomConfig, currentMinigame, roundHistory } = get()
+    const { scores, currentRound, roomConfig, currentMinigame, roundHistory, mockSandboxGame } =
+      get()
     const newScores = { ...scores, [winnerId]: (scores[winnerId] ?? 0) + 1 }
     const newHistory: RoundRecord[] = [
       ...roundHistory,
       { round: currentRound, minigameId: currentMinigame ?? 'clickspeed', winnerId },
     ]
     const winsNeeded = Math.ceil(roomConfig.bestOf / 2)
-    if (Object.values(newScores).some((s) => s >= winsNeeded)) {
+    // In sandbox mode the loop is endless — always go to round_end so Next Round restarts the game
+    const matchOver = !mockSandboxGame && Object.values(newScores).some((s) => s >= winsNeeded)
+    if (matchOver) {
       set({
         scores: newScores,
         lastRoundWinnerId: winnerId,
@@ -912,7 +924,37 @@ export const useGameStore = create<GameState>((set, get) => ({
       minigameState: null,
       banPhasePool: null,
       banPhaseCount: 0,
+      mockSandboxGame: null,
       players: players.map((p) => ({ ...p, ready: false })),
     })
+  },
+
+  // Launch a single-game sandbox loop from the lobby: auto-adds mock opponent,
+  // then starts the chosen game. mockNextRound will keep replaying the same game.
+  // Also sets myNickname + roomId so RoomPage can render without a real WS connection.
+  mockStartSandbox: (id) => {
+    const nickname = (() => {
+      try {
+        return localStorage.getItem('nickname') || 'Dev'
+      } catch {
+        return 'Dev'
+      }
+    })()
+    if (!get().players.find((p) => p.id === 'player-2')) {
+      set({ players: [...get().players, MOCK_OPP] })
+    }
+    set({
+      myNickname: nickname,
+      roomId: 'dev',
+      mockSandboxGame: id,
+      scores: { 'player-1': 0, 'player-2': 0 },
+      currentRound: 1,
+      roundHistory: [],
+      matchWinnerId: null,
+      lastRoundWinnerId: null,
+      matchStartedAt: Date.now(),
+      isMockMatch: true,
+    })
+    get().mockSetMinigame(id)
   },
 }))

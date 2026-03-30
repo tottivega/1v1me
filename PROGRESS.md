@@ -223,6 +223,13 @@
 
 > ✅ **Week 0 complete.** Infrastructure, UX polish, and scale-prep done. Next: minigame creation sprint (week 1).
 
+### Week 1 — Dev flow & game polish
+
+**Mock / sandbox dev flow**
+- [x] **DevPanel sandbox launch** — clicking a minigame card from the lobby now calls `mockStartSandbox(id)` and navigates to `/room/dev`; sets nickname from localStorage, adds mock opponent, seeds scores/round, and starts the selected game immediately
+- [x] **Sandbox loop** — `mockNextRound` replays the same game when `mockSandboxGame` is set, so "Next Round" loops the single game indefinitely; match-end is suppressed in sandbox mode so the loop never terminates
+- [x] **RoomPage sandbox guards** — connect effect skips opening a real WebSocket when `isMockMatch` is true; NicknameGate skipped for sandbox sessions; real room flow unchanged
+
 ---
 
 ## 🗑️ Removed

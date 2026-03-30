@@ -76,6 +76,7 @@ export default function RoomPage() {
     myNickname,
     wsStatus,
     roomNotFound,
+    isMockMatch,
     connect,
     reconnectSaved,
     currentMinigame,
@@ -118,9 +119,9 @@ export default function RoomPage() {
     prevStatus.current = roomStatus
   }, [roomStatus])
 
-  // Connect (or reconnect) whenever roomId changes
+  // Connect (or reconnect) whenever roomId changes — skip for sandbox mock sessions
   useEffect(() => {
-    if (!roomId) return
+    if (!roomId || isMockMatch) return
     const saved = getSavedSession()
     if (saved && saved.roomId === roomId) {
       reconnectSaved(roomId, saved.playerId)
@@ -159,8 +160,8 @@ export default function RoomPage() {
     )
   }
 
-  // No nickname yet (direct URL visit) → show a quick name gate
-  if (!myNickname) return <NicknameGate roomId={roomId!} />
+  // No nickname yet (direct URL visit) → show a quick name gate (skip in mock/sandbox)
+  if (!myNickname && !isMockMatch) return <NicknameGate roomId={roomId!} />
 
   if (roomStatus === 'lobby' || roomStatus === 'ready')
     return (

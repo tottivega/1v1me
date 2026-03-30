@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '../store/gameStore'
 import {
   MINIGAME_CONFIGS,
@@ -32,6 +33,7 @@ const CATEGORY_COLORS: Record<MinigameCategory, string> = {
 const BEST_OF_OPTIONS = [3, 5, 7, 9] as const
 
 export default function DevPanel() {
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [gameSearch, setGameSearch] = useState('')
   const [catFilter, setCatFilter] = useState<MinigameCategory | 'all'>('all')
@@ -56,6 +58,7 @@ export default function DevPanel() {
     mockForceRoundEnd,
     mockSetBestOf,
     mockNextRound,
+    mockStartSandbox,
     minigameState,
   } = useGameStore()
 
@@ -345,10 +348,18 @@ export default function DevPanel() {
               {visibleGames.map((id) => {
                 const cfg = MINIGAME_CONFIGS[id]
                 const isActive = currentMinigame === id
+                const inLobby = roomStatus === 'lobby'
                 return (
                   <button
                     key={id}
-                    onClick={() => mockSetMinigame(id)}
+                    onClick={() => {
+                      if (inLobby) {
+                        mockStartSandbox(id)
+                        navigate('/room/dev')
+                      } else {
+                        mockSetMinigame(id)
+                      }
+                    }}
                     style={{
                       background: isActive ? 'rgba(255,221,0,0.15)' : 'rgba(255,255,255,0.05)',
                       border: `1.5px solid ${isActive ? 'var(--yellow)' : 'rgba(255,255,255,0.12)'}`,
@@ -412,7 +423,7 @@ export default function DevPanel() {
                       </div>
                     </div>
                     <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, lineHeight: 1.3 }}>
-                      {cfg.description}
+                      {inLobby ? '▶ Launch sandbox' : cfg.description}
                     </div>
                   </button>
                 )
