@@ -104,7 +104,7 @@ export default function ReactionTest() {
     const bgColor = iAmPenalized
       ? '#880000'
       : phase === 'ready'
-        ? 'var(--green)'
+        ? 'var(--blue)'
         : showResult
           ? '#222222'
           : '#cc2222'
@@ -139,7 +139,7 @@ export default function ReactionTest() {
               ⚠️ WAIT…
             </div>
             <div style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: 18 }}>
-              Click when the screen turns green!
+              Click when the screen turns blue!
             </div>
             {hasSentReaction.current && (
               <div className="badge badge-red">⚡ Input sent — waiting…</div>
@@ -180,7 +180,7 @@ export default function ReactionTest() {
                 textShadow: '4px 4px 0 rgba(0,0,0,0.4)',
               }}
             >
-              🟢 CLICK NOW!
+              🔵 CLICK NOW!
             </div>
           </div>
         )}
@@ -227,7 +227,7 @@ export default function ReactionTest() {
       : mockPhase === 'too-early'
         ? '#880000'
         : mockPhase === 'ready'
-          ? 'var(--green)'
+          ? 'var(--blue)'
           : '#222222'
 
   return (
@@ -260,7 +260,7 @@ export default function ReactionTest() {
             ⚠️ WAIT…
           </div>
           <div style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: 18 }}>
-            Click when the screen turns green!
+            Click when the screen turns blue!
           </div>
         </>
       )}
@@ -293,7 +293,7 @@ export default function ReactionTest() {
               textShadow: '4px 4px 0 rgba(0,0,0,0.4)',
             }}
           >
-            🟢 CLICK NOW!
+            🔵 CLICK NOW!
           </div>
         </div>
       )}
