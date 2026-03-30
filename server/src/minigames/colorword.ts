@@ -1,15 +1,17 @@
 import type { MinigameModule } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
-import { twoPlayers, randomWinner } from '../utils/gameUtils'
+import { twoPlayers } from '../utils/gameUtils'
 
 const COLORS = ['red', 'blue', 'green', 'yellow', 'orange', 'purple'] as const
 type Color = (typeof COLORS)[number]
 
 interface State {
-  word: Color // the text shown
-  inkColor: Color // the CSS color — must differ from word
-  resolved: boolean
+  word: Color
+  inkColor: Color
+  scores: Record<string, number>
+  firstTimes: Record<string, Record<number, number>> // playerId → score → timestamp
+  puzzleSeq: number
 }
 
 export function pick(): { word: Color; inkColor: Color } {
@@ -23,40 +25,70 @@ const colorword: MinigameModule = {
   id: 'colorword',
 
   start(room) {
+    const [p1, p2] = twoPlayers(room)
     const { word, inkColor } = pick()
-    const state: State = { word, inkColor, resolved: false }
+    const state: State = {
+      word,
+      inkColor,
+      scores: { [p1.id]: 0, [p2.id]: 0 },
+      firstTimes: { [p1.id]: {}, [p2.id]: {} },
+      puzzleSeq: 0,
+    }
     room.match!.minigameState = state
-    broadcast(room, 'GAME_UPDATE', { state: { word, inkColor } })
+    broadcast(room, 'GAME_UPDATE', {
+      state: { word, inkColor, scores: state.scores, puzzleSeq: 0 },
+    })
   },
 
   handleInput(room, playerId, input) {
     if (input.type !== 'PICK_COLOR') return
 
     const state = room.match!.minigameState as State | null
-    if (!state) return // input arrived after round resolved
-    if (state.resolved) return
+    if (!state) return
     if (room.match!.roundResolved) return
 
     const correct = input.color === state.inkColor
-    if (!correct) return // wrong pick — ignore, let them try again (timer ends it)
+    if (correct) {
+      state.scores[playerId] = (state.scores[playerId] ?? 0) + 1
+      const score = state.scores[playerId]!
+      if (!state.firstTimes[playerId]) state.firstTimes[playerId] = {}
+      if (!state.firstTimes[playerId]![score]) {
+        state.firstTimes[playerId]![score] = Date.now()
+      }
+    }
 
-    state.resolved = true
+    // New puzzle regardless of correct or wrong
+    const { word, inkColor } = pick()
+    state.word = word
+    state.inkColor = inkColor
+    state.puzzleSeq++
+
     broadcast(room, 'GAME_UPDATE', {
-      state: { word: state.word, inkColor: state.inkColor, winnerId: playerId },
+      state: { word, inkColor, scores: state.scores, puzzleSeq: state.puzzleSeq },
     })
-    room.match!.onRoundDone?.({ winnerId: playerId, reason: 'completed' })
   },
 
   getResult(room): MinigameResult {
-    // Timeout: random winner
+    const state = room.match!.minigameState as State
     const [p1, p2] = twoPlayers(room)
-    const winnerId = randomWinner(p1, p2)
+    const s1 = state.scores[p1.id] ?? 0
+    const s2 = state.scores[p2.id] ?? 0
+
+    let winnerId: string
+    if (s1 > s2) {
+      winnerId = p1.id
+    } else if (s2 > s1) {
+      winnerId = p2.id
+    } else {
+      // Tie: whoever reached score N first wins
+      const tied = s1
+      const t1 = (state.firstTimes[p1.id] ?? {})[tied] ?? Infinity
+      const t2 = (state.firstTimes[p2.id] ?? {})[tied] ?? Infinity
+      winnerId = t1 <= t2 ? p1.id : p2.id
+    }
+
     broadcast(room, 'GAME_UPDATE', {
-      state: {
-        word: (room.match!.minigameState as State).word,
-        inkColor: (room.match!.minigameState as State).inkColor,
-        winnerId,
-      },
+      state: { ...pick(), scores: state.scores, puzzleSeq: state.puzzleSeq + 1, winnerId },
     })
     return { winnerId, reason: 'timeout' }
   },

@@ -85,9 +85,9 @@ export const MINIGAME_CONFIGS = {
   colorword: {
     label: 'Color Word',
     emoji: '🎨',
-    timeoutMs: 10000,
+    timeoutMs: 30000,
     category: 'reflex',
-    description: 'Ignore the text — click the button matching the INK color of the word.',
+    description: 'Get as many correct ink color picks as you can in 30 seconds.',
     platforms: 'all',
   },
   higherorlower: {
@@ -193,6 +193,8 @@ export interface ColorWordState {
   kind: 'colorword'
   word: ColorWordColor
   inkColor: ColorWordColor
+  scores: Record<string, number>
+  puzzleSeq: number
   winnerId?: string
 }
 
