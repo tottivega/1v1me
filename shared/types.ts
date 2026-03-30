@@ -29,9 +29,9 @@ export const MINIGAME_CONFIGS = {
   clickspeed: {
     label: 'Click Speed',
     emoji: '👆',
-    timeoutMs: 5000,
+    timeoutMs: 10000,
     category: 'skill',
-    description: 'Click as many times as you can in 5 seconds.',
+    description: 'Click as many times as you can in 10 seconds.',
     platforms: 'all',
   },
   coinflip: {

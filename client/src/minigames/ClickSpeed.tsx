@@ -17,6 +17,7 @@ export default function ClickSpeed() {
   const [localMyClicks, setLocalMyClicks] = useState(0)
   const [localOppClicks, setLocalOppClicks] = useState(0)
   const [ripples, setRipples] = useState<Ripple[]>([])
+  const [isPressed, setIsPressed] = useState(false)
   const clickTimestamps = useRef<number[]>([])
   const btnRef = useRef<HTMLButtonElement>(null)
 
@@ -67,7 +68,7 @@ export default function ClickSpeed() {
           CLICK SPEED 👆
         </div>
         <div className="subtitle" style={{ opacity: 0.6, fontSize: 15 }}>
-          Click as fast as you can!
+          Click as fast as you can for 10 seconds!
         </div>
       </div>
 
@@ -78,49 +79,62 @@ export default function ClickSpeed() {
         <ClickBar label={opponent?.nickname ?? '???'} clicks={oppClicks} color="var(--orange)" />
       </div>
 
-      <button
-        ref={btnRef}
-        className="btn btn-orange"
-        onMouseDown={(e) => handleClick(e.clientX, e.clientY)}
-        onTouchStart={(e) => {
-          e.preventDefault()
-          const t = e.touches[0]!
-          handleClick(t.clientX, t.clientY)
-        }}
-        style={{
-          position: 'relative',
-          overflow: 'hidden',
-          width: 180,
-          height: 180,
-          borderRadius: '50%',
-          fontSize: 52,
-          border: '4px solid var(--black)',
-          boxShadow: '6px 6px 0px var(--black)',
-          lineHeight: 1,
-          touchAction: 'manipulation',
-        }}
-      >
-        {ripples.map((r) => (
-          <span
-            key={r.id}
-            style={{
-              position: 'absolute',
-              left: r.x - 16,
-              top: r.y - 16,
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.45)',
-              animation: 'ripple 0.5s ease-out forwards',
-              pointerEvents: 'none',
-            }}
-          />
-        ))}
-        👊
-      </button>
-
-      <div className="label" style={{ opacity: 0.5 }}>
-        Smash that button!
+      {/* Bomb button */}
+      <div style={{ perspective: 600 }}>
+        <button
+          ref={btnRef}
+          onMouseDown={(e) => {
+            setIsPressed(true)
+            handleClick(e.clientX, e.clientY)
+          }}
+          onMouseUp={() => setIsPressed(false)}
+          onMouseLeave={() => setIsPressed(false)}
+          onTouchStart={(e) => {
+            e.preventDefault()
+            setIsPressed(true)
+            const t = e.touches[0]!
+            handleClick(t.clientX, t.clientY)
+          }}
+          onTouchEnd={() => setIsPressed(false)}
+          style={{
+            position: 'relative',
+            overflow: 'hidden',
+            width: 180,
+            height: 180,
+            borderRadius: '50%',
+            lineHeight: 1,
+            touchAction: 'manipulation',
+            cursor: 'pointer',
+            border: '5px solid var(--black)',
+            background: isPressed
+              ? 'radial-gradient(circle at 40% 38%, #ff5555 0%, #bb0000 55%, #6b0000 100%)'
+              : 'radial-gradient(circle at 32% 28%, #ff8888 0%, #dd0000 50%, #880000 100%)',
+            boxShadow: isPressed
+              ? '0 2px 0 #550000, 2px 5px 0 var(--black)'
+              : '0 10px 0 #770000, 5px 16px 0 var(--black)',
+            transform: isPressed
+              ? 'rotateX(20deg) translateY(8px)'
+              : 'rotateX(20deg) translateY(0)',
+            transition: 'transform 0.06s, box-shadow 0.06s, background 0.06s',
+          }}
+        >
+          {ripples.map((r) => (
+            <span
+              key={r.id}
+              style={{
+                position: 'absolute',
+                left: r.x - 16,
+                top: r.y - 16,
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.35)',
+                animation: 'ripple 0.5s ease-out forwards',
+                pointerEvents: 'none',
+              }}
+            />
+          ))}
+        </button>
       </div>
     </div>
   )
@@ -147,7 +161,7 @@ function ClickBar({ label, clicks, color }: { label: string; clicks: number; col
         <div
           style={{
             height: '100%',
-            width: `${Math.min(100, (clicks / 80) * 100)}%`,
+            width: `${Math.min(100, (clicks / 200) * 100)}%`,
             background: color,
             borderRadius: 99,
             transition: 'width 0.1s',

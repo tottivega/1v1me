@@ -44,6 +44,28 @@ function guard(): boolean {
 
 // ── Primitive builders ────────────────────────────────────────────────────────
 
+function noise(duration: number, centerFreq: number, volume = 0.25, delay = 0) {
+  const c = ctx()
+  const bufSize = Math.ceil(c.sampleRate * duration)
+  const buf = c.createBuffer(1, bufSize, c.sampleRate)
+  const data = buf.getChannelData(0)
+  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1
+  const src = c.createBufferSource()
+  src.buffer = buf
+  const filter = c.createBiquadFilter()
+  filter.type = 'bandpass'
+  filter.frequency.value = centerFreq
+  filter.Q.value = 1.2
+  const gain = c.createGain()
+  src.connect(filter)
+  filter.connect(gain)
+  gain.connect(c.destination)
+  gain.gain.setValueAtTime(volume * getVolume(), c.currentTime + delay)
+  gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + delay + duration)
+  src.start(c.currentTime + delay)
+  src.stop(c.currentTime + delay + duration)
+}
+
 function tone(
   freq: number,
   duration: number,
@@ -182,10 +204,33 @@ export function playMatchLose() {
   sweep(280, 200, 0.25, 'sawtooth', 0.2, 0.36)
 }
 
-/** Click Speed — each click */
+/** Click Speed — Minecraft-style hurt thud, 5 random variants */
 export function playClickHit() {
   if (guard()) return
-  tone(1000, 0.025, 'square', 0.12)
+  // Each variant: [noiseDur, noiseFreq, noiseVol, thudFreq, thudVol]
+  const variants: [number, number, number, number, number][] = [
+    [0.12, 480, 0.55, 90, 0.4],
+    [0.1, 530, 0.5, 78, 0.45],
+    [0.14, 440, 0.5, 102, 0.38],
+    [0.11, 570, 0.55, 84, 0.42],
+    [0.13, 500, 0.5, 96, 0.4],
+  ]
+  const [nd, nf, nv, tf, tv] = variants[Math.floor(Math.random() * 5)]!
+  // Noise burst (the "impact" layer)
+  noise(nd, nf, nv)
+  // Low thud that pitch-drops (the "body" layer)
+  const c = ctx()
+  const osc = c.createOscillator()
+  const gain = c.createGain()
+  osc.connect(gain)
+  gain.connect(c.destination)
+  osc.type = 'sine'
+  osc.frequency.setValueAtTime(tf, c.currentTime)
+  osc.frequency.exponentialRampToValueAtTime(tf * 0.55, c.currentTime + 0.09)
+  gain.gain.setValueAtTime(tv * getVolume(), c.currentTime)
+  gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.11)
+  osc.start(c.currentTime)
+  osc.stop(c.currentTime + 0.13)
 }
 
 /** Round transition count-in tick (3…2…1) */
