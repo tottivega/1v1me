@@ -30,7 +30,7 @@ const coinflip: MinigameModule = {
       setTimeout(() => {
         room.match!.onRoundDone?.({ winnerId, reason: 'completed' })
       }, 1200)
-    }, 2000)
+    }, 4000)
   },
 
   handleInput(_room, _playerId, _input) {

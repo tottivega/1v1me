@@ -249,8 +249,18 @@ body {
   100% { transform: scale(5); opacity: 0; }
 }
 @keyframes coin-flip-3d {
-  0%   { transform: perspective(220px) rotateY(0deg); }
-  100% { transform: perspective(220px) rotateY(360deg); }
+  0%,  50%,  100% { transform: scaleX(1); }
+  25%, 75%        { transform: scaleX(0.02); }
+}
+@keyframes coin-face-front {
+  0%, 24.99%       { opacity: 1; }
+  25%, 75%         { opacity: 0; }
+  75.01%, 100%     { opacity: 1; }
+}
+@keyframes coin-face-back {
+  0%, 24.99%       { opacity: 0; }
+  25%, 75%         { opacity: 1; }
+  75.01%, 100%     { opacity: 0; }
 }
 @keyframes count-in {
   0%   { transform: scale(2.2); opacity: 0; }

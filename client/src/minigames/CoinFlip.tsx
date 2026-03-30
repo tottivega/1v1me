@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
-import { playCoinFlip, playCoinResult } from '../utils/sounds'
+import { playCoinResult } from '../utils/sounds'
 import { type CoinFlipPhase, type CoinFlipState } from '@shared/types'
 
 type Phase = CoinFlipPhase
+
+// Coin spin duration — must match coin-flip-3d and coin-face-* CSS animations
+const SPIN_DURATION = '1.4s'
 
 export default function CoinFlip() {
   const { myPlayerId, players, minigameState, isMockMatch } = useGameStore()
@@ -21,12 +24,11 @@ export default function CoinFlip() {
 
   useEffect(() => {
     if (isLive) return
-    playCoinFlip()
     const t = setTimeout(() => {
       const winnerId = Math.random() < 0.5 ? myPlayerId : (opponent?.id ?? myPlayerId)
       setMockWinnerId(winnerId)
       setMockPhase('result')
-    }, 2200)
+    }, 4200)
     return () => clearTimeout(t)
   }, [isLive, myPlayerId, opponent?.id])
 
@@ -35,9 +37,8 @@ export default function CoinFlip() {
   const winnerId = isLive ? liveWinnerId : mockWinnerId
   const iWon = winnerId === myPlayerId
 
-  // Play sounds on phase transitions
+  // Play result sound on reveal
   useEffect(() => {
-    if (phase === 'flipping' && isLive) playCoinFlip()
     if (phase === 'result') playCoinResult(iWon)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
@@ -65,30 +66,79 @@ export default function CoinFlip() {
         COIN FLIP 🪙
       </div>
 
-      {/* Coin */}
+      {/* Coin — outer ring (always gold) */}
       <div
         style={{
-          width: 160,
-          height: 160,
+          width: 180,
+          height: 180,
           borderRadius: '50%',
           border: '5px solid var(--black)',
           boxShadow: '6px 6px 0px var(--black)',
-          background: phase === 'flipping' ? 'var(--yellow)' : iWon ? 'var(--green)' : 'var(--red)',
+          background: '#c9960a',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 72,
           animation:
             phase === 'flipping'
-              ? 'coin-flip-3d 0.65s linear infinite'
+              ? `coin-flip-3d ${SPIN_DURATION} linear infinite`
               : 'bounce-in 0.4s ease both',
-          transition: 'background 0.3s',
         }}
       >
-        {phase === 'flipping' ? '🪙' : iWon ? '😎' : '💀'}
+        {/* Shaded rim */}
+        <div
+          style={{
+            width: 152,
+            height: 152,
+            borderRadius: '50%',
+            background: '#a07808',
+            boxShadow: 'inset 3px 3px 10px rgba(0,0,0,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {/* Inner circle */}
+          <div
+            style={{
+              width: 118,
+              height: 118,
+              borderRadius: '50%',
+              background: '#f5c518',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 56,
+              position: 'relative',
+            }}
+          >
+            {phase === 'flipping' ? (
+              <>
+                {/* Front face (😊) and back face (💀) swap via CSS, synced to scaleX */}
+                <span
+                  style={{
+                    position: 'absolute',
+                    animation: `coin-face-front ${SPIN_DURATION} linear infinite`,
+                  }}
+                >
+                  😊
+                </span>
+                <span
+                  style={{
+                    position: 'absolute',
+                    animation: `coin-face-back ${SPIN_DURATION} linear infinite`,
+                  }}
+                >
+                  💀
+                </span>
+              </>
+            ) : (
+              <span>{iWon ? '😎' : '💀'}</span>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Result */}
+      {/* Result text */}
       {phase === 'result' && (
         <div className="anim-bounce" style={{ textAlign: 'center' }}>
           <div

@@ -149,13 +149,13 @@ export function playEarly() {
   sweep(400, 150, 0.25, 'sawtooth', 0.25)
 }
 
-/** Coin flip — spinning effect */
+/** Coin flip — spinning effect (~4s to match flip duration) */
 export function playCoinFlip() {
   if (guard()) return
-  // Rapid oscillating pitch simulates a spinning coin
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 40; i++) {
     const freq = i % 2 === 0 ? 700 : 500
-    tone(freq, 0.08, 'sine', 0.12, i * 0.09)
+    const vol = Math.max(0.02, 0.12 - i * 0.002)
+    tone(freq, 0.08, 'sine', vol, i * 0.1)
   }
 }
 
@@ -317,15 +317,19 @@ const AMBIENT: Record<string, [number, Ticker]> = {
   ],
 
   // ── COIN FLIP ────────────────────────────────────────────────────────────────
-  // Shimmering anticipation: slow arpeggiated chime in C major. Each note has
-  // a warm sub-octave for body. Spaced far apart — feels like floating.
+  // Slow, ominous suspense: heavy bass drone with dark chromatic mid-tones.
+  // Long overlapping bass notes create a tension bed; alternating Bb/Db/Eb
+  // middle notes are deliberately unsettling. Rare high shimmer adds dread.
   coinflip: [
-    780,
+    1200,
     (mg, phase, vol) => {
-      const notes = [523, 659, 784, 659] // C5 E5 G5 E5
-      const f = notes[phase % 4]!
-      aTone(mg, f, 0.55, 'sine', vol * 0.75, 0)
-      aTone(mg, f * 0.5, 0.7, 'sine', vol * 0.25, 0) // warm sub
+      aTone(mg, 55, 1.15, 'sine', vol * 0.85, 0) // A1 — deep, ominous pulse
+      aTone(mg, 82.5, 0.95, 'sine', vol * 0.45, 0) // E2 — fifth, adds body
+      const midNote = [233, 277, 311][phase % 3]! // Bb3 → Db4 → Eb4 (dark)
+      aTone(mg, midNote, 0.95, 'sine', vol * 0.3, 0.1)
+      if (phase % 4 === 0) {
+        aSweep(mg, 880, 1100, 0.85, 'sine', vol * 0.1, 0.35) // eerie shimmer
+      }
     },
   ],
 
