@@ -1,78 +1,199 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useGameStore } from '../store/gameStore'
-import { playCorrect } from '../utils/sounds'
+import { playCorrect, playWrong } from '../utils/sounds'
 import { type FastestTyperState } from '@shared/types'
+
+// ── Sentence pool (mirrors server) ────────────────────────────────────────────
+const PHRASE_POOL = [
+  'cats sleep all day',
+  'birds fly south fast',
+  'big dogs love rain',
+  'stars shine at night',
+  'fish swim in rivers',
+  'run like the wind',
+  'time moves very fast',
+  'jump over the fence',
+  'the sun sets every evening',
+  'dogs bark at the moon',
+  'never skip a rest day',
+  'she reads books every morning',
+  'slow and steady wins races',
+  'the cold wind blows hard',
+  'he scored the final point',
+  'we drove all night long',
+  'type fast and stay focused',
+  'the fox ran very far',
+  'we played cards all night long',
+  'the rain fell on the roof',
+  'go left at the old bridge',
+  'every day brings a new chance',
+  'the team worked until very late',
+  'hold your breath and jump in',
+  'the big red barn burned down',
+  'she found her keys right away',
+  'the bus came just in time',
+  'they ran across the open field',
+  'the quick brown fox jumps so high',
+  'she typed faster than anyone else could',
+  'the best things in life are free',
+  'the small boat rocked in the waves',
+  'we all laughed until our sides hurt',
+  'the clock on the wall ticked loudly',
+  'the early bird always catches the fat worm',
+  'she walked slowly across the old wooden bridge',
+  'the bright stars filled the dark winter sky',
+  'he ran as fast as his legs allowed',
+  'the dog chased the ball across the yard',
+  'every great journey begins with a single step',
+]
+
+const PHRASE_COUNT = 10
+
+function pickMockPhrases(): string[] {
+  return [...PHRASE_POOL].sort(() => Math.random() - 0.5).slice(0, PHRASE_COUNT)
+}
+
+/** Character index at which the 3rd-to-last word starts (preview trigger). */
+function previewTriggerChar(phrase: string): number {
+  const words = phrase.split(' ')
+  const n = words.length
+  if (n <= 3) return 0
+  return words.slice(0, n - 3).join(' ').length + 1
+}
 
 export default function FastestTyper() {
   const { myPlayerId, players, sendInput, minigameState, isMockMatch } = useGameStore()
   const isLive = !isMockMatch
+  const isLiveRef = useRef(isLive)
+  isLiveRef.current = isLive
+
   const opponent = players.find((p) => p.id !== myPlayerId)
+  const oppId = opponent?.id ?? 'opp'
+  const oppName = opponent?.nickname ?? '???'
 
+  // ── Live state ─────────────────────────────────────────────────────────────
+  const server = isLive ? (minigameState as FastestTyperState | null) : null
+
+  // ── Mock phrases — stable for the lifetime of this mount ─────────────────
+  const [mockPhrases] = useState<string[]>(pickMockPhrases)
+
+  // ── Player local state ────────────────────────────────────────────────────
   const [typed, setTyped] = useState('')
-  const [finished, setFinished] = useState(false)
+  const [localCompleted, setLocalCompleted] = useState(0)
+  // Highest 0-based sentence index that has been revealed to the player
+  const [revealedUpTo, setRevealedUpTo] = useState(0)
+
   const inputRef = useRef<HTMLInputElement>(null)
+  const sentenceBottomRef = useRef<HTMLDivElement>(null)
 
-  const serverState = isLive ? (minigameState as FastestTyperState | null) : null
-  const phrase = serverState?.phrase ?? (isLive ? '' : MOCK_PHRASE)
+  const activePhrases = isLive ? (server?.phrases ?? []) : mockPhrases
+  const currentPhrase = activePhrases[localCompleted] ?? ''
 
-  // Mock opponent progress — advances at a random pace in dev/disconnected mode
-  const [mockOppProg, setMockOppProg] = useState(0)
+  const sendProgress = useCallback(
+    (completed: number, chars: number) => {
+      if (isLiveRef.current) sendInput({ type: 'PROGRESS', completed, chars })
+    },
+    [sendInput]
+  )
+
+  // ── Mock opponent — completes one sentence every 4.5–7.5 s ───────────────
+  const [mockOppCompleted, setMockOppCompleted] = useState(0)
   useEffect(() => {
     if (isLive) return
-    setMockOppProg(0)
-    const id = setInterval(() => {
-      setMockOppProg((p) => {
-        if (p >= phrase.length) {
-          clearInterval(id)
-          return p
-        }
-        return Math.min(p + Math.floor(Math.random() * 2) + 1, phrase.length)
-      })
-    }, 400)
-    return () => clearInterval(id)
-  }, [isLive, phrase])
-
-  // Correct characters from start (live mode = server tracks; mock = local)
-  const myProgress = isLive
-    ? (serverState?.progress[myPlayerId] ?? 0)
-    : computeProgress(typed, phrase)
-  const oppProgress = isLive
-    ? opponent
-      ? (serverState?.progress[opponent.id] ?? 0)
-      : 0
-    : mockOppProg
-
-  const isResolved = serverState?.resolved ?? false
-  const winnerId = serverState?.winnerId ?? null
-
-  // Reset on new phrase
-  useEffect(() => {
-    setTyped('')
-    setFinished(false)
-    setTimeout(() => inputRef.current?.focus(), 50)
-  }, [phrase])
-
-  // Detect when we finish
-  useEffect(() => {
-    if (!finished && myProgress === phrase.length && phrase.length > 0) {
-      setFinished(true)
-      playCorrect()
+    let cancelled = false
+    function scheduleNext(current: number) {
+      if (current >= PHRASE_COUNT || cancelled) return
+      setTimeout(
+        () => {
+          if (cancelled) return
+          setMockOppCompleted((c) => {
+            const next = Math.min(c + 1, PHRASE_COUNT)
+            scheduleNext(next)
+            return next
+          })
+        },
+        4500 + Math.random() * 3000
+      )
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myProgress, phrase.length])
+    scheduleNext(0)
+    return () => {
+      cancelled = true
+    }
+  }, [isLive])
+
+  // ── Reset on new game ─────────────────────────────────────────────────────
+  useEffect(() => {
+    if (minigameState === null) {
+      setTyped('')
+      setLocalCompleted(0)
+      setRevealedUpTo(0)
+      setMockOppCompleted(0)
+    }
+  }, [minigameState])
+
+  // Auto-focus input on mount
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 50)
+  }, [])
+
+  // Scroll sentence list to bottom when new sentence is revealed
+  useEffect(() => {
+    sentenceBottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [revealedUpTo, localCompleted])
+
+  // ── Sound on live result ──────────────────────────────────────────────────
+  const prevWinnerId = useRef<string | null | undefined>(undefined)
+  useEffect(() => {
+    const wId = server?.winnerId
+    if (wId !== undefined && wId !== prevWinnerId.current) {
+      prevWinnerId.current = wId
+      if (wId === myPlayerId) playCorrect()
+      else playWrong()
+    }
+  }, [server?.winnerId, myPlayerId])
+
+  // ── Input handler ─────────────────────────────────────────────────────────
+  const resolved = isLive ? (server?.resolved ?? false) : localCompleted >= PHRASE_COUNT
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (finished) return
+    if (resolved) return
     const val = e.target.value
-    setTyped(val)
-    if (isLive) {
-      sendInput({ type: 'TYPE', text: val })
+
+    if (val === currentPhrase) {
+      // Sentence complete — auto-advance
+      const next = localCompleted + 1
+      setLocalCompleted(next)
+      setTyped('')
+      setRevealedUpTo((r) => Math.max(r, next))
+      sendProgress(next, 0)
+    } else {
+      setTyped(val)
+      sendProgress(localCompleted, val.length)
+      // Show next sentence preview when player starts the 3rd-to-last word
+      const trigger = previewTriggerChar(currentPhrase)
+      if (val.length >= trigger && localCompleted + 1 < activePhrases.length) {
+        setRevealedUpTo((r) => Math.max(r, localCompleted + 1))
+      }
     }
   }
 
-  const pct = phrase.length > 0 ? (myProgress / phrase.length) * 100 : 0
-  const oppPct = phrase.length > 0 ? (oppProgress / phrase.length) * 100 : 0
-  const oppName = opponent?.nickname ?? '???'
+  // ── Progress values ───────────────────────────────────────────────────────
+  const myCompleted = isLive ? (server?.completed[myPlayerId] ?? 0) : localCompleted
+  const oppCompleted = isLive ? (server?.completed[oppId] ?? 0) : mockOppCompleted
+
+  function smoothPct(completed: number, chars: number, phraseIdx: number): number {
+    const phrase = activePhrases[phraseIdx] ?? ''
+    const partial = phrase.length > 0 ? chars / phrase.length : 0
+    return ((completed + partial) / PHRASE_COUNT) * 100
+  }
+
+  const myChars = isLive ? (server?.charProgress[myPlayerId] ?? 0) : typed.length
+  const oppChars = isLive ? (server?.charProgress[oppId] ?? 0) : 0
+  const myPct = smoothPct(myCompleted, myChars, myCompleted)
+  const oppPct = smoothPct(oppCompleted, oppChars, oppCompleted)
+
+  const winnerId = server?.winnerId ?? null
+  const iWon = winnerId === myPlayerId || (!isLive && localCompleted >= PHRASE_COUNT)
 
   return (
     <div
@@ -80,18 +201,20 @@ export default function FastestTyper() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
-        gap: 28,
+        gap: 16,
         flex: 1,
-        padding: 28,
+        padding: '20px 24px',
+        overflow: 'hidden',
       }}
     >
+      {/* Title */}
       <div
         style={{
           fontFamily: 'var(--font-title)',
-          fontSize: 32,
+          fontSize: 28,
           color: 'var(--blue)',
           textAlign: 'center',
+          flexShrink: 0,
         }}
       >
         FASTEST TYPER ⌨️
@@ -99,44 +222,92 @@ export default function FastestTyper() {
 
       {/* Progress bars */}
       <div
-        style={{ width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 10 }}
-      >
-        <ProgressBar label="You" pct={pct} color="var(--blue)" />
-        <ProgressBar label={oppName} pct={oppPct} color="var(--orange)" />
-      </div>
-
-      {/* Phrase display */}
-      <div
         style={{
-          background: 'var(--white)',
-          border: 'var(--border)',
-          borderRadius: 16,
-          boxShadow: 'var(--shadow)',
-          padding: '20px 28px',
-          maxWidth: 480,
           width: '100%',
-          lineHeight: 1.7,
-          fontFamily: 'monospace',
-          fontSize: 20,
-          letterSpacing: 0.5,
+          maxWidth: 500,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+          flexShrink: 0,
         }}
       >
-        {phrase.split('').map((ch: string, i: number) => {
-          const typedChar = typed[i]
-          let color = 'rgba(0,0,0,0.25)'
-          if (typedChar === undefined) color = 'var(--black)'
-          else if (typedChar === ch) color = 'var(--green)'
-          else color = 'var(--red)'
+        <ProgressBar label={`You (${myCompleted}/10)`} pct={myPct} color="var(--blue)" />
+        <ProgressBar label={`${oppName} (${oppCompleted}/10)`} pct={oppPct} color="var(--orange)" />
+      </div>
+
+      {/* Sentence stack — scrollable */}
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 500,
+          flex: 1,
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+          paddingRight: 4,
+        }}
+      >
+        {Array.from({ length: revealedUpTo + 1 }, (_, i) => {
+          const phrase = activePhrases[i]
+          if (!phrase) return null
+          const isDone = i < localCompleted
+          const isActive = i === localCompleted
+          const isPreview = i > localCompleted
+
           return (
-            <span key={i} style={{ color, transition: 'color 0.1s' }}>
-              {ch}
-            </span>
+            <div
+              key={i}
+              style={{
+                background: isActive ? 'var(--white)' : 'transparent',
+                border: isActive ? 'var(--border)' : '2px solid transparent',
+                borderRadius: 12,
+                padding: isActive ? '14px 18px' : '6px 18px',
+                boxShadow: isActive ? 'var(--shadow)' : 'none',
+                fontFamily: 'monospace',
+                fontSize: isActive ? 20 : 17,
+                letterSpacing: 0.4,
+                lineHeight: 1.7,
+                opacity: isPreview ? 0.35 : 1,
+                transition: 'opacity 0.3s',
+              }}
+            >
+              {isDone && (
+                <span style={{ color: 'var(--green)', opacity: 0.7 }}>
+                  {phrase} <span style={{ fontSize: 13 }}>✓</span>
+                </span>
+              )}
+              {isActive &&
+                phrase.split('').map((ch, ci) => {
+                  const typedCh = typed[ci]
+                  let color = 'rgba(0,0,0,0.3)'
+                  let bg = 'transparent'
+                  if (typedCh !== undefined) {
+                    if (typedCh === ch) {
+                      color = 'var(--green)'
+                    } else {
+                      color = 'var(--red)'
+                      bg = 'rgba(220,50,50,0.12)'
+                    }
+                  }
+                  return (
+                    <span
+                      key={ci}
+                      style={{ color, background: bg, borderRadius: 2, transition: 'color 0.08s' }}
+                    >
+                      {ch}
+                    </span>
+                  )
+                })}
+              {isPreview && <span style={{ color: 'rgba(0,0,0,0.45)' }}>{phrase}</span>}
+            </div>
           )
         })}
+        <div ref={sentenceBottomRef} />
       </div>
 
       {/* Input */}
-      {!isResolved && !finished && (
+      {!resolved && (
         <input
           ref={inputRef}
           type="text"
@@ -150,37 +321,40 @@ export default function FastestTyper() {
           autoCapitalize="off"
           style={{
             fontFamily: 'monospace',
-            fontSize: 20,
+            fontSize: 18,
             width: '100%',
-            maxWidth: 480,
+            maxWidth: 500,
             border: 'var(--border)',
             borderRadius: 12,
             padding: '12px 18px',
             background: 'var(--white)',
             boxShadow: 'var(--shadow-sm)',
             outline: 'none',
-            letterSpacing: 0.5,
+            letterSpacing: 0.4,
+            flexShrink: 0,
           }}
         />
       )}
 
-      {/* Status messages */}
-      {(finished || isResolved) && (
+      {/* Result */}
+      {resolved && (
         <div
           className="anim-pop"
-          style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 8 }}
+          style={{
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+            flexShrink: 0,
+          }}
         >
-          {winnerId === myPlayerId || (finished && !isResolved) ? (
+          {iWon ? (
             <div style={{ fontFamily: 'var(--font-title)', fontSize: 32, color: 'var(--green)' }}>
               ✅ Done! Waiting for result…
             </div>
-          ) : winnerId && winnerId !== myPlayerId ? (
-            <div style={{ fontFamily: 'var(--font-title)', fontSize: 28, color: 'var(--orange)' }}>
-              {opponent?.nickname ?? 'Opponent'} finished first!
-            </div>
           ) : (
-            <div style={{ fontFamily: 'var(--font-title)', fontSize: 28, color: 'var(--green)' }}>
-              ✅ Submitted!
+            <div style={{ fontFamily: 'var(--font-title)', fontSize: 28, color: 'var(--orange)' }}>
+              {oppName} finished first!
             </div>
           )}
         </div>
@@ -188,6 +362,8 @@ export default function FastestTyper() {
     </div>
   )
 }
+
+// ── Sub-components ─────────────────────────────────────────────────────────────
 
 function ProgressBar({ label, pct, color }: { label: string; pct: number; color: string }) {
   return (
@@ -202,11 +378,11 @@ function ProgressBar({ label, pct, color }: { label: string; pct: number; color:
         }}
       >
         <span>{label}</span>
-        <span>{Math.round(pct)}%</span>
+        <span>{Math.round(Math.min(100, pct))}%</span>
       </div>
       <div
         style={{
-          height: 14,
+          height: 12,
           background: 'rgba(0,0,0,0.08)',
           borderRadius: 8,
           overflow: 'hidden',
@@ -217,7 +393,7 @@ function ProgressBar({ label, pct, color }: { label: string; pct: number; color:
           style={{
             height: '100%',
             background: color,
-            width: `${pct}%`,
+            width: `${Math.min(100, pct)}%`,
             borderRadius: 8,
             transition: 'width 0.15s ease-out',
           }}
@@ -226,12 +402,3 @@ function ProgressBar({ label, pct, color }: { label: string; pct: number; color:
     </div>
   )
 }
-
-function computeProgress(typed: string, phrase: string): number {
-  let i = 0
-  while (i < typed.length && i < phrase.length && typed[i] === phrase[i]) i++
-  return i
-}
-
-// ── Mock (dev / disconnected mode) ───────────────────────────────────────────
-const MOCK_PHRASE = 'the quick brown fox'

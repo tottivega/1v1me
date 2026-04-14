@@ -69,9 +69,9 @@ export const MINIGAME_CONFIGS = {
   fastesttyper: {
     label: 'Fastest Typer',
     emoji: '⌨️',
-    timeoutMs: 30000,
+    timeoutMs: 60000,
     category: 'skill',
-    description: 'Type the phrase faster than your opponent.',
+    description: 'Type 10 sentences faster than your opponent.',
     platforms: 'desktop-only',
   },
   rockpaperscissors: {
@@ -161,8 +161,9 @@ export interface MemoryMatchState {
 
 export interface FastestTyperState {
   kind: 'fastesttyper'
-  phrase: string
-  progress: Record<string, number>
+  phrases: string[] // 10 sentences, identical for both players
+  completed: Record<string, number> // sentences fully completed per player (0-10)
+  charProgress: Record<string, number> // chars typed in current sentence per player
   resolved: boolean
   winnerId: string | null
 }

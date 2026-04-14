@@ -232,21 +232,21 @@ describe('FastestTyper', () => {
     expect(() => fireEvent.change(input, { target: { value: 'hello' } })).not.toThrow()
   })
 
-  it('shows the server phrase in live mode', async () => {
+  it('shows phrases from server state', async () => {
     useGameStore.setState({
       wsStatus: 'connected',
       isMockMatch: false,
       minigameState: {
         kind: 'fastesttyper',
-        phrase: 'the quick brown fox',
-        progress: { [ME]: 0, [OPP]: 0 },
+        phrases: ['cats sleep all day', 'run like the wind'],
+        completed: { [ME]: 0, [OPP]: 0 },
+        charProgress: { [ME]: 0, [OPP]: 0 },
         resolved: false,
         winnerId: null,
       },
     })
     await renderGame('FastestTyper')
-    // Phrase is rendered character-by-character in spans; check combined text content
-    expect(document.body.textContent).toContain('the quick brown fox')
+    expect(document.body.textContent).toContain('cats sleep all day')
   })
 })
 

@@ -3,86 +3,134 @@ import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 import { twoPlayers, randomWinner } from '../utils/gameUtils'
 
-const PHRASES = [
-  'the quick brown fox',
-  'pack my box with five dozen liquor jugs',
-  'how vexingly quick daft zebras jump',
-  'sphinx of black quartz judge my vow',
-  'bright vixens jump dozy fowl quack',
-  'five boxing wizards jump quickly',
-  'jackdaws love my big sphinx of quartz',
-  'the early bird catches the worm',
-  'practice makes perfect every single time',
-  'stay hungry stay foolish keep going',
-  'winners never quit and quitters never win',
-  'just do it no excuses whatsoever',
-  'may the best typist win this round',
-  'speed is key but accuracy matters',
-  'fingers flying fast across the keys',
+// ── Sentence pool (4–8 words, no punctuation) ─────────────────────────────────
+const PHRASE_POOL = [
+  // 4 words
+  'cats sleep all day',
+  'birds fly south fast',
+  'big dogs love rain',
+  'stars shine at night',
+  'fish swim in rivers',
+  'run like the wind',
+  'time moves very fast',
+  'jump over the fence',
+  // 5 words
+  'the sun sets every evening',
+  'dogs bark at the moon',
+  'never skip a rest day',
+  'she reads books every morning',
+  'slow and steady wins races',
+  'the cold wind blows hard',
+  'he scored the final point',
+  'we drove all night long',
+  'type fast and stay focused',
+  'the fox ran very far',
+  // 6 words
+  'we played cards all night long',
+  'the rain fell on the roof',
+  'go left at the old bridge',
+  'every day brings a new chance',
+  'the team worked until very late',
+  'hold your breath and jump in',
+  'the big red barn burned down',
+  'she found her keys right away',
+  'the bus came just in time',
+  'they ran across the open field',
+  // 7 words
+  'the quick brown fox jumps so high',
+  'she typed faster than anyone else could',
+  'the best things in life are free',
+  'the small boat rocked in the waves',
+  'we all laughed until our sides hurt',
+  'the clock on the wall ticked loudly',
+  // 8 words
+  'the early bird always catches the fat worm',
+  'she walked slowly across the old wooden bridge',
+  'the bright stars filled the dark winter sky',
+  'he ran as fast as his legs allowed',
+  'the dog chased the ball across the yard',
+  'every great journey begins with a single step',
 ]
 
+const PHRASE_COUNT = 10
+
+function pickPhrases(): string[] {
+  const pool = [...PHRASE_POOL]
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[pool[i], pool[j]] = [pool[j]!, pool[i]!]
+  }
+  return pool.slice(0, PHRASE_COUNT)
+}
+
 interface State {
-  phrase: string
-  progress: Record<string, number> // chars correct from start
+  phrases: string[]
+  completed: Record<string, number> // sentences fully completed per player
+  charProgress: Record<string, number> // chars in current sentence per player
+  lastCompleteTime: Record<string, number> // timestamp of each player's last sentence completion
   resolved: boolean
   winnerId: string | null
+}
+
+function broadcastState(room: Parameters<typeof broadcast>[0], state: State) {
+  broadcast(room, 'GAME_UPDATE', {
+    state: {
+      phrases: state.phrases,
+      completed: state.completed,
+      charProgress: state.charProgress,
+      resolved: state.resolved,
+      winnerId: state.winnerId,
+    },
+  })
 }
 
 const fastesttyper: MinigameModule = {
   id: 'fastesttyper',
 
   start(room) {
-    const phrase = PHRASES[Math.floor(Math.random() * PHRASES.length)]!
+    const phrases = pickPhrases()
     const state: State = {
-      phrase,
-      progress: {},
+      phrases,
+      completed: Object.fromEntries(room.players.map((p) => [p.id, 0])),
+      charProgress: Object.fromEntries(room.players.map((p) => [p.id, 0])),
+      lastCompleteTime: {},
       resolved: false,
       winnerId: null,
     }
-    for (const p of room.players) state.progress[p.id] = 0
     room.match!.minigameState = state
-
-    broadcast(room, 'GAME_UPDATE', {
-      state: { phrase, progress: state.progress, resolved: false, winnerId: null },
-    })
+    broadcastState(room, state)
   },
 
   handleInput(room, playerId, input) {
-    if (input.type !== 'TYPE') return
+    if (input.type !== 'PROGRESS') return
 
     const state = room.match!.minigameState as State | null
-    if (!state) return // input arrived after round resolved
-    if (state.resolved) return
+    if (!state || state.resolved) return
 
-    const typed = typeof input.text === 'string' ? input.text.slice(0, 200) : ''
-    const phrase = state.phrase
+    const newCompleted = Math.max(0, Math.min(PHRASE_COUNT, Math.floor(Number(input.completed))))
+    const chars = Math.max(0, Math.floor(Number(input.chars)))
 
-    // Count correct characters from the start
-    let correct = 0
-    for (let i = 0; i < Math.min(typed.length, phrase.length); i++) {
-      if (typed[i] === phrase[i]) correct++
-      else break
+    if (!Number.isFinite(newCompleted) || !Number.isFinite(chars)) return
+
+    // Record timestamp when a new sentence is completed
+    const prevCompleted = state.completed[playerId] ?? 0
+    if (newCompleted > prevCompleted) {
+      state.lastCompleteTime[playerId] = Date.now()
     }
-    state.progress[playerId] = correct
 
-    const finished = correct === phrase.length
+    state.completed[playerId] = newCompleted
+    state.charProgress[playerId] = chars
 
-    broadcast(room, 'GAME_UPDATE', {
-      state: {
-        phrase,
-        progress: state.progress,
-        resolved: finished,
-        winnerId: finished ? playerId : null,
-      },
-    })
-
-    if (finished) {
+    // Immediate win: all 10 sentences typed
+    if (newCompleted >= PHRASE_COUNT) {
       state.resolved = true
       state.winnerId = playerId
-      setTimeout(() => {
-        room.match?.onRoundDone?.({ winnerId: playerId, reason: 'completed' })
-      }, 1200)
+      broadcastState(room, state)
+      room.match!.onRoundDone?.({ winnerId: playerId, reason: 'completed' })
+      return
     }
+
+    broadcastState(room, state)
   },
 
   getResult(room): MinigameResult {
@@ -90,11 +138,21 @@ const fastesttyper: MinigameModule = {
     if (state.winnerId) return { winnerId: state.winnerId, reason: 'completed' }
 
     const [p1, p2] = twoPlayers(room)
-    const prog1 = state.progress[p1.id] ?? 0
-    const prog2 = state.progress[p2.id] ?? 0
+    const c1 = state.completed[p1.id] ?? 0
+    const c2 = state.completed[p2.id] ?? 0
 
-    if (prog1 > prog2) return { winnerId: p1.id, reason: 'timeout' }
-    if (prog2 > prog1) return { winnerId: p2.id, reason: 'timeout' }
+    if (c1 !== c2) return { winnerId: c1 > c2 ? p1.id : p2.id, reason: 'timeout' }
+
+    // Tiebreak 1: further into their next partial sentence
+    const ch1 = state.charProgress[p1.id] ?? 0
+    const ch2 = state.charProgress[p2.id] ?? 0
+    if (ch1 !== ch2) return { winnerId: ch1 > ch2 ? p1.id : p2.id, reason: 'timeout' }
+
+    // Tiebreak 2: who completed their last sentence first
+    const t1 = state.lastCompleteTime[p1.id] ?? Infinity
+    const t2 = state.lastCompleteTime[p2.id] ?? Infinity
+    if (t1 !== t2) return { winnerId: t1 < t2 ? p1.id : p2.id, reason: 'timeout' }
+
     return { winnerId: randomWinner(p1, p2), reason: 'timeout' }
   },
 }
