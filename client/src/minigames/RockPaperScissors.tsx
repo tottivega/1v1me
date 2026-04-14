@@ -22,13 +22,14 @@ const BEATS: Record<Choice, Choice> = { rock: 'scissors', paper: 'rock', scissor
 
 // ── Mock state ────────────────────────────────────────────────────────────────
 interface MockState {
-  throwNum: number
+  throwNum: number // increments on every throw including draws — triggers effects
   phase: 'picking' | 'reveal' | 'done'
   myPick: Choice | null
   revealPicks: Record<string, Choice>
-  throwWinnerId: string | null
+  throwWinnerId: string | null // null = draw, string = winner of this throw
   scores: Record<string, number>
-  history: RPSThrowRecord[]
+  history: RPSThrowRecord[] // decisive throws only
+  drawsThisThrow: number
   finalWinnerId: string | null
 }
 
@@ -40,6 +41,7 @@ const INITIAL_MOCK: MockState = {
   throwWinnerId: null,
   scores: {},
   history: [],
+  drawsThisThrow: 0,
   finalWinnerId: null,
 }
 
@@ -55,9 +57,7 @@ export default function RockPaperScissors() {
   const oppId = opponent?.id ?? 'opp'
 
   const [mock, setMock] = useState<MockState>(INITIAL_MOCK)
-  // Holds the opponent's staged pick before the player has picked (mock mode only)
   const stagedOppPick = useRef<Choice | null>(null)
-  // Tracks what I picked in live mode (server only echoes back who submitted, not what)
   const myLivePickRef = useRef<Choice | null>(null)
 
   const serverState = isLive ? (minigameState as RockPaperScissorsState | null) : null
@@ -68,7 +68,12 @@ export default function RockPaperScissors() {
     stagedOppPick.current = null
     myLivePickRef.current = null
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [minigameState === null ? 0 : 1]) // fires when minigameState resets to null
+  }, [minigameState === null ? 0 : 1])
+
+  // ── Live: reset pick ref on each new throw (including draws) ──────────────
+  useEffect(() => {
+    myLivePickRef.current = null
+  }, [serverState?.throwNum])
 
   // ── Mock: schedule opponent's pick for the current throw ───────────────────
   useEffect(() => {
@@ -77,7 +82,6 @@ export default function RockPaperScissors() {
     return randomDelay(700, 2200, () => {
       const oppChoice = CHOICES[Math.floor(Math.random() * 3)]!.id
       stagedOppPick.current = oppChoice
-      // If player already picked, resolve immediately
       setMock((prev) => {
         if (prev.phase !== 'picking' || prev.myPick === null) return prev
         return resolveMockThrow(prev, prev.myPick, oppChoice)
@@ -107,25 +111,41 @@ export default function RockPaperScissors() {
   function resolveMockThrow(prev: MockState, myChoice: Choice, oppChoice: Choice): MockState {
     const winnerId = getThrowWinner(myChoice, oppChoice, myPlayerId, oppId)
     const newScores = { ...prev.scores }
-    if (winnerId) newScores[winnerId] = (newScores[winnerId] ?? 0) + 1
+    const newDrawsThisThrow = winnerId === null ? (prev.drawsThisThrow ?? 0) + 1 : 0
+
+    let effectiveWinnerId = winnerId
+    let effectiveDraws = newDrawsThisThrow
+
+    if (winnerId === null && newDrawsThisThrow >= 10) {
+      effectiveWinnerId = Math.random() < 0.5 ? myPlayerId : oppId
+      effectiveDraws = 0
+    }
+
+    if (effectiveWinnerId) {
+      newScores[effectiveWinnerId] = (newScores[effectiveWinnerId] ?? 0) + 1
+    }
 
     const revealPicks = { [myPlayerId]: myChoice, [oppId]: oppChoice }
-    const newHistory: RPSThrowRecord[] = [...prev.history, { picks: revealPicks, winnerId }]
+
+    // Only decisive throws go in history
+    const newHistory: RPSThrowRecord[] = effectiveWinnerId
+      ? [...prev.history, { picks: revealPicks, winnerId: effectiveWinnerId }]
+      : prev.history
 
     const matchWinner = [myPlayerId, oppId].find((id) => (newScores[id] ?? 0) >= 2)
-    const allDone = newHistory.length >= 3
 
     const base: MockState = {
       ...prev,
       phase: 'reveal',
       myPick: myChoice,
       revealPicks,
-      throwWinnerId: winnerId,
+      throwWinnerId: effectiveWinnerId, // null = draw shown, string = winner
       scores: newScores,
       history: newHistory,
+      drawsThisThrow: effectiveDraws,
     }
 
-    if (matchWinner || allDone) {
+    if (matchWinner) {
       const s1 = newScores[myPlayerId] ?? 0
       const s2 = newScores[oppId] ?? 0
       const finalWinnerId =
@@ -163,14 +183,14 @@ export default function RockPaperScissors() {
     if (!inReveal) return
     if (revealWinner === myPlayerId) playCorrect()
     else if (revealWinner !== null) playWrong()
+    // draws: no sound
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revealThrowNum, isLive ? serverState?.phase : mock.phase])
 
   // ── Derived display values ─────────────────────────────────────────────────
   const phase = isLive ? (serverState?.phase ?? 'picking') : mock.phase
-  const throwNum = isLive ? (serverState?.throwNum ?? 1) : mock.throwNum
   const scores = isLive ? (serverState?.scores ?? {}) : mock.scores
-  const history = isLive ? (serverState?.history ?? []) : mock.history
+  const history = isLive ? (serverState?.history ?? []) : mock.history // decisive only
 
   const iHavePicked = isLive
     ? serverState?.phase === 'picking' &&
@@ -187,9 +207,11 @@ export default function RockPaperScissors() {
   const oppScore = scores[oppId] ?? 0
   const oppName = opponent?.nickname ?? '???'
 
-  const finalWinnerId = isLive
-    ? null // live final result comes through ROUND_END, not here
-    : mock.finalWinnerId
+  // Decisive throw number = decisive throws completed + 1
+  const decisiveThrowNum = Math.min(3, history.length + 1)
+
+  const finalWinnerId = isLive ? null : mock.finalWinnerId
+  const isDraw = revealWinner === null && phase === 'reveal'
 
   return (
     <div
@@ -221,7 +243,7 @@ export default function RockPaperScissors() {
         <ThrowScore label={oppName} score={oppScore} color="var(--orange)" />
       </div>
 
-      {/* Throw counter / status */}
+      {/* Throw counter */}
       <div
         style={{
           fontFamily: 'var(--font-title)',
@@ -231,7 +253,7 @@ export default function RockPaperScissors() {
           textTransform: 'uppercase',
         }}
       >
-        {finalWinnerId ? 'GAME OVER' : `Throw ${throwNum} of 3`}
+        {finalWinnerId ? 'GAME OVER' : `Throw ${decisiveThrowNum} of 3`}
       </div>
 
       {/* ── Final result (mock done) ── */}
@@ -281,7 +303,7 @@ export default function RockPaperScissors() {
                     justifyContent: 'center',
                     gap: 6,
                     background: isPicked ? 'var(--blue)' : 'var(--white)',
-                    border: `3px solid var(--black)`,
+                    border: '3px solid var(--black)',
                     borderRadius: 16,
                     boxShadow: isPicked ? '2px 2px 0 var(--black)' : '4px 4px 0 var(--black)',
                     transform: isPicked ? 'translate(2px, 2px)' : 'none',
@@ -335,26 +357,25 @@ export default function RockPaperScissors() {
               color:
                 revealWinner === myPlayerId
                   ? 'var(--green)'
-                  : revealWinner === null
+                  : isDraw
                     ? 'var(--orange)'
                     : 'var(--red)',
             }}
           >
             {revealWinner === myPlayerId
               ? '🏆 You take this throw!'
-              : revealWinner === null
-                ? '🤝 Tie!'
+              : isDraw
+                ? '🤝 Tie! Pick again…'
                 : `${oppName} takes this throw!`}
           </div>
         </div>
       )}
 
-      {/* Throw history dots */}
+      {/* Decisive throw history dots */}
       {history.length > 0 && (
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
           {history.map((record: RPSThrowRecord, i: number) => {
             const won = record.winnerId === myPlayerId
-            const tied = record.winnerId === null
             return (
               <div
                 key={i}
@@ -363,7 +384,7 @@ export default function RockPaperScissors() {
                   height: 30,
                   borderRadius: 8,
                   border: '2px solid var(--black)',
-                  background: tied ? 'var(--orange)' : won ? 'var(--green)' : 'var(--red)',
+                  background: won ? 'var(--green)' : 'var(--red)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -372,11 +393,11 @@ export default function RockPaperScissors() {
                   color: 'var(--white)',
                 }}
               >
-                {tied ? '–' : won ? '✓' : '✗'}
+                {won ? '✓' : '✗'}
               </div>
             )
           })}
-          {/* Empty slots for remaining throws */}
+          {/* Empty slots for remaining decisive throws */}
           {Array.from({ length: Math.max(0, 3 - history.length) }).map((_, i) => (
             <div
               key={`empty-${i}`}

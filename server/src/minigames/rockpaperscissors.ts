@@ -10,17 +10,18 @@ const BEATS: Record<Choice, Choice> = { rock: 'scissors', paper: 'rock', scissor
 const THROW_TIMEOUT_MS = 8000
 const REVEAL_DELAY_MS = 1500
 const THROWS_TO_WIN = 2
-const TOTAL_THROWS = 3
+const MAX_DRAWS_PER_THROW = 10
 
 // Per-room throw timers — not serializable, never broadcast
 const throwTimer = new RoomTimerManager()
 
 interface State {
-  throwNum: number
+  throwNum: number // increments on every throw including draws — used to trigger client effects
   phase: 'picking' | 'reveal'
-  picks: Record<string, Choice> // current throw picks (only populated during reveal)
+  picks: Record<string, Choice>
   scores: Record<string, number>
-  history: Array<{ picks: Record<string, Choice>; winnerId: string | null }>
+  history: Array<{ picks: Record<string, Choice>; winnerId: string | null }> // decisive throws only
+  drawsThisThrow: number // consecutive draws on the current decisive throw
   resolved: boolean
 }
 
@@ -34,7 +35,7 @@ function broadcastPicking(room: Room, state: State) {
     state: {
       phase: 'picking',
       throwNum: state.throwNum,
-      submitted: Object.keys(state.picks), // who has picked — not what they picked
+      submitted: Object.keys(state.picks),
       scores: state.scores,
       history: state.history,
     },
@@ -58,22 +59,40 @@ function resolveThrowAndAdvance(room: Room, state: State, winnerId: string | nul
   throwTimer.clear(room.roomId)
   if (state.resolved) return
 
-  if (winnerId) state.scores[winnerId] = (state.scores[winnerId] ?? 0) + 1
-  state.history.push({ picks: { ...state.picks }, winnerId })
+  let effectiveWinnerId = winnerId
+
+  if (winnerId === null) {
+    // Draw — count consecutive draws for this decisive throw
+    state.drawsThisThrow++
+    if (state.drawsThisThrow >= MAX_DRAWS_PER_THROW) {
+      // Too many draws: quietly pick a random winner and move on
+      const [p1, p2] = twoPlayers(room)
+      effectiveWinnerId = randomWinner(p1, p2)
+      state.drawsThisThrow = 0
+    }
+  } else {
+    state.drawsThisThrow = 0
+  }
+
+  // Only decisive outcomes go into history and scoring
+  if (effectiveWinnerId) {
+    state.scores[effectiveWinnerId] = (state.scores[effectiveWinnerId] ?? 0) + 1
+    state.history.push({ picks: { ...state.picks }, winnerId: effectiveWinnerId })
+  }
+
   state.phase = 'reveal'
-  broadcastReveal(room, state, winnerId)
+  broadcastReveal(room, state, effectiveWinnerId)
 
   const [p1, p2] = twoPlayers(room)
   const matchWinner = [p1, p2].find((p) => (state.scores[p.id] ?? 0) >= THROWS_TO_WIN)
-  const allDone = state.history.length >= TOTAL_THROWS
 
-  if (matchWinner || allDone) {
+  if (matchWinner) {
     state.resolved = true
     setTimeout(() => room.match?.onRoundDone?.(computeResult(room, state)), REVEAL_DELAY_MS)
     return
   }
 
-  // Advance to next throw
+  // Advance to next throw — same decisive round if draw, next if decisive
   setTimeout(() => {
     if (!room.match || state.resolved) return
     state.throwNum++
@@ -90,10 +109,8 @@ function startThrowTimeout(room: Room, state: State) {
     const [p1, p2] = twoPlayers(room)
     const p1Picked = !!state.picks[p1.id]
     const p2Picked = !!state.picks[p2.id]
-    // Award throw to whoever picked; if both or neither timed out → null
     const timeoutWinnerId = p1Picked && !p2Picked ? p1.id : p2Picked && !p1Picked ? p2.id : null
-    // Fill in missing picks for history display
-    if (!state.picks[p1.id]) state.picks[p1.id] = 'rock' // placeholder
+    if (!state.picks[p1.id]) state.picks[p1.id] = 'rock' // placeholder for display
     if (!state.picks[p2.id]) state.picks[p2.id] = 'rock'
     resolveThrowAndAdvance(room, state, timeoutWinnerId)
   })
@@ -119,6 +136,7 @@ const rockpaperscissors: MinigameModule = {
       picks: {},
       scores: { [p1.id]: 0, [p2.id]: 0 },
       history: [],
+      drawsThisThrow: 0,
       resolved: false,
     }
     room.match!.minigameState = state
@@ -130,9 +148,9 @@ const rockpaperscissors: MinigameModule = {
     if (input.type !== 'PICK') return
 
     const state = room.match!.minigameState as State | null
-    if (!state) return // input arrived after round resolved
+    if (!state) return
     if (state.resolved || state.phase !== 'picking') return
-    if (state.picks[playerId]) return // already picked this throw
+    if (state.picks[playerId]) return
 
     const choice = input.choice as Choice
     if (!['rock', 'paper', 'scissors'].includes(choice)) return
