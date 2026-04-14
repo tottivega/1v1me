@@ -61,9 +61,9 @@ export const MINIGAME_CONFIGS = {
   memorymatch: {
     label: 'Memory Match',
     emoji: '🧠',
-    timeoutMs: 25000,
+    timeoutMs: 0,
     category: 'strategy',
-    description: 'Memorise a sequence of symbols, then reproduce it perfectly.',
+    description: 'Memorise a growing sequence of symbols across up to 10 rounds.',
     platforms: 'all',
   },
   fastesttyper: {
@@ -152,6 +152,9 @@ export interface QuickMathsState {
 
 export interface MemoryMatchState {
   kind: 'memorymatch'
+  roundNum: number
+  seqLen: number
+  phase: 'memorize' | 'recall'
   sequence: string[]
   submissions: Record<string, string[]>
 }
