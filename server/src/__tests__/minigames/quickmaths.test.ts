@@ -108,6 +108,35 @@ describe('quickmaths — integration', () => {
     expect(state.correct['p1']).toBe(0)
   })
 
+  it('getResult tiebreaks on timestamp — earlier last correct answer wins', () => {
+    vi.useFakeTimers()
+    try {
+      const room = makeRoom()
+      room.match = makeMatch('p1', 'p2')
+      quickmaths.start(room)
+
+      const state = room.match.minigameState as {
+        equations: Record<string, { answer: number }>
+        correct: Record<string, number>
+        lastCorrectTime: Record<string, number>
+      }
+
+      // Both get 1 correct, but p1 was first
+      vi.setSystemTime(1000)
+      quickmaths.handleInput(room, 'p1', { type: 'ANSWER', answer: state.equations['p1']!.answer })
+      vi.setSystemTime(2000)
+      quickmaths.handleInput(room, 'p2', { type: 'ANSWER', answer: state.equations['p2']!.answer })
+
+      expect(state.correct['p1']).toBe(1)
+      expect(state.correct['p2']).toBe(1)
+
+      const result = quickmaths.getResult(room)
+      expect(result.winnerId).toBe('p1')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('ignores non-finite answer values', () => {
     const room = makeRoom()
     room.match = makeMatch('p1', 'p2')

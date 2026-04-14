@@ -4,19 +4,24 @@ import { playCorrect, playWrong } from '../utils/sounds'
 import { type QuickMathsEquation, type QuickMathsState } from '@shared/types'
 
 type Equation = QuickMathsEquation
-
 type Flash = 'correct' | 'wrong' | null
+
+const MAX_DIGITS = 4
 
 export default function QuickMaths() {
   const { myPlayerId, players, sendInput, minigameState, isMockMatch } = useGameStore()
   const isLive = !isMockMatch
   const opponent = players.find((p) => p.id !== myPlayerId)
 
-  const [inputVal, setInputVal] = useState('')
+  const [displayVal, setDisplayVal] = useState('')
   const [flash, setFlash] = useState<Flash>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
 
-  // Track previous correct count so we can detect right/wrong after server responds
+  // Stable refs so callbacks never go stale
+  const displayValRef = useRef('')
+  displayValRef.current = displayVal
+  const isLiveRef = useRef(isLive)
+  isLiveRef.current = isLive
+
   const prevCorrect = useRef(0)
   const prevQuestion = useRef('')
 
@@ -26,66 +31,54 @@ export default function QuickMaths() {
   const myCorrect = serverState?.correct[myPlayerId] ?? 0
   const oppCorrect = opponent ? (serverState?.correct[opponent.id] ?? 0) : 0
 
+  const myEquationRef = useRef(myEquation)
+  myEquationRef.current = myEquation
+
+  const triggerFlash = useCallback((type: Flash) => {
+    setFlash(type)
+    if (type === 'correct') playCorrect()
+    else if (type === 'wrong') playWrong()
+    setTimeout(() => setFlash(null), 350)
+  }, [])
+
   // Detect server response (equation changed) → show flash feedback
   useEffect(() => {
     if (!isLive || !myEquation) return
-    if (myEquation.question === prevQuestion.current) return // no change yet
+    if (myEquation.question === prevQuestion.current) return
 
     if (prevQuestion.current === '') {
-      // First equation arriving — initialize tracking refs without triggering flash
       prevCorrect.current = myCorrect
       prevQuestion.current = myEquation.question
-      setInputVal('')
-      inputRef.current?.focus()
+      setDisplayVal('')
       return
     }
 
     const wasCorrect = myCorrect > prevCorrect.current
     triggerFlash(wasCorrect ? 'correct' : 'wrong')
-
     prevCorrect.current = myCorrect
     prevQuestion.current = myEquation.question
-    setInputVal('')
-    inputRef.current?.focus()
+    setDisplayVal('')
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myEquation?.question, isLive, myCorrect])
+  }, [myEquation?.question, isLive, myCorrect, triggerFlash])
 
-  // Focus input on mount and whenever equation changes
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [myEquation?.question])
-
-  // Reset tracking on new round
+  // Reset on new round
   useEffect(() => {
     if (minigameState === null) {
       prevCorrect.current = 0
       prevQuestion.current = ''
-      setInputVal('')
+      setDisplayVal('')
       setFlash(null)
     }
   }, [minigameState])
-
-  function triggerFlash(type: Flash) {
-    setFlash(type)
-    if (type === 'correct') playCorrect()
-    else if (type === 'wrong') playWrong()
-    setTimeout(() => setFlash(null), 350)
-  }
-
-  function submitLive() {
-    const num = parseInt(inputVal, 10)
-    if (isNaN(num)) return
-    prevQuestion.current = myEquation?.question ?? ''
-    sendInput({ type: 'ANSWER', answer: num })
-    setInputVal('')
-  }
 
   // ── Mock mode ─────────────────────────────────────────────────────────────
   const [mockEquation, setMockEquation] = useState<Equation>(mockGenerate)
   const [mockMyCorrect, setMockMyCorrect] = useState(0)
   const [mockOppCorrect, setMockOppCorrect] = useState(0)
 
-  // Simulate opponent answering at random intervals in mock mode
+  const mockEquationRef = useRef(mockEquation)
+  mockEquationRef.current = mockEquation
+
   useEffect(() => {
     if (isLive) return
     const interval = setInterval(
@@ -97,27 +90,45 @@ export default function QuickMaths() {
     return () => clearInterval(interval)
   }, [isLive])
 
-  function submitMock() {
-    const num = parseInt(inputVal, 10)
-    if (isNaN(num)) return
-    const correct = num === mockEquation.answer
-    triggerFlash(correct ? 'correct' : 'wrong')
-    if (correct) setMockMyCorrect((c) => c + 1)
-    setMockEquation(mockGenerate())
-    setInputVal('')
-    sendInput({ type: 'ANSWER', answer: num })
-    inputRef.current?.focus()
-  }
-
+  // ── Calculator handlers ───────────────────────────────────────────────────
   const handleSubmit = useCallback(() => {
-    if (isLive) submitLive()
-    else submitMock()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLive, inputVal, myEquation])
+    const val = displayValRef.current
+    const num = parseInt(val, 10)
+    if (isNaN(num)) return
+    setDisplayVal('')
 
-  function onKey(e: React.KeyboardEvent) {
-    if (e.key === 'Enter') handleSubmit()
-  }
+    if (isLiveRef.current) {
+      prevQuestion.current = myEquationRef.current?.question ?? ''
+      sendInput({ type: 'ANSWER', answer: num })
+    } else {
+      const correct = num === mockEquationRef.current.answer
+      // triggerFlash captured via closure — it's stable (useCallback [])
+      setFlash(correct ? 'correct' : 'wrong')
+      if (correct) playCorrect()
+      else playWrong()
+      setTimeout(() => setFlash(null), 350)
+      if (correct) setMockMyCorrect((c) => c + 1)
+      setMockEquation(mockGenerate())
+      sendInput({ type: 'ANSWER', answer: num })
+    }
+  }, [sendInput])
+
+  // Keyboard support
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (/^[0-9]$/.test(e.key)) {
+        setDisplayVal((v) => (v.length >= MAX_DIGITS ? v : v + e.key))
+      } else if (e.key === 'Backspace') {
+        setDisplayVal((v) => v.slice(0, -1))
+      } else if (e.key === 'Escape' || e.key === 'Delete') {
+        setDisplayVal('')
+      } else if (e.key === 'Enter') {
+        handleSubmit()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [handleSubmit])
 
   // ── Shared render values ──────────────────────────────────────────────────
   const question = isLive ? (myEquation?.question ?? '…') : mockEquation.question
@@ -125,12 +136,12 @@ export default function QuickMaths() {
   const oppScore = isLive ? oppCorrect : mockOppCorrect
   const oppName = opponent?.nickname ?? '???'
 
-  const flashBg =
+  const flashShadow =
     flash === 'correct'
-      ? 'rgba(68,204,68,0.18)'
+      ? '4px 4px 0 var(--green)'
       : flash === 'wrong'
-        ? 'rgba(255,51,51,0.18)'
-        : 'transparent'
+        ? '4px 4px 0 var(--red)'
+        : 'var(--shadow)'
 
   return (
     <div
@@ -139,18 +150,16 @@ export default function QuickMaths() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 28,
+        gap: 20,
         flex: 1,
-        padding: 32,
-        transition: 'background 0.15s',
-        background: flashBg,
+        padding: 24,
       }}
     >
       {/* Title */}
       <div
         style={{
           fontFamily: 'var(--font-title)',
-          fontSize: 32,
+          fontSize: 28,
           color: 'var(--blue)',
           textAlign: 'center',
         }}
@@ -161,100 +170,126 @@ export default function QuickMaths() {
       {/* Score bar */}
       <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
         <ScorePill label="You" score={myScore} color="var(--blue)" />
-        <span style={{ fontFamily: 'var(--font-title)', fontSize: 22, opacity: 0.3 }}>vs</span>
+        <span style={{ fontFamily: 'var(--font-title)', fontSize: 20, opacity: 0.3 }}>vs</span>
         <ScorePill label={oppName} score={oppScore} color="var(--orange)" />
       </div>
 
-      {/* Equation */}
+      {/* Calculator display */}
       <div
         style={{
-          background: 'var(--white)',
-          border: 'var(--border)',
-          borderRadius: 20,
-          boxShadow:
-            flash === 'correct'
-              ? '4px 4px 0 var(--green)'
-              : flash === 'wrong'
-                ? '4px 4px 0 var(--red)'
-                : 'var(--shadow)',
-          padding: '28px 48px',
-          textAlign: 'center',
+          background: '#1a2a1a',
+          border: '3px solid var(--black)',
+          borderRadius: 16,
+          boxShadow: flashShadow,
+          padding: '14px 20px',
+          width: '100%',
+          maxWidth: 320,
           transition: 'box-shadow 0.1s',
-          minWidth: 280,
         }}
       >
+        {/* Question row */}
         <div
           style={{
-            fontFamily: 'var(--font-title)',
-            fontSize: 64,
-            color: 'var(--black)',
-            lineHeight: 1,
+            fontFamily: 'monospace',
+            fontSize: 28,
+            color: '#5aaa5a',
+            opacity: 0.85,
+            letterSpacing: 2,
+            marginBottom: 6,
           }}
         >
-          {question} = ?
+          {question} = <span style={{ color: '#00e676' }}>{displayVal}</span>
         </div>
+
+        {/* Flash feedback */}
         {flash === 'correct' && (
           <div
             className="anim-pop"
-            style={{ color: 'var(--green)', fontWeight: 900, fontSize: 18, marginTop: 8 }}
+            style={{
+              color: '#00e676',
+              fontWeight: 900,
+              fontSize: 13,
+              textAlign: 'right',
+              marginTop: 4,
+            }}
           >
-            ✅ Correct!
+            ✓ Correct!
           </div>
         )}
         {flash === 'wrong' && (
           <div
             className="anim-shake"
-            style={{ color: 'var(--red)', fontWeight: 900, fontSize: 18, marginTop: 8 }}
+            style={{
+              color: '#ff5555',
+              fontWeight: 900,
+              fontSize: 13,
+              textAlign: 'right',
+              marginTop: 4,
+            }}
           >
-            ❌ Nope! New one →
+            ✗ Next one →
           </div>
         )}
       </div>
 
-      {/* Input */}
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-        <input
-          ref={inputRef}
-          type="number"
-          inputMode="numeric"
-          value={inputVal}
-          onChange={(e) => setInputVal(e.target.value)}
-          onKeyDown={onKey}
-          placeholder="?"
-          style={{
-            fontFamily: 'var(--font-title)',
-            fontSize: 40,
-            width: 140,
-            textAlign: 'center',
-            border: 'var(--border)',
-            borderRadius: 12,
-            padding: '10px 16px',
-            boxShadow: 'var(--shadow-sm)',
-            outline: 'none',
-            background: 'var(--white)',
-            MozAppearance: 'textfield',
-          }}
+      {/* Keypad */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 80px)',
+          gap: 8,
+        }}
+      >
+        {[7, 8, 9, 4, 5, 6, 1, 2, 3].map((d) => (
+          <CalcButton
+            key={d}
+            label={String(d)}
+            onClick={() => setDisplayVal((v) => (v.length >= MAX_DIGITS ? v : v + d))}
+          />
+        ))}
+        <CalcButton label="C" onClick={() => setDisplayVal('')} textColor="var(--red)" />
+        <CalcButton
+          label="0"
+          onClick={() => setDisplayVal((v) => (v.length >= MAX_DIGITS ? v : v + '0'))}
         />
-        <button
-          className="btn btn-blue btn-lg"
-          onClick={handleSubmit}
-          style={{ fontSize: 22, padding: '14px 28px' }}
-        >
-          ↵
-        </button>
+        <CalcButton
+          label="⌫"
+          onClick={() => setDisplayVal((v) => v.slice(0, -1))}
+          textColor="var(--orange)"
+        />
       </div>
 
-      <div className="label" style={{ opacity: 0.45 }}>
-        Press Enter to submit
-      </div>
+      {/* Enter button */}
+      <button
+        onClick={handleSubmit}
+        disabled={!displayVal}
+        style={{
+          width: 256,
+          height: 56,
+          fontFamily: 'var(--font-title)',
+          fontSize: 20,
+          letterSpacing: 2,
+          background: displayVal ? 'var(--green)' : 'rgba(0,0,0,0.08)',
+          color: displayVal ? 'var(--white)' : 'rgba(0,0,0,0.25)',
+          border: '3px solid var(--black)',
+          borderRadius: 14,
+          boxShadow: displayVal ? '4px 4px 0 var(--black)' : 'none',
+          cursor: displayVal ? 'pointer' : 'default',
+          transition: 'all 0.08s',
+        }}
+      >
+        ENTER ↵
+      </button>
     </div>
   )
 }
 
+// ── Sub-components ────────────────────────────────────────────────────────────
+
 function ScorePill({ label, score, color }: { label: string; score: number; color: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-      <div style={{ fontFamily: 'var(--font-title)', fontSize: 52, color, lineHeight: 1 }}>
+      <div style={{ fontFamily: 'var(--font-title)', fontSize: 48, color, lineHeight: 1 }}>
         {score}
       </div>
       <div className="label" style={{ opacity: 0.6 }}>
@@ -264,7 +299,43 @@ function ScorePill({ label, score, color }: { label: string; score: number; colo
   )
 }
 
-// ── Mock equation generator (client-side only) ────────────────────────────────
+function CalcButton({
+  label,
+  onClick,
+  textColor = 'var(--black)',
+}: {
+  label: string
+  onClick: () => void
+  textColor?: string
+}) {
+  const [pressed, setPressed] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onPointerDown={() => setPressed(true)}
+      onPointerUp={() => setPressed(false)}
+      onPointerLeave={() => setPressed(false)}
+      style={{
+        height: 64,
+        fontFamily: 'var(--font-title)',
+        fontSize: 26,
+        fontWeight: 900,
+        background: 'var(--white)',
+        border: '3px solid var(--black)',
+        borderRadius: 12,
+        boxShadow: pressed ? 'none' : '3px 3px 0 var(--black)',
+        transform: pressed ? 'translate(3px, 3px)' : 'none',
+        cursor: 'pointer',
+        color: textColor,
+        transition: 'transform 0.05s, box-shadow 0.05s',
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
+// ── Mock equation generator ───────────────────────────────────────────────────
 function mockGenerate(): Equation {
   const roll = Math.random()
   if (roll < 0.35) {

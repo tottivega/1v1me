@@ -53,7 +53,7 @@ export const MINIGAME_CONFIGS = {
   quickmaths: {
     label: 'Quick Maths',
     emoji: '🔢',
-    timeoutMs: 15000,
+    timeoutMs: 30000,
     category: 'math',
     description: 'Solve as many equations as you can in 15 seconds.',
     platforms: 'all',

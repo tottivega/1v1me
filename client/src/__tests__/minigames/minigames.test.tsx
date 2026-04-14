@@ -164,15 +164,16 @@ describe('ReactionTest', () => {
 // ── QuickMaths ─────────────────────────────────────────────────────────────────
 
 describe('QuickMaths', () => {
-  it('renders an equation input', async () => {
+  it('renders the calculator keypad', async () => {
     await renderGame('QuickMaths')
-    expect(screen.getByRole('spinbutton')).toBeInTheDocument()
+    for (const d of ['0', '1', '5', '9']) {
+      expect(screen.getByRole('button', { name: d })).toBeInTheDocument()
+    }
   })
 
-  it('typing an answer does not throw', async () => {
+  it('clicking a digit does not throw', async () => {
     await renderGame('QuickMaths')
-    const input = screen.getByRole('spinbutton')
-    expect(() => fireEvent.change(input, { target: { value: '42' } })).not.toThrow()
+    expect(() => fireEvent.click(screen.getByRole('button', { name: '4' }))).not.toThrow()
   })
 
   it('shows equation from server state', async () => {
@@ -205,7 +206,10 @@ describe('MemoryMatch', () => {
       isMockMatch: false,
       minigameState: {
         kind: 'memorymatch',
-        sequence: ['★', '●', '▲', '■', '♦'],
+        roundNum: 1,
+        seqLen: 3,
+        phase: 'memorize',
+        sequence: ['🔴', '🔵', '🟡'],
         submissions: {},
       },
     })
@@ -316,7 +320,7 @@ describe('ColorWord', () => {
     useGameStore.setState({
       wsStatus: 'connected',
       isMockMatch: false,
-      minigameState: { kind: 'colorword', word: 'red', inkColor: 'blue' },
+      minigameState: { kind: 'colorword', word: 'red', inkColor: 'blue', scores: {}, puzzleSeq: 1 },
     })
     await renderGame('ColorWord')
     // The word "RED" should appear as display text

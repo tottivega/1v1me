@@ -11,6 +11,7 @@ interface Equation {
 interface State {
   equations: Record<string, Equation> // current equation per player
   correct: Record<string, number> // correct answer count per player
+  lastCorrectTime: Record<string, number> // timestamp of each player's last correct answer
 }
 
 function generate(): Equation {
@@ -39,7 +40,7 @@ function generate(): Equation {
 function broadcastState(room: Room, state: State) {
   broadcast(room, 'GAME_UPDATE', {
     state: {
-      equations: state.equations, // includes answer — server validates anyway
+      equations: state.equations,
       correct: state.correct,
     },
   })
@@ -49,7 +50,7 @@ const quickmaths: MinigameModule = {
   id: 'quickmaths',
 
   start(room) {
-    const state: State = { equations: {}, correct: {} }
+    const state: State = { equations: {}, correct: {}, lastCorrectTime: {} }
     for (const p of room.players) {
       state.equations[p.id] = generate()
       state.correct[p.id] = 0
@@ -62,17 +63,18 @@ const quickmaths: MinigameModule = {
     if (input.type !== 'ANSWER') return
 
     const state = room.match!.minigameState as State | null
-    if (!state) return // input arrived after round resolved
+    if (!state) return
     if (!state.equations[playerId]) return
 
     const submitted = Number(input.answer)
     if (!Number.isFinite(submitted)) return
 
-    if (Math.round(submitted) === state.equations[playerId].answer) {
+    if (Math.round(submitted) === state.equations[playerId]!.answer) {
       state.correct[playerId] = (state.correct[playerId] ?? 0) + 1
+      state.lastCorrectTime[playerId] = Date.now()
     }
 
-    // Always swap to a new equation (wrong answer = no penalty, just a new problem)
+    // Always rotate to a new equation (wrong answer = new problem, no penalty)
     state.equations[playerId] = generate()
     broadcastState(room, state)
   },
@@ -83,12 +85,15 @@ const quickmaths: MinigameModule = {
     const c1 = state.correct[p1.id] ?? 0
     const c2 = state.correct[p2.id] ?? 0
 
-    let winnerId: string
-    if (c1 > c2) winnerId = p1.id
-    else if (c2 > c1) winnerId = p2.id
-    else winnerId = randomWinner(p1, p2)
+    if (c1 > c2) return { winnerId: p1.id, reason: 'timeout' }
+    if (c2 > c1) return { winnerId: p2.id, reason: 'timeout' }
 
-    return { winnerId, reason: 'timeout' }
+    // Tied on count — first to reach that score wins
+    const t1 = state.lastCorrectTime[p1.id] ?? Infinity
+    const t2 = state.lastCorrectTime[p2.id] ?? Infinity
+    if (t1 !== t2) return { winnerId: t1 < t2 ? p1.id : p2.id, reason: 'timeout' }
+
+    return { winnerId: randomWinner(p1, p2), reason: 'timeout' }
   },
 }
 
