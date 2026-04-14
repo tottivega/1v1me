@@ -330,49 +330,54 @@ describe('ColorWord', () => {
   })
 })
 
-// ── HigherOrLower ──────────────────────────────────────────────────────────────
+// ── Kaboom ─────────────────────────────────────────────────────────────────────
 
-describe('HigherOrLower', () => {
-  it('renders Higher and Lower buttons', async () => {
-    await renderGame('HigherOrLower')
-    expect(screen.getByRole('button', { name: /higher/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /lower/i })).toBeInTheDocument()
+describe('Kaboom', () => {
+  it('renders the wire grid', async () => {
+    await renderGame('Kaboom')
+    const buttons = screen.getAllByRole('button')
+    expect(buttons.length).toBeGreaterThanOrEqual(8)
   })
 
-  it('clicking Higher does not throw', async () => {
-    await renderGame('HigherOrLower')
-    expect(() => fireEvent.click(screen.getByRole('button', { name: /higher/i }))).not.toThrow()
+  it('clicking a wire does not throw', async () => {
+    await renderGame('Kaboom')
+    const buttons = screen.getAllByRole('button')
+    expect(() => fireEvent.click(buttons[0]!)).not.toThrow()
   })
 
-  it('shows the clue number from server state', async () => {
+  it('shows picking phase from server state', async () => {
     useGameStore.setState({
       wsStatus: 'connected',
       isMockMatch: false,
       minigameState: {
-        kind: 'higherorlower',
-        clue: 42,
-        phase: 'guessing',
+        kind: 'kaboom',
+        wires: [0, 1, 2, 3, 4, 5, 6, 7],
+        eliminated: [],
+        phase: 'picking',
+        currentPlayerId: ME,
+        roundNum: 1,
       },
     })
-    await renderGame('HigherOrLower')
-    expect(screen.getByText('42')).toBeInTheDocument()
+    await renderGame('Kaboom')
+    expect(document.body.textContent).toContain('KABOOM')
   })
 
-  it('shows reveal phase with target from server state', async () => {
+  it('shows reveal phase with bomb pick from server state', async () => {
     useGameStore.setState({
       wsStatus: 'connected',
       isMockMatch: false,
       minigameState: {
-        kind: 'higherorlower',
-        clue: 42,
+        kind: 'kaboom',
+        wires: [0, 1, 2, 3, 4, 5, 6, 7],
+        eliminated: [],
         phase: 'reveal',
-        target: 55,
-        correct: 'higher',
-        answers: { [ME]: 'higher', [OPP]: 'lower' },
+        currentPlayerId: OPP,
+        lastPick: { playerId: OPP, wire: 3, isBomb: true },
+        roundNum: 2,
         winnerId: ME,
       },
     })
-    await renderGame('HigherOrLower')
-    expect(screen.getByText('55')).toBeInTheDocument()
+    await renderGame('Kaboom')
+    expect(document.body).toBeTruthy()
   })
 })

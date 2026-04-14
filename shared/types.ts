@@ -90,12 +90,12 @@ export const MINIGAME_CONFIGS = {
     description: 'Get as many correct ink color picks as you can in 30 seconds.',
     platforms: 'all',
   },
-  higherorlower: {
-    label: 'Higher or Lower',
-    emoji: '📊',
-    timeoutMs: 10000,
+  kaboom: {
+    label: 'Kaboom!',
+    emoji: '💣',
+    timeoutMs: 0,
     category: 'luck',
-    description: 'A secret number is near the clue. Is it Higher or Lower?',
+    description: 'Take turns cutting wires. Cut the bomb wire and you lose!',
     platforms: 'all',
   },
 } as const satisfies Record<
@@ -201,16 +201,20 @@ export interface ColorWordState {
   winnerId?: string
 }
 
-export type HigherOrLowerPhase = 'guessing' | 'reveal'
-export interface HigherOrLowerState {
-  kind: 'higherorlower'
-  clue: number
-  phase: HigherOrLowerPhase
-  submitted?: string[]
-  target?: number
-  correct?: 'higher' | 'lower'
-  answers?: Record<string, 'higher' | 'lower'>
-  winnerId?: string
+export interface KaboomLastPick {
+  playerId: string
+  wire: number
+  isBomb: boolean
+}
+export interface KaboomState {
+  kind: 'kaboom'
+  wires: number[] // remaining wire indices not yet cut
+  eliminated: number[] // safely cut wire indices
+  phase: 'picking' | 'reveal'
+  currentPlayerId: string // whose turn it is to pick
+  lastPick?: KaboomLastPick // set during reveal phase
+  roundNum: number // increments each pick (for animation reset)
+  winnerId?: string // set when game resolves
 }
 
 /**
@@ -227,7 +231,7 @@ export type MinigameStateMap = {
   fastesttyper: FastestTyperState
   rockpaperscissors: RockPaperScissorsState
   colorword: ColorWordState
-  higherorlower: HigherOrLowerState
+  kaboom: KaboomState
 }
 
 /**
