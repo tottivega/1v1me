@@ -7,7 +7,9 @@ interface OpenRoom {
   createdAt: number
 }
 
-const API_BASE = (import.meta.env.VITE_WS_URL ?? 'ws://localhost:3001').replace(/^ws/, 'http')
+const API_BASE = (import.meta.env.VITE_WS_URL ?? 'ws://localhost:3001')
+  .replace(/^ws/, 'http')
+  .replace(/\/$/, '')
 
 function timeAgo(ts: number): string {
   const secs = Math.floor((Date.now() - ts) / 1000)
