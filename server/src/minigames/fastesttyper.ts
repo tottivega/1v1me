@@ -1,4 +1,4 @@
-import type { MinigameModule } from '../types'
+import type { MinigameModule, Room } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 import { twoPlayers, randomWinner } from '../utils/gameUtils'
@@ -53,6 +53,10 @@ const PHRASE_POOL = [
 ]
 
 const PHRASE_COUNT = 10
+// Shortest phrase is ~18 chars; at 120 WPM (~10 chars/s) that's ~1.8s.
+// We allow 0.8s minimum to be generous to fast typists while blocking
+// instant-complete exploits (10 phrases would take at least 8s to cheat through).
+const MIN_MS_PER_PHRASE = 800
 
 function pickPhrases(): string[] {
   const pool = [...PHRASE_POOL]
@@ -72,7 +76,7 @@ interface State {
   winnerId: string | null
 }
 
-function broadcastState(room: Parameters<typeof broadcast>[0], state: State) {
+function broadcastState(room: Room, state: State) {
   broadcast(room, 'GAME_UPDATE', {
     state: {
       phrases: state.phrases,
@@ -108,13 +112,23 @@ const fastesttyper: MinigameModule = {
     if (!state || state.resolved) return
 
     const newCompleted = Math.max(0, Math.min(PHRASE_COUNT, Math.floor(Number(input.completed))))
-    const chars = Math.max(0, Math.floor(Number(input.chars)))
+    // Cap chars at the length of the current sentence — prevents sending an
+    // inflated value to win the charProgress tiebreak without actually typing.
+    const phraseLen = state.phrases[newCompleted]?.length ?? 0
+    const chars = Math.max(0, Math.min(phraseLen, Math.floor(Number(input.chars))))
 
     if (!Number.isFinite(newCompleted) || !Number.isFinite(chars)) return
 
-    // Record timestamp when a new sentence is completed
     const prevCompleted = state.completed[playerId] ?? 0
+
+    // Only allow forward progress — never let completed decrease
+    if (newCompleted < prevCompleted) return
+    // Only allow one phrase completion per message (blocks instant-win exploits)
+    if (newCompleted > prevCompleted + 1) return
+    // Enforce a minimum time between phrase completions
     if (newCompleted > prevCompleted) {
+      const lastTime = state.lastCompleteTime[playerId] ?? 0
+      if (Date.now() - lastTime < MIN_MS_PER_PHRASE) return
       state.lastCompleteTime[playerId] = Date.now()
     }
 

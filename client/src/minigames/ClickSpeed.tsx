@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { playClickHit } from '../utils/sounds'
 import { type ClickSpeedState, CLICKSPEED_CPS_CAP } from '@shared/types'
@@ -20,6 +20,14 @@ export default function ClickSpeed() {
   const [isPressed, setIsPressed] = useState(false)
   const clickTimestamps = useRef<number[]>([])
   const btnRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (minigameState === null) {
+      setLocalMyClicks(0)
+      setLocalOppClicks(0)
+      clickTimestamps.current = []
+    }
+  }, [minigameState])
 
   const serverState = isLive ? (minigameState as ClickSpeedState | null) : null
   const myClicks = isLive

@@ -49,6 +49,17 @@ const coinflip: MinigameModule = {
       state.timer = null
     }
   },
+
+  getSafeState(room) {
+    const state = room.match?.minigameState as State | undefined
+    if (!state) return null
+    // Hide the winner until the flip animation resolves — spectators who join
+    // mid-round must not see winnerId before the reveal broadcast.
+    return {
+      phase: state.resolved ? 'result' : 'flipping',
+      ...(state.resolved ? { winnerId: state.winnerId } : {}),
+    }
+  },
 }
 
 export default coinflip

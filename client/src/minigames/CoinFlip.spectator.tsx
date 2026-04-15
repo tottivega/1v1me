@@ -1,8 +1,9 @@
 import type { SpectatorProps } from './spectatorHelpers'
 
-export default function CoinFlipSpectator({ state }: SpectatorProps) {
-  const s = state as { phase?: string } | null
+export default function CoinFlipSpectator({ state, players }: SpectatorProps) {
+  const s = state as { phase?: string; winnerId?: string } | null
   const isFlipping = !s || s.phase === 'flipping'
+  const winner = s?.winnerId ? players.find((p) => p.id === s.winnerId) : null
   return (
     <div
       style={{
@@ -32,7 +33,7 @@ export default function CoinFlipSpectator({ state }: SpectatorProps) {
         🪙
       </div>
       <div className="subtitle anim-pulse" style={{ opacity: 0.7 }}>
-        {isFlipping ? 'Flipping…' : 'Result!'}
+        {isFlipping ? 'Flipping…' : winner ? `${winner.nickname} wins!` : 'Result!'}
       </div>
       <style>{`@keyframes coin-spin{0%{transform:scaleX(1)}50%{transform:scaleX(0.1)}100%{transform:scaleX(1)}}`}</style>
     </div>

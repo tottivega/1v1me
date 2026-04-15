@@ -1,10 +1,14 @@
 import type { MinigameModule } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
-import { twoPlayers } from '../utils/gameUtils'
+import { twoPlayers, randomWinner } from '../utils/gameUtils'
 
 const COLORS = ['red', 'blue', 'green', 'yellow', 'orange', 'purple'] as const
 type Color = (typeof COLORS)[number]
+
+// Minimum ms a player must wait between picks. Human Stroop-task reaction is
+// 300ms+; 150ms is generous for network jitter but blocks rapid-fire exploits.
+const MIN_PICK_INTERVAL_MS = 150
 
 interface State {
   word: Color
@@ -12,6 +16,7 @@ interface State {
   scores: Record<string, number>
   firstTimes: Record<string, Record<number, number>> // playerId → score → timestamp
   puzzleSeq: number
+  lastPickTime: Record<string, number> // playerId → timestamp of last accepted pick
 }
 
 export function pick(): { word: Color; inkColor: Color } {
@@ -33,6 +38,7 @@ const colorword: MinigameModule = {
       scores: { [p1.id]: 0, [p2.id]: 0 },
       firstTimes: { [p1.id]: {}, [p2.id]: {} },
       puzzleSeq: 0,
+      lastPickTime: {},
     }
     room.match!.minigameState = state
     broadcast(room, 'GAME_UPDATE', {
@@ -46,6 +52,11 @@ const colorword: MinigameModule = {
     const state = room.match!.minigameState as State | null
     if (!state) return
     if (room.match!.roundResolved) return
+
+    const now = Date.now()
+    const lastPick = state.lastPickTime[playerId] ?? 0
+    if (now - lastPick < MIN_PICK_INTERVAL_MS) return
+    state.lastPickTime[playerId] = now
 
     const correct = input.color === state.inkColor
     if (correct) {
@@ -80,15 +91,21 @@ const colorword: MinigameModule = {
     } else if (s2 > s1) {
       winnerId = p2.id
     } else {
-      // Tie: whoever reached score N first wins
+      // Tie: whoever reached score N first wins; true dead-heat → random
       const tied = s1
       const t1 = (state.firstTimes[p1.id] ?? {})[tied] ?? Infinity
       const t2 = (state.firstTimes[p2.id] ?? {})[tied] ?? Infinity
-      winnerId = t1 <= t2 ? p1.id : p2.id
+      winnerId = t1 < t2 ? p1.id : t2 < t1 ? p2.id : randomWinner(p1, p2)
     }
 
     broadcast(room, 'GAME_UPDATE', {
-      state: { ...pick(), scores: state.scores, puzzleSeq: state.puzzleSeq + 1, winnerId },
+      state: {
+        word: state.word,
+        inkColor: state.inkColor,
+        scores: state.scores,
+        puzzleSeq: state.puzzleSeq,
+        winnerId,
+      },
     })
     return { winnerId, reason: 'timeout' }
   },

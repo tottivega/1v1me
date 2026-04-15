@@ -74,7 +74,9 @@ const reactiontest: MinigameModule = {
     if (state.signalTime === null) {
       // Too early — penalize
       state.penalized.add(playerId)
-      broadcast(room, 'GAME_UPDATE', { state: { phase: 'waiting', penalized: playerId } })
+      broadcast(room, 'GAME_UPDATE', {
+        state: { phase: 'waiting', penalized: [...state.penalized] },
+      })
 
       // If both penalized, treat as draw
       if (state.penalized.size >= room.players.length) {
@@ -101,6 +103,28 @@ const reactiontest: MinigameModule = {
   cleanup(room) {
     clearTimers(room.roomId)
   },
+
+  getSafeState(room) {
+    const state = room.match?.minigameState as State | undefined
+    if (!state) return null
+    // penalized is a Set — must be spread to an array so JSON.stringify serialises it
+    // correctly for spectators joining mid-round via SPECTATE_JOINED.
+    const base = {
+      penalized: [...state.penalized],
+      reactions: state.reactions,
+    }
+    if (state.resolved) {
+      return {
+        ...base,
+        phase: 'result',
+        winnerId: computeResult(
+          room.players.map((p) => p.id),
+          state
+        ).winnerId,
+      }
+    }
+    return { ...base, phase: state.signalTime !== null ? 'ready' : 'waiting' }
+  },
 }
 
 function resolve(room: Room, state: State): void {
@@ -122,7 +146,7 @@ function resolve(room: Room, state: State): void {
   })
 
   setTimeout(() => {
-    room.match!.onRoundDone?.(result)
+    room.match?.onRoundDone?.(result)
   }, 1500)
 }
 

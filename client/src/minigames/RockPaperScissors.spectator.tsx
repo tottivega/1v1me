@@ -6,12 +6,13 @@ export default function RockPaperScissorsSpectator({ state, players }: Spectator
   const s = state as {
     phase?: string
     throwNum?: number
+    history?: string[][]
     submitted?: string[]
     picks?: Record<string, string>
     scores?: Record<string, number>
   } | null
   const phase = s?.phase ?? 'picking'
-  const throwNum = s?.throwNum ?? 1
+  const throwNum = Math.min(3, (s?.history?.length ?? 0) + 1)
   const scores = s?.scores ?? {}
   const picks = s?.picks ?? {}
   const submitted = s?.submitted ?? Object.keys(picks)

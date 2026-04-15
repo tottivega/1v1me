@@ -44,7 +44,8 @@ function broadcastState(room: Room, state: State) {
       roundNum: state.roundNum,
       seqLen: state.seqLen,
       phase: state.phase,
-      sequence: state.sequence,
+      // Omit sequence during recall — clients must rely on memory, not the wire
+      sequence: state.phase === 'recall' ? [] : state.sequence,
       submissions: state.submissions,
     },
   })
@@ -161,6 +162,21 @@ const memorymatch: MinigameModule = {
     phaseTimer.clear(room.roomId)
     const state = room.match?.minigameState as State | undefined
     if (state) state.resolved = true
+  },
+
+  getSafeState(room) {
+    const state = room.match?.minigameState as State | undefined
+    if (!state) return null
+    // Always include the full sequence — this is called for spectators joining
+    // mid-round, who are read-only and should see what they're spectating.
+    // (The recall-phase hiding in broadcastState only applies to active players.)
+    return {
+      roundNum: state.roundNum,
+      seqLen: state.seqLen,
+      phase: state.phase,
+      sequence: state.sequence,
+      submissions: state.submissions,
+    }
   },
 }
 

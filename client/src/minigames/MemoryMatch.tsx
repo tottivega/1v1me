@@ -48,8 +48,30 @@ export default function MemoryMatch() {
   // ── Unified display values ────────────────────────────────────────────────
   const roundNum = isLive ? (serverState?.roundNum ?? 1) : mockRoundNum
   const seqLen = isLive ? (serverState?.seqLen ?? MIN_SEQ_LEN) : mockSeqLen
-  const sequence = isLive ? (serverState?.sequence ?? []) : mockSequence
   const serverPhase = serverState?.phase ?? null
+
+  // Cache the last non-empty server sequence. The server omits the sequence
+  // during the recall phase (anti-cheat), so by the time we reach the
+  // submitted phase serverState.sequence is []. We need the original to
+  // colour-code each answer slot green/red correctly.
+  const cachedSequenceRef = useRef<string[]>([])
+  useEffect(() => {
+    if (isLive) {
+      const s = serverState?.sequence
+      if (s && s.length > 0) cachedSequenceRef.current = s
+    }
+  }, [isLive, serverState?.sequence])
+  // Reset cache when entering a fresh game (before first GAME_UPDATE arrives)
+  useEffect(() => {
+    if (minigameState === null) cachedSequenceRef.current = []
+  }, [minigameState])
+
+  const sequence = isLive
+    ? (serverState?.sequence ?? []).length > 0
+      ? serverState!.sequence
+      : cachedSequenceRef.current
+    : mockSequence
+
   const submissions = serverState?.submissions
 
   const oppSubmitted = isLive ? !!(opponent && submissions?.[opponent.id]) : !!mockOppSub
