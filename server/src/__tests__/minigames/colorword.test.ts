@@ -2,6 +2,11 @@ import { describe, it, expect, vi } from 'vitest'
 import colorword, { pick } from '../../minigames/colorword'
 import { makeRoom, makeMatch } from '../helpers'
 
+type ColorWordState = {
+  puzzles: Record<string, { word: string; inkColor: string; seq: number }>
+  scores: Record<string, number>
+}
+
 describe('pick()', () => {
   it('word and inkColor are always different', () => {
     for (let i = 0; i < 200; i++) {
@@ -29,44 +34,43 @@ describe('pick()', () => {
 })
 
 describe('colorword — integration', () => {
-  it('correct pick increments score and advances puzzle without resolving round', () => {
+  it('correct pick increments score and advances only that player puzzle', () => {
     const room = makeRoom()
     const onRoundDone = vi.fn()
     room.match = makeMatch('p1', 'p2', { onRoundDone })
 
     colorword.start(room)
-    const state = room.match.minigameState as {
-      inkColor: string
-      scores: Record<string, number>
-      puzzleSeq: number
-    }
+    const state = room.match.minigameState as ColorWordState
 
-    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: state.inkColor })
+    const p1InkBefore = state.puzzles['p1']!.inkColor
+    const p2SeqBefore = state.puzzles['p2']!.seq
+
+    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: p1InkBefore })
 
     expect(onRoundDone).not.toHaveBeenCalled()
     expect(state.scores['p1']).toBe(1)
     expect(state.scores['p2']).toBe(0)
-    expect(state.puzzleSeq).toBe(1)
+    expect(state.puzzles['p1']!.seq).toBe(1) // p1 puzzle advanced
+    expect(state.puzzles['p2']!.seq).toBe(p2SeqBefore) // p2 puzzle unchanged
   })
 
-  it('wrong pick advances puzzle without scoring', () => {
+  it('wrong pick advances only that player puzzle without scoring', () => {
     const room = makeRoom()
     const onRoundDone = vi.fn()
     room.match = makeMatch('p1', 'p2', { onRoundDone })
 
     colorword.start(room)
-    const state = room.match.minigameState as {
-      word: string
-      scores: Record<string, number>
-      puzzleSeq: number
-    }
+    const state = room.match.minigameState as ColorWordState
 
-    // word is always different from inkColor — guaranteed by pick()
-    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: state.word })
+    const p1WordBefore = state.puzzles['p1']!.word // word is always different from inkColor
+    const p2SeqBefore = state.puzzles['p2']!.seq
+
+    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: p1WordBefore })
 
     expect(onRoundDone).not.toHaveBeenCalled()
     expect(state.scores['p1']).toBe(0)
-    expect(state.puzzleSeq).toBe(1)
+    expect(state.puzzles['p1']!.seq).toBe(1)
+    expect(state.puzzles['p2']!.seq).toBe(p2SeqBefore) // p2 puzzle unchanged
   })
 
   it('ignores input after round is resolved', () => {
@@ -76,11 +80,12 @@ describe('colorword — integration', () => {
 
     colorword.start(room)
     room.match!.roundResolved = true
-    const state = room.match.minigameState as { inkColor: string; puzzleSeq: number }
+    const state = room.match.minigameState as ColorWordState
+    const seqBefore = state.puzzles['p1']!.seq
 
-    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: state.inkColor })
+    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: state.puzzles['p1']!.inkColor })
 
-    expect(state.puzzleSeq).toBe(0) // no change
+    expect(state.puzzles['p1']!.seq).toBe(seqBefore) // no change
   })
 
   it('getResult returns player with higher score', () => {
@@ -91,14 +96,12 @@ describe('colorword — integration', () => {
     colorword.start(room)
 
     // Give p1 two correct picks (advance past rate-limit between each), p2 one correct pick
-    const s1 = room.match.minigameState as { inkColor: string }
-    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: s1.inkColor })
+    const s = room.match.minigameState as ColorWordState
+    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: s.puzzles['p1']!.inkColor })
     vi.advanceTimersByTime(200)
-    const s2 = room.match.minigameState as { inkColor: string }
-    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: s2.inkColor })
+    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: s.puzzles['p1']!.inkColor })
     vi.advanceTimersByTime(200)
-    const s3 = room.match.minigameState as { inkColor: string }
-    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s3.inkColor })
+    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s.puzzles['p2']!.inkColor })
 
     const result = colorword.getResult(room)
     expect(result.winnerId).toBe('p1')
@@ -112,16 +115,14 @@ describe('colorword — integration', () => {
     room.match = makeMatch('p1', 'p2', {})
 
     colorword.start(room)
+    const s = room.match.minigameState as ColorWordState
 
     // p1 gets 1, p2 gets 2 (advance past rate-limit between each)
-    const s1 = room.match.minigameState as { inkColor: string }
-    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: s1.inkColor })
+    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: s.puzzles['p1']!.inkColor })
     vi.advanceTimersByTime(200)
-    const s2 = room.match.minigameState as { inkColor: string }
-    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s2.inkColor })
+    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s.puzzles['p2']!.inkColor })
     vi.advanceTimersByTime(200)
-    const s3 = room.match.minigameState as { inkColor: string }
-    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s3.inkColor })
+    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s.puzzles['p2']!.inkColor })
 
     const result = colorword.getResult(room)
     expect(result.winnerId).toBe('p2')

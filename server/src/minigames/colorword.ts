@@ -10,12 +10,16 @@ type Color = (typeof COLORS)[number]
 // 300ms+; 150ms is generous for network jitter but blocks rapid-fire exploits.
 const MIN_PICK_INTERVAL_MS = 150
 
-interface State {
+interface PlayerPuzzle {
   word: Color
   inkColor: Color
+  seq: number
+}
+
+interface State {
+  puzzles: Record<string, PlayerPuzzle> // per-player independent puzzles
   scores: Record<string, number>
   firstTimes: Record<string, Record<number, number>> // playerId → score → timestamp
-  puzzleSeq: number
   lastPickTime: Record<string, number> // playerId → timestamp of last accepted pick
 }
 
@@ -31,18 +35,20 @@ const colorword: MinigameModule = {
 
   start(room) {
     const [p1, p2] = twoPlayers(room)
-    const { word, inkColor } = pick()
+    const p1Puzzle = pick()
+    const p2Puzzle = pick()
     const state: State = {
-      word,
-      inkColor,
+      puzzles: {
+        [p1.id]: { ...p1Puzzle, seq: 0 },
+        [p2.id]: { ...p2Puzzle, seq: 0 },
+      },
       scores: { [p1.id]: 0, [p2.id]: 0 },
       firstTimes: { [p1.id]: {}, [p2.id]: {} },
-      puzzleSeq: 0,
       lastPickTime: {},
     }
     room.match!.minigameState = state
     broadcast(room, 'GAME_UPDATE', {
-      state: { word, inkColor, scores: state.scores, puzzleSeq: 0 },
+      state: { puzzles: state.puzzles, scores: state.scores },
     })
   },
 
@@ -58,7 +64,10 @@ const colorword: MinigameModule = {
     if (now - lastPick < MIN_PICK_INTERVAL_MS) return
     state.lastPickTime[playerId] = now
 
-    const correct = input.color === state.inkColor
+    const puzzle = state.puzzles[playerId]
+    if (!puzzle) return
+
+    const correct = input.color === puzzle.inkColor
     if (correct) {
       state.scores[playerId] = (state.scores[playerId] ?? 0) + 1
       const score = state.scores[playerId]!
@@ -68,14 +77,12 @@ const colorword: MinigameModule = {
       }
     }
 
-    // New puzzle regardless of correct or wrong
+    // Advance only this player's puzzle
     const { word, inkColor } = pick()
-    state.word = word
-    state.inkColor = inkColor
-    state.puzzleSeq++
+    state.puzzles[playerId] = { word, inkColor, seq: puzzle.seq + 1 }
 
     broadcast(room, 'GAME_UPDATE', {
-      state: { word, inkColor, scores: state.scores, puzzleSeq: state.puzzleSeq },
+      state: { puzzles: state.puzzles, scores: state.scores },
     })
   },
 
@@ -100,10 +107,8 @@ const colorword: MinigameModule = {
 
     broadcast(room, 'GAME_UPDATE', {
       state: {
-        word: state.word,
-        inkColor: state.inkColor,
+        puzzles: state.puzzles,
         scores: state.scores,
-        puzzleSeq: state.puzzleSeq,
         winnerId,
       },
     })

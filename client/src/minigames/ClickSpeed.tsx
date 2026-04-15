@@ -98,6 +98,8 @@ export default function ClickSpeed() {
           onMouseUp={() => setIsPressed(false)}
           onMouseLeave={() => setIsPressed(false)}
           onTouchStart={(e) => {
+            // Only register the primary touch — ignore multi-finger taps
+            if (e.touches.length > 1) return
             e.preventDefault()
             setIsPressed(true)
             const t = e.touches[0]!

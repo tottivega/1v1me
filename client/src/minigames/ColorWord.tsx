@@ -39,12 +39,13 @@ export default function ColorWord() {
 
   // ── Live mode ─────────────────────────────────────────────────────────────
   const server = isLive ? (minigameState as ColorWordState | null) : null
+  const myPuzzle = server?.puzzles?.[myPlayerId] ?? null
   const [picked, setPicked] = useState<Color | null>(null)
 
-  // Clear picked when server sends a new puzzle
+  // Clear picked when server sends my new puzzle
   useEffect(() => {
     setPicked(null)
-  }, [server?.puzzleSeq])
+  }, [myPuzzle?.seq])
 
   // ── Mock mode ─────────────────────────────────────────────────────────────
   const [mockPuzzle, setMockPuzzle] = useState<{ word: Color; ink: Color } | null>(null)
@@ -121,8 +122,9 @@ export default function ColorWord() {
   }, [isLive, myPlayerId, opponent?.id])
 
   // ── Unified values ────────────────────────────────────────────────────────
-  const word = isLive ? (server?.word ?? null) : (mockPuzzle?.word ?? null)
-  const inkColor = isLive ? (server?.inkColor ?? null) : (mockPuzzle?.ink ?? null)
+  const word = isLive ? (myPuzzle?.word ?? null) : (mockPuzzle?.word ?? null)
+  const inkColor = isLive ? (myPuzzle?.inkColor ?? null) : (mockPuzzle?.ink ?? null)
+  const puzzleSeq = isLive ? (myPuzzle?.seq ?? 0) : null
   const myScore = isLive ? (server?.scores?.[myPlayerId] ?? 0) : mockScores.my
   const oppScore = isLive ? (server?.scores?.[opponent?.id ?? ''] ?? 0) : mockScores.opp
   const winnerId = isLive ? (server?.winnerId ?? null) : mockWinnerId
@@ -261,12 +263,12 @@ export default function ColorWord() {
 
           {/* Color word — key forces re-mount animation on each new puzzle */}
           <div
-            key={`${word}-${inkColor}`}
+            key={isLive ? puzzleSeq : `${word}-${inkColor}`}
             className="anim-pop"
             style={{
               fontFamily: 'var(--font-title)',
               fontSize: 72,
-              color: COLOR_CSS[inkColor],
+              color: COLOR_CSS[inkColor!],
               WebkitTextStroke: '2px var(--black)',
               textShadow: '3px 3px 0 var(--black)',
               letterSpacing: 4,

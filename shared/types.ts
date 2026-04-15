@@ -193,12 +193,15 @@ export interface RockPaperScissorsStateReveal {
 export type RockPaperScissorsState = RockPaperScissorsStatePicking | RockPaperScissorsStateReveal
 
 export type ColorWordColor = 'red' | 'blue' | 'green' | 'yellow' | 'orange' | 'purple'
-export interface ColorWordState {
-  kind: 'colorword'
+export interface ColorWordPlayerPuzzle {
   word: ColorWordColor
   inkColor: ColorWordColor
+  seq: number
+}
+export interface ColorWordState {
+  kind: 'colorword'
+  puzzles: Record<string, ColorWordPlayerPuzzle>
   scores: Record<string, number>
-  puzzleSeq: number
   winnerId?: string
 }
 

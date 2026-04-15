@@ -144,142 +144,145 @@ export default function QuickMaths() {
         : 'var(--shadow)'
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 20,
-        flex: 1,
-        padding: 24,
-      }}
-    >
-      {/* Title */}
+    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
       <div
         style={{
-          fontFamily: 'var(--font-title)',
-          fontSize: 28,
-          color: 'var(--blue)',
-          textAlign: 'center',
-        }}
-      >
-        QUICK MATHS 🔢
-      </div>
-
-      {/* Score bar */}
-      <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-        <ScorePill label="You" score={myScore} color="var(--blue)" />
-        <span style={{ fontFamily: 'var(--font-title)', fontSize: 20, opacity: 0.3 }}>vs</span>
-        <ScorePill label={oppName} score={oppScore} color="var(--orange)" />
-      </div>
-
-      {/* Calculator display */}
-      <div
-        style={{
-          background: '#1a2a1a',
-          border: '3px solid var(--black)',
-          borderRadius: 16,
-          boxShadow: flashShadow,
-          padding: '14px 20px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 20,
+          margin: 'auto',
+          padding: 24,
           width: '100%',
-          maxWidth: 320,
-          transition: 'box-shadow 0.1s',
         }}
       >
-        {/* Question row */}
+        {/* Title */}
         <div
           style={{
-            fontFamily: 'monospace',
+            fontFamily: 'var(--font-title)',
             fontSize: 28,
-            color: '#5aaa5a',
-            opacity: 0.85,
-            letterSpacing: 2,
-            marginBottom: 6,
+            color: 'var(--blue)',
+            textAlign: 'center',
           }}
         >
-          {question} = <span style={{ color: '#00e676' }}>{displayVal}</span>
+          QUICK MATHS 🔢
         </div>
 
-        {/* Flash feedback */}
-        {flash === 'correct' && (
-          <div
-            className="anim-pop"
-            style={{
-              color: '#00e676',
-              fontWeight: 900,
-              fontSize: 13,
-              textAlign: 'right',
-              marginTop: 4,
-            }}
-          >
-            ✓ Correct!
-          </div>
-        )}
-        {flash === 'wrong' && (
-          <div
-            className="anim-shake"
-            style={{
-              color: '#ff5555',
-              fontWeight: 900,
-              fontSize: 13,
-              textAlign: 'right',
-              marginTop: 4,
-            }}
-          >
-            ✗ Next one →
-          </div>
-        )}
-      </div>
+        {/* Score bar */}
+        <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+          <ScorePill label="You" score={myScore} color="var(--blue)" />
+          <span style={{ fontFamily: 'var(--font-title)', fontSize: 20, opacity: 0.3 }}>vs</span>
+          <ScorePill label={oppName} score={oppScore} color="var(--orange)" />
+        </div>
 
-      {/* Keypad */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 80px)',
-          gap: 8,
-        }}
-      >
-        {[7, 8, 9, 4, 5, 6, 1, 2, 3].map((d) => (
+        {/* Calculator display */}
+        <div
+          style={{
+            background: '#1a2a1a',
+            border: '3px solid var(--black)',
+            borderRadius: 16,
+            boxShadow: flashShadow,
+            padding: '14px 20px',
+            width: '100%',
+            maxWidth: 320,
+            transition: 'box-shadow 0.1s',
+          }}
+        >
+          {/* Question row */}
+          <div
+            style={{
+              fontFamily: 'monospace',
+              fontSize: 28,
+              color: '#5aaa5a',
+              opacity: 0.85,
+              letterSpacing: 2,
+              marginBottom: 6,
+            }}
+          >
+            {question} = <span style={{ color: '#00e676' }}>{displayVal}</span>
+          </div>
+
+          {/* Flash feedback */}
+          {flash === 'correct' && (
+            <div
+              className="anim-pop"
+              style={{
+                color: '#00e676',
+                fontWeight: 900,
+                fontSize: 13,
+                textAlign: 'right',
+                marginTop: 4,
+              }}
+            >
+              ✓ Correct!
+            </div>
+          )}
+          {flash === 'wrong' && (
+            <div
+              className="anim-shake"
+              style={{
+                color: '#ff5555',
+                fontWeight: 900,
+                fontSize: 13,
+                textAlign: 'right',
+                marginTop: 4,
+              }}
+            >
+              ✗ Next one →
+            </div>
+          )}
+        </div>
+
+        {/* Keypad */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 80px)',
+            gap: 8,
+          }}
+        >
+          {[7, 8, 9, 4, 5, 6, 1, 2, 3].map((d) => (
+            <CalcButton
+              key={d}
+              label={String(d)}
+              onClick={() => setDisplayVal((v) => (v.length >= MAX_DIGITS ? v : v + d))}
+            />
+          ))}
+          <CalcButton label="C" onClick={() => setDisplayVal('')} textColor="var(--red)" />
           <CalcButton
-            key={d}
-            label={String(d)}
-            onClick={() => setDisplayVal((v) => (v.length >= MAX_DIGITS ? v : v + d))}
+            label="0"
+            onClick={() => setDisplayVal((v) => (v.length >= MAX_DIGITS ? v : v + '0'))}
           />
-        ))}
-        <CalcButton label="C" onClick={() => setDisplayVal('')} textColor="var(--red)" />
-        <CalcButton
-          label="0"
-          onClick={() => setDisplayVal((v) => (v.length >= MAX_DIGITS ? v : v + '0'))}
-        />
-        <CalcButton
-          label="⌫"
-          onClick={() => setDisplayVal((v) => v.slice(0, -1))}
-          textColor="var(--orange)"
-        />
-      </div>
+          <CalcButton
+            label="⌫"
+            onClick={() => setDisplayVal((v) => v.slice(0, -1))}
+            textColor="var(--orange)"
+          />
+        </div>
 
-      {/* Enter button */}
-      <button
-        onClick={handleSubmit}
-        disabled={!displayVal}
-        style={{
-          width: 256,
-          height: 56,
-          fontFamily: 'var(--font-title)',
-          fontSize: 20,
-          letterSpacing: 2,
-          background: displayVal ? 'var(--green)' : 'rgba(0,0,0,0.08)',
-          color: displayVal ? 'var(--white)' : 'rgba(0,0,0,0.25)',
-          border: '3px solid var(--black)',
-          borderRadius: 14,
-          boxShadow: displayVal ? '4px 4px 0 var(--black)' : 'none',
-          cursor: displayVal ? 'pointer' : 'default',
-          transition: 'all 0.08s',
-        }}
-      >
-        ENTER ↵
-      </button>
+        {/* Enter button */}
+        <button
+          onClick={handleSubmit}
+          disabled={!displayVal}
+          style={{
+            width: 256,
+            height: 56,
+            fontFamily: 'var(--font-title)',
+            fontSize: 20,
+            letterSpacing: 2,
+            background: displayVal ? 'var(--green)' : 'rgba(0,0,0,0.08)',
+            color: displayVal ? 'var(--white)' : 'rgba(0,0,0,0.25)',
+            border: '3px solid var(--black)',
+            borderRadius: 14,
+            boxShadow: displayVal ? '4px 4px 0 var(--black)' : 'none',
+            cursor: displayVal ? 'pointer' : 'default',
+            transition: 'all 0.08s',
+          }}
+        >
+          ENTER ↵
+        </button>
+      </div>
     </div>
   )
 }

@@ -320,7 +320,14 @@ describe('ColorWord', () => {
     useGameStore.setState({
       wsStatus: 'connected',
       isMockMatch: false,
-      minigameState: { kind: 'colorword', word: 'red', inkColor: 'blue', scores: {}, puzzleSeq: 1 },
+      minigameState: {
+        kind: 'colorword',
+        puzzles: {
+          [ME]: { word: 'red', inkColor: 'blue', seq: 1 },
+          [OPP]: { word: 'green', inkColor: 'yellow', seq: 0 },
+        },
+        scores: {},
+      },
     })
     await renderGame('ColorWord')
     // The word "RED" should appear as display text
