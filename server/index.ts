@@ -57,6 +57,17 @@ const server = createServer((req, res) => {
 
   if (url === '/rooms') {
     const cors = isProd && ALLOWED_ORIGIN ? ALLOWED_ORIGIN : '*'
+    // Handle CORS preflight
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, {
+        'Access-Control-Allow-Origin': cors,
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Max-Age': '86400',
+      })
+      res.end()
+      return
+    }
     const qs = new URLSearchParams(req.url?.split('?')[1] ?? '')
     const limit = Math.min(50, Math.max(1, parseInt(qs.get('limit') ?? '20', 10) || 20))
     const offset = Math.max(0, parseInt(qs.get('offset') ?? '0', 10) || 0)
