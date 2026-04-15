@@ -6,7 +6,7 @@
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",
     "install:all": "npm install && npm install --prefix server && npm install --prefix client",
-    "prepare": "husky",
+    "prepare": "node -e \"if (!process.env.CI) require('child_process').execSync('husky', {stdio:'inherit'})\"",
     "format": "prettier --write \"server/src/**/*.ts\" \"client/src/**/*.{ts,tsx}\" \"shared/**/*.ts\"",
     "format:check": "prettier --check \"server/src/**/*.ts\" \"client/src/**/*.{ts,tsx}\" \"shared/**/*.ts\"",
     "test:e2e": "npm install --prefix tests && npm test --prefix tests",
