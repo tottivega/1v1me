@@ -42,10 +42,10 @@ describe('colorword — integration', () => {
     colorword.start(room)
     const state = room.match.minigameState as ColorWordState
 
-    const p1InkBefore = state.puzzles['p1']!.inkColor
+    const p1WordBefore = state.puzzles['p1']!.word
     const p2SeqBefore = state.puzzles['p2']!.seq
 
-    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: p1InkBefore })
+    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: p1WordBefore })
 
     expect(onRoundDone).not.toHaveBeenCalled()
     expect(state.scores['p1']).toBe(1)
@@ -62,10 +62,10 @@ describe('colorword — integration', () => {
     colorword.start(room)
     const state = room.match.minigameState as ColorWordState
 
-    const p1WordBefore = state.puzzles['p1']!.word // word is always different from inkColor
+    const p1InkBefore = state.puzzles['p1']!.inkColor // inkColor is always different from word
     const p2SeqBefore = state.puzzles['p2']!.seq
 
-    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: p1WordBefore })
+    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: p1InkBefore })
 
     expect(onRoundDone).not.toHaveBeenCalled()
     expect(state.scores['p1']).toBe(0)
@@ -97,11 +97,11 @@ describe('colorword — integration', () => {
 
     // Give p1 two correct picks (advance past rate-limit between each), p2 one correct pick
     const s = room.match.minigameState as ColorWordState
-    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: s.puzzles['p1']!.inkColor })
+    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: s.puzzles['p1']!.word })
     vi.advanceTimersByTime(200)
-    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: s.puzzles['p1']!.inkColor })
+    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: s.puzzles['p1']!.word })
     vi.advanceTimersByTime(200)
-    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s.puzzles['p2']!.inkColor })
+    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s.puzzles['p2']!.word })
 
     const result = colorword.getResult(room)
     expect(result.winnerId).toBe('p1')
@@ -118,11 +118,11 @@ describe('colorword — integration', () => {
     const s = room.match.minigameState as ColorWordState
 
     // p1 gets 1, p2 gets 2 (advance past rate-limit between each)
-    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: s.puzzles['p1']!.inkColor })
+    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: s.puzzles['p1']!.word })
     vi.advanceTimersByTime(200)
-    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s.puzzles['p2']!.inkColor })
+    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s.puzzles['p2']!.word })
     vi.advanceTimersByTime(200)
-    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s.puzzles['p2']!.inkColor })
+    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s.puzzles['p2']!.word })
 
     const result = colorword.getResult(room)
     expect(result.winnerId).toBe('p2')

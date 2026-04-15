@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, Suspense } from 'react'
+import { useEffect, useState, useRef, Suspense, Component, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '../../store/gameStore'
 import { MINIGAME_CONFIGS } from '@shared/types'
@@ -106,6 +106,54 @@ function RoundEndOverlay() {
       )}
     </div>
   )
+}
+
+// Catches "Failed to fetch dynamically imported module" errors that happen when
+// Vercel deploys a new build while a user is mid-game (old chunk hashes disappear).
+class ChunkErrorBoundary extends Component<
+  { children: ReactNode; emoji: string; label: string },
+  { failed: boolean }
+> {
+  state = { failed: false }
+
+  static getDerivedStateFromError(err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (
+      msg.includes('Failed to fetch dynamically imported module') ||
+      msg.includes('Importing a module script failed')
+    ) {
+      return { failed: true }
+    }
+    return null // let other errors propagate normally
+  }
+
+  render() {
+    if (this.state.failed) {
+      return (
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 16,
+            padding: 32,
+            textAlign: 'center',
+          }}
+        >
+          <div style={{ fontSize: 48 }}>{this.props.emoji}</div>
+          <div className="label" style={{ opacity: 0.7 }}>
+            New version deployed — reload to play {this.props.label}
+          </div>
+          <button className="btn btn-orange" onClick={() => window.location.reload()}>
+            Reload
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
 }
 
 export default function MatchView() {
@@ -574,26 +622,28 @@ export default function MatchView() {
       {/* Minigame area */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {MinigameComp ? (
-          <Suspense
-            fallback={
-              <div
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  opacity: 0.5,
-                }}
-              >
-                <div style={{ fontSize: 48 }}>{cfg?.emoji ?? '🎮'}</div>
-                <div className="label">{cfg?.label ?? 'Loading…'}</div>
-              </div>
-            }
-          >
-            <MinigameComp />
-          </Suspense>
+          <ChunkErrorBoundary emoji={cfg?.emoji ?? '🎮'} label={cfg?.label ?? 'game'}>
+            <Suspense
+              fallback={
+                <div
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    opacity: 0.5,
+                  }}
+                >
+                  <div style={{ fontSize: 48 }}>{cfg?.emoji ?? '🎮'}</div>
+                  <div className="label">{cfg?.label ?? 'Loading…'}</div>
+                </div>
+              }
+            >
+              <MinigameComp />
+            </Suspense>
+          </ChunkErrorBoundary>
         ) : (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="subtitle" style={{ opacity: 0.5 }}>

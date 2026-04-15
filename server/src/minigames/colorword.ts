@@ -67,7 +67,7 @@ const colorword: MinigameModule = {
     const puzzle = state.puzzles[playerId]
     if (!puzzle) return
 
-    const correct = input.color === puzzle.inkColor
+    const correct = input.color === puzzle.word
     if (correct) {
       state.scores[playerId] = (state.scores[playerId] ?? 0) + 1
       const score = state.scores[playerId]!

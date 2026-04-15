@@ -87,7 +87,7 @@ export const MINIGAME_CONFIGS = {
     emoji: '🎨',
     timeoutMs: 30000,
     category: 'reflex',
-    description: 'Get as many correct ink color picks as you can in 30 seconds.',
+    description: "Click the color the word spells — not the color it's written in. 30 seconds.",
     platforms: 'all',
   },
   kaboom: {

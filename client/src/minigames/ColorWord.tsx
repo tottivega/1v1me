@@ -136,12 +136,12 @@ export default function ColorWord() {
     if (isLive) {
       if (picked) return // already waiting for server response
       setPicked(color)
-      if (color === inkColor) playCorrect()
+      if (color === word) playCorrect()
       else playWrong()
       sendInput({ type: 'PICK_COLOR', color })
     } else {
       if (!mockPuzzle || endedRef.current) return
-      const correct = color === mockInkRef.current
+      const correct = color === mockPuzzle.word
       if (correct) {
         playCorrect()
         mockScoresRef.current.my++
@@ -180,7 +180,7 @@ export default function ColorWord() {
             textAlign: 'center',
           }}
         >
-          CLICK THE INK COLOR 🎨
+          CLICK THE WORD 🧠
         </div>
         <div
           style={{
@@ -237,7 +237,7 @@ export default function ColorWord() {
           textAlign: 'center',
         }}
       >
-        CLICK THE INK COLOR 🎨
+        CLICK THE WORD 🧠
       </div>
 
       {/* Live scores */}
@@ -258,7 +258,7 @@ export default function ColorWord() {
               textAlign: 'center',
             }}
           >
-            What color is the <em>text itself</em>? (Not the word it spells)
+            Click what the word <em>says</em> — ignore the color it's written in!
           </p>
 
           {/* Color word — key forces re-mount animation on each new puzzle */}
