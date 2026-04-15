@@ -7,7 +7,9 @@ export function startTimer(room: Room, onTimeout: () => void): void {
   if (!room.match) return
   stopTimer(room)
 
-  room.match.paused = false
+  // Do NOT reset paused here — it is owned by pauseTimer/resumeTimer.
+  // Overwriting it here would undo a disconnect-pause if a new round accidentally
+  // starts while a player is still reconnecting (see roundReadyTimer fix).
 
   room.match.tickInterval = setInterval(() => {
     if (!room.match || room.match.paused) return

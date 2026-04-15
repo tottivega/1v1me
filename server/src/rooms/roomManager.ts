@@ -230,15 +230,28 @@ export function handleReconnect(
   })
 
   if (room.match) {
+    // Always send ROUND_START first — establishes currentRound / currentMinigame context.
     send(player.ws, 'ROUND_START', {
       round: room.match.currentRound,
       minigameId: room.match.currentMinigame,
       timeoutMs: room.match.timeoutMs,
       scores: room.match.scores, // restore scoreboard — ROOM_JOINED resets it to {}
     })
-    send(player.ws, 'TIMER_TICK', { remainingMs: room.match.remainingMs })
-    const safeState = room.match.getSafeState?.(room) ?? room.match.minigameState
-    send(player.ws, 'GAME_UPDATE', { state: safeState })
+
+    if (room.status === 'round_end') {
+      // Between rounds: follow up with ROUND_END so the client shows the result
+      // overlay rather than a blank playing state.
+      const lastRound = room.match.roundHistory[room.match.roundHistory.length - 1]
+      send(player.ws, 'ROUND_END', {
+        winnerId: lastRound?.winnerId ?? null,
+        scores: room.match.scores,
+        reason: 'timeout' as const,
+      })
+    } else {
+      send(player.ws, 'TIMER_TICK', { remainingMs: room.match.remainingMs })
+      const safeState = room.match.getSafeState?.(room) ?? room.match.minigameState
+      send(player.ws, 'GAME_UPDATE', { state: safeState })
+    }
   }
 
   console.log(`[Room] ${player.nickname} reconnected to room ${roomId}`)

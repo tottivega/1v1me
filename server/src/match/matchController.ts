@@ -228,7 +228,12 @@ export function resolveRound(room: Room, result: MinigameResult): void {
     // Wait for both players to confirm before starting next round
     room.match.roundReadyVotes = new Set()
     room.match.roundReadyTimer = setTimeout(() => {
-      if (room.match && room.status === 'round_end') startRound(room)
+      if (!room.match || room.status !== 'round_end') return
+      // Don't auto-advance while a player is in the reconnect window — their
+      // pauseTimer call would be undone by startTimer and the game would tick
+      // against an absent player. The forfeit timer handles the no-show case.
+      if (room.players.some((p) => !p.connected)) return
+      startRound(room)
     }, ROUND_READY_TIMEOUT_MS)
   }
 }
