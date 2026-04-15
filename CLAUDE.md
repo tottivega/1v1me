@@ -222,7 +222,7 @@ reconnectSaved()            // tries reconnect from localStorage saved { roomId,
 | `soundVolume` | Volume 0–100 |
 | `1v1me_streak` | Win streak counter |
 | `1v1me_history` | Last 5 `MatchHistoryEntry[]` (JSON) |
-| `1v1me_reconnect` | `{ roomId, playerId }` for auto-reconnect |
+| `1v1me_session` | `{ roomId, playerId }` for auto-reconnect |
 
 ---
 

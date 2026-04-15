@@ -178,6 +178,33 @@ const rockpaperscissors: MinigameModule = {
     const state = room.match?.minigameState as State | undefined
     if (state) state.resolved = true
   },
+
+  getSafeState(room) {
+    const state = room.match?.minigameState as State | undefined
+    if (!state) return null
+    // During picking, hide each player's choice until both have locked in.
+    // Only send who has submitted (submitted: string[]), not what they chose.
+    // During reveal, picks are already public — include them, and derive the
+    // throw winner from the most recent decisive-throw history entry.
+    if (state.phase === 'reveal') {
+      const lastDecisive = state.history[state.history.length - 1]
+      return {
+        phase: 'reveal',
+        throwNum: state.throwNum,
+        picks: state.picks,
+        throwWinnerId: lastDecisive?.winnerId ?? null,
+        scores: state.scores,
+        history: state.history,
+      }
+    }
+    return {
+      phase: 'picking',
+      throwNum: state.throwNum,
+      submitted: Object.keys(state.picks),
+      scores: state.scores,
+      history: state.history,
+    }
+  },
 }
 
 export default rockpaperscissors

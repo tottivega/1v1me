@@ -23,12 +23,12 @@ const coinflip: MinigameModule = {
 
     // Resolve after short delay so client can animate the coin flip
     state.timer = setTimeout(() => {
-      if (room.match!.roundResolved) return
+      if (room.match?.roundResolved) return
       state.resolved = true
       broadcast(room, 'GAME_UPDATE', { state: { phase: 'result', winnerId } })
 
       setTimeout(() => {
-        room.match!.onRoundDone?.({ winnerId, reason: 'completed' })
+        room.match?.onRoundDone?.({ winnerId, reason: 'completed' })
       }, 1200)
     }, 4000)
   },

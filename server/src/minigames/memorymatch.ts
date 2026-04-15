@@ -167,14 +167,15 @@ const memorymatch: MinigameModule = {
   getSafeState(room) {
     const state = room.match?.minigameState as State | undefined
     if (!state) return null
-    // Always include the full sequence — this is called for spectators joining
-    // mid-round, who are read-only and should see what they're spectating.
-    // (The recall-phase hiding in broadcastState only applies to active players.)
+    // Mirror the same hiding logic as broadcastState: omit the sequence during
+    // recall so that a reconnecting player cannot read what they should have
+    // memorised. Spectators joining during recall also get the hidden sequence —
+    // they can follow the submissions without seeing the answer.
     return {
       roundNum: state.roundNum,
       seqLen: state.seqLen,
       phase: state.phase,
-      sequence: state.sequence,
+      sequence: state.phase === 'recall' ? [] : state.sequence,
       submissions: state.submissions,
     }
   },
