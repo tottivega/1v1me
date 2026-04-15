@@ -61,7 +61,40 @@ cp server/.env.example server/.env
 
 ## PRODUCTION DEPLOY
 
-> TODO — see `server/fly.toml` (Fly.io) and `client/vercel.json` (Vercel) for deploy config. Full deploy instructions to be written once infrastructure is finalized.
+**Live:** https://1v1me-eta.vercel.app
+
+### Deploying a new version
+
+**Client (Vercel)** — auto-deploys on every push to `master`. Nothing extra needed.
+
+```bash
+git push
+```
+
+**Server (Fly.io)** — does NOT auto-deploy. Trigger it manually after pushing.
+
+```bash
+git push
+fly deploy --config server/fly.toml
+```
+
+The deploy takes ~30 seconds. Connected players receive a `SERVER_RESTARTING` notice and see a reconnect banner.
+
+**Rule of thumb:** if you only changed `client/`, pushing to GitHub is enough. If you touched anything under `server/` or `shared/`, run `fly deploy` too.
+
+### Updating secrets
+
+```bash
+fly secrets set KEY="value" --config server/fly.toml
+fly deploy --config server/fly.toml
+```
+
+### Checking server health / logs
+
+```bash
+curl https://1v1me-server.fly.dev/health
+fly logs --config server/fly.toml
+```
 
 ---
 
