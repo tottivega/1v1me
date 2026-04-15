@@ -40,6 +40,9 @@ export interface MatchState {
   onRoundDone: ((result: MinigameResult) => void) | null
   roundReadyVotes: Set<string>
   roundReadyTimer: ReturnType<typeof setTimeout> | null
+  /** Returns a sanitized copy of the current minigame state safe for spectators/reconnecting
+   *  players. Set by matchController when a round starts; null when no secrets to hide. */
+  getSafeState: ((room: Room) => unknown) | null
 }
 
 export interface Room {
@@ -52,6 +55,9 @@ export interface Room {
   createdAt: number
   lastActivityAt: number
   cleanupTimer: ReturnType<typeof setTimeout> | null
+  /** Stored reference to the BAN_PHASE_TIMEOUT_MS safety timer so it can be cancelled
+   *  when bans are submitted early or the room is reset. */
+  banPhaseTimer: ReturnType<typeof setTimeout> | null
   rematchVotes: Set<string>
   banVotes: Record<string, MinigameId[]> // playerId → banned game ids (ban phase)
   // Per-room rate limit (120 msg/s across all players)
@@ -67,4 +73,9 @@ export interface MinigameModule {
   /** Called when the round ends for any reason (win, timeout, forfeit).
    *  Use to cancel any module-level timers keyed on roomId. */
   cleanup?(room: Room): void
+  /** Returns a sanitized copy of the minigame state safe to send to clients
+   *  (spectators, reconnecting players). Implement when the internal state
+   *  contains secrets (e.g. Kaboom's bombWire, Memory Match sequence during recall).
+   *  Falls back to minigameState as-is when not implemented. */
+  getSafeState?(room: Room): unknown
 }

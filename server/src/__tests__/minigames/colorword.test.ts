@@ -84,49 +84,57 @@ describe('colorword — integration', () => {
   })
 
   it('getResult returns player with higher score', () => {
+    vi.useFakeTimers()
     const room = makeRoom()
     room.match = makeMatch('p1', 'p2', {})
 
     colorword.start(room)
 
-    // Give p1 two correct picks, p2 one correct pick
-    for (let i = 0; i < 2; i++) {
-      const s = room.match.minigameState as { inkColor: string }
-      colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: s.inkColor })
-    }
-    const s = room.match.minigameState as { inkColor: string }
-    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s.inkColor })
+    // Give p1 two correct picks (advance past rate-limit between each), p2 one correct pick
+    const s1 = room.match.minigameState as { inkColor: string }
+    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: s1.inkColor })
+    vi.advanceTimersByTime(200)
+    const s2 = room.match.minigameState as { inkColor: string }
+    colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: s2.inkColor })
+    vi.advanceTimersByTime(200)
+    const s3 = room.match.minigameState as { inkColor: string }
+    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s3.inkColor })
 
     const result = colorword.getResult(room)
     expect(result.winnerId).toBe('p1')
     expect(result.reason).toBe('timeout')
+    vi.useRealTimers()
   })
 
   it('getResult returns player with higher score (p2 wins)', () => {
+    vi.useFakeTimers()
     const room = makeRoom()
     room.match = makeMatch('p1', 'p2', {})
 
     colorword.start(room)
 
-    // p1 gets 1, p2 gets 2
+    // p1 gets 1, p2 gets 2 (advance past rate-limit between each)
     const s1 = room.match.minigameState as { inkColor: string }
     colorword.handleInput(room, 'p1', { type: 'PICK_COLOR', color: s1.inkColor })
-    for (let i = 0; i < 2; i++) {
-      const s = room.match.minigameState as { inkColor: string }
-      colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s.inkColor })
-    }
+    vi.advanceTimersByTime(200)
+    const s2 = room.match.minigameState as { inkColor: string }
+    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s2.inkColor })
+    vi.advanceTimersByTime(200)
+    const s3 = room.match.minigameState as { inkColor: string }
+    colorword.handleInput(room, 'p2', { type: 'PICK_COLOR', color: s3.inkColor })
 
     const result = colorword.getResult(room)
     expect(result.winnerId).toBe('p2')
+    vi.useRealTimers()
   })
 
-  it('getResult tiebreaks at 0-0 by defaulting to p1', () => {
+  it('getResult tiebreaks at 0-0 by picking a random winner', () => {
     const room = makeRoom()
     room.match = makeMatch('p1', 'p2', {})
 
     colorword.start(room)
-    // No picks — both at 0
+    // No picks — both at 0, both firstTimes are Infinity → random tiebreak
     const result = colorword.getResult(room)
-    expect(result.winnerId).toBe('p1') // Infinity <= Infinity → p1
+    expect(['p1', 'p2']).toContain(result.winnerId)
   })
 })

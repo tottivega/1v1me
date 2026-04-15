@@ -72,8 +72,10 @@ export function startMatch(room: Room): void {
     const pool = buildPool(room)
     broadcast(room, 'BAN_PHASE_START', { pool, banCount: room.config.banCount })
 
-    // Safety timeout: auto-submit empty bans for any player who goes idle
-    setTimeout(() => {
+    // Safety timeout: auto-submit empty bans for any player who goes idle.
+    // Reference is stored so launchMatch / doRematch can cancel it.
+    room.banPhaseTimer = setTimeout(() => {
+      room.banPhaseTimer = null
       if (room.status !== 'banning' || !room.match) return
       if (room.players.length < 2) return // player left during ban phase — can't start
       for (const p of room.players) {
@@ -90,6 +92,11 @@ export function startMatch(room: Room): void {
 /** Called once ban votes are resolved (or immediately if banCount === 0). */
 function launchMatch(room: Room, bannedIds: MinigameId[]): void {
   if (!room.match) return
+  // Cancel the safety timeout — bans were resolved (either submitted or timed out)
+  if (room.banPhaseTimer) {
+    clearTimeout(room.banPhaseTimer)
+    room.banPhaseTimer = null
+  }
   const { bestOf, enabledCategories } = room.config
   const excludePlatforms = platformExcludes(room)
   room.match.minigameQueue = shuffleQueue(bestOf, enabledCategories, excludePlatforms, bannedIds)

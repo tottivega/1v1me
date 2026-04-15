@@ -500,6 +500,17 @@ export const useGameStore = create<GameState>((set, get) => ({
     switch (msg.type) {
       case 'ROOM_JOINED': {
         const p = msg.payload as RoomJoinedPayload
+        if (p.isReconnect) {
+          // Mid-match reconnect: only refresh the player roster and config.
+          // Resetting match state here would wipe scores/round before ROUND_START arrives.
+          set({
+            myPlayerId: p.playerId,
+            players: p.players,
+            spectatorCount: p.spectatorCount ?? 0,
+            roomConfig: p.config ?? { ...DEFAULT_ROOM_CONFIG },
+          })
+          break
+        }
         set({
           myPlayerId: p.playerId,
           roomId: p.roomId,

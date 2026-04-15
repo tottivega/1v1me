@@ -353,6 +353,7 @@ export interface RoomJoinedPayload {
   players: PlayerInfo[]
   spectatorCount: number
   config: RoomConfig
+  isReconnect?: boolean // true when sent as part of mid-match reconnect (don't reset match state)
 }
 
 export interface RoomConfigPayload {

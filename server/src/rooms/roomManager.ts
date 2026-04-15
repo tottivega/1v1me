@@ -70,6 +70,7 @@ export function joinOrCreateRoom(
       createdAt: Date.now(),
       lastActivityAt: Date.now(),
       cleanupTimer: null,
+      banPhaseTimer: null,
       rematchVotes: new Set(),
       banVotes: {},
       roomMsgCount: 0,
@@ -184,6 +185,12 @@ export function handleDisconnect(roomId: string, playerId: string): void {
   player.reconnectTimer = setTimeout(() => {
     console.log(`[Room] Reconnect window expired for ${player.nickname}`)
     forfeitMatch(room, playerId)
+    // endMatch (called by forfeitMatch) arms a POST_MATCH_IDLE_MS cleanup timer,
+    // but we're deleting immediately — cancel it to avoid an orphaned 2-min timer.
+    if (room.cleanupTimer) {
+      clearTimeout(room.cleanupTimer)
+      room.cleanupTimer = null
+    }
     deleteRoom(roomId)
   }, RECONNECT_TIMEOUT)
 }
@@ -211,13 +218,15 @@ export function handleReconnect(
   resumeTimer(room)
   broadcast(room, 'PLAYER_RECONNECTED', { playerId, status: room.status })
 
-  // Send full current state to the reconnecting player
+  // Send full current state to the reconnecting player.
+  // isReconnect=true tells the client not to reset match state (scores, round, etc.)
   send(player.ws, 'ROOM_JOINED', {
     roomId,
     playerId,
     players: toPlayerInfos(room.players),
     spectatorCount: room.spectators.length,
     config: room.config,
+    isReconnect: true,
   })
 
   if (room.match) {
@@ -301,6 +310,11 @@ export function removeSpectator(roomId: string, ws: WebSocket): void {
 
 function doRematch(room: Room): void {
   stopTimer(room)
+  // Cancel the ban-phase safety timer if a rematch is triggered while banning
+  if (room.banPhaseTimer) {
+    clearTimeout(room.banPhaseTimer)
+    room.banPhaseTimer = null
+  }
   room.match = null
   room.status = 'lobby'
   room.rematchVotes.clear()
