@@ -577,6 +577,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           roomStatus: 'playing',
           minigameState: null,
           lastRoundWinnerId: null,
+          ...(p.scores ? { scores: p.scores } : {}),
         })
         break
       }
@@ -607,15 +608,17 @@ export const useGameStore = create<GameState>((set, get) => ({
       case 'MATCH_END': {
         const p = msg.payload as MatchEndPayload
         const s = get()
-        const opponent = s.players.find((pl) => pl.id !== s.myPlayerId)
-        const iWon = p.winnerId === s.myPlayerId
-        recordMatchResult(
-          iWon,
-          opponent?.nickname ?? '???',
-          p.scores[s.myPlayerId] ?? 0,
-          opponent ? (p.scores[opponent.id] ?? 0) : 0,
-          p.roundHistory ?? []
-        )
+        if (!s.isSpectator) {
+          const opponent = s.players.find((pl) => pl.id !== s.myPlayerId)
+          const iWon = p.winnerId === s.myPlayerId
+          recordMatchResult(
+            iWon,
+            opponent?.nickname ?? '???',
+            p.scores[s.myPlayerId] ?? 0,
+            opponent ? (p.scores[opponent.id] ?? 0) : 0,
+            p.roundHistory ?? []
+          )
+        }
         set({
           matchWinnerId: p.winnerId,
           scores: p.scores,
@@ -629,7 +632,10 @@ export const useGameStore = create<GameState>((set, get) => ({
         const p = msg.payload as PlayerDisconnectedPayload
         set((s) => ({
           players: s.players.map((pl) => (pl.id === p.playerId ? { ...pl, connected: false } : pl)),
-          roomStatus: 'reconnecting',
+          // Only enter reconnecting state if there's an actual reconnect window.
+          // For lobby/ready disconnects (window = 0) the player is removed server-side —
+          // no PLAYER_RECONNECTED will arrive, so we must not get stuck in 'reconnecting'.
+          roomStatus: p.reconnectWindowMs > 0 ? 'reconnecting' : s.roomStatus,
           reconnectCountdown:
             p.reconnectWindowMs > 0 ? Math.ceil(p.reconnectWindowMs / 1000) : null,
         }))
@@ -649,11 +655,13 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
 
       case 'PLAYER_RECONNECTED': {
-        const { playerId } = msg.payload as { playerId: string }
+        const p = msg.payload as { playerId: string; status?: RoomStatus }
         clearReconnectInterval()
         set((s) => ({
-          players: s.players.map((pl) => (pl.id === playerId ? { ...pl, connected: true } : pl)),
-          roomStatus: 'playing',
+          players: s.players.map((pl) => (pl.id === p.playerId ? { ...pl, connected: true } : pl)),
+          // Restore the actual room status — hardcoding 'playing' was wrong when
+          // the disconnect happened during round_end (between-round confirm window).
+          roomStatus: p.status ?? 'playing',
           reconnectCountdown: null,
         }))
         break
@@ -683,6 +691,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           players: p.players,
           roomStatus: p.status,
           spectatorCount: p.spectatorCount ?? 0,
+          roomConfig: p.config ?? { ...DEFAULT_ROOM_CONFIG },
         }
         if (p.match) {
           updates.scores = p.match.scores

@@ -5,7 +5,7 @@ import { MINIGAME_CONFIGS } from '@shared/types'
 import { broadcast, toPlayerInfos } from '../sync/broadcast'
 import { startTimer, stopTimer } from '../timer/timerController'
 import { getMinigame, shuffleQueue } from '../minigames/index'
-import { twoPlayers } from '../utils/gameUtils'
+import { twoPlayers, randomWinner } from '../utils/gameUtils'
 import { persistMatchResult, persistRoundResult } from '../db/index'
 import { deleteRoom } from '../rooms/roomStore'
 
@@ -62,6 +62,7 @@ export function startMatch(room: Room): void {
     onRoundDone: null,
     roundReadyVotes: new Set(),
     roundReadyTimer: null,
+    getSafeState: null,
   }
 
   if (room.config.banCount > 0) {
@@ -74,6 +75,7 @@ export function startMatch(room: Room): void {
     // Safety timeout: auto-submit empty bans for any player who goes idle
     setTimeout(() => {
       if (room.status !== 'banning' || !room.match) return
+      if (room.players.length < 2) return // player left during ban phase — can't start
       for (const p of room.players) {
         if (!(p.id in room.banVotes)) room.banVotes[p.id] = []
       }
@@ -117,6 +119,7 @@ export function handleBanSubmit(room: Room, playerId: string, bannedIds: Minigam
   // Check if both players have submitted
   const allSubmitted = room.players.every((p) => p.id in room.banVotes)
   if (!allSubmitted) return
+  if (room.players.length < 2) return // player left during ban phase — can't start
 
   // Merge all bans (union) — a game banned by either player is removed
   const merged = Array.from(new Set(Object.values(room.banVotes).flat())) as MinigameId[]
@@ -137,6 +140,7 @@ function startRound(room: Room): void {
   room.match.timeoutMs = timeoutMs
   room.match.remainingMs = timeoutMs
   room.match.minigameState = null
+  room.match.getSafeState = module.getSafeState ? (r) => module.getSafeState!(r) : null
 
   room.status = 'playing'
   broadcast(room, 'ROUND_START', {
@@ -211,7 +215,7 @@ export function resolveRound(room: Room, result: MinigameResult): void {
     const [p1, p2] = twoPlayers(room)
     const s1 = room.match.scores[p1.id] ?? 0
     const s2 = room.match.scores[p2.id] ?? 0
-    const winnerId = s1 >= s2 ? p1.id : p2.id
+    const winnerId = s1 > s2 ? p1.id : s2 > s1 ? p2.id : randomWinner(p1, p2)
     setTimeout(() => endMatch(room, winnerId, 'completed'), 2500)
   } else {
     // Wait for both players to confirm before starting next round
@@ -290,7 +294,7 @@ function endMatch(room: Room, winnerId: string, reason: 'completed' | 'forfeit')
 }
 
 export function forfeitMatch(room: Room, forfeitedPlayerId: string): void {
-  if (!room.match) return
+  if (!room.match || room.status === 'match_end') return
 
   stopTimer(room)
 

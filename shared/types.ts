@@ -47,7 +47,7 @@ export const MINIGAME_CONFIGS = {
     emoji: '⚡',
     timeoutMs: 0,
     category: 'reflex',
-    description: 'Wait for green, then click as fast as humanly possible.',
+    description: 'Wait for blue, then click as fast as humanly possible.',
     platforms: 'all',
   },
   quickmaths: {
@@ -55,7 +55,7 @@ export const MINIGAME_CONFIGS = {
     emoji: '🔢',
     timeoutMs: 30000,
     category: 'math',
-    description: 'Solve as many equations as you can in 15 seconds.',
+    description: 'Solve as many equations as you can in 30 seconds.',
     platforms: 'all',
   },
   memorymatch: {
@@ -142,7 +142,7 @@ export interface ReactionTestState {
 
 export interface QuickMathsEquation {
   question: string
-  answer: number
+  answer?: number // only present in mock/local mode; server never sends this to clients
 }
 export interface QuickMathsState {
   kind: 'quickmaths'
@@ -378,6 +378,7 @@ export interface RoundStartPayload {
   round: number
   minigameId: MinigameId
   timeoutMs: number
+  scores?: Record<string, number> // only present on reconnect — restores scoreboard
 }
 
 export interface TimerTickPayload {
@@ -411,6 +412,11 @@ export interface PlayerDisconnectedPayload {
   reconnectWindowMs: number
 }
 
+export interface PlayerReconnectedPayload {
+  playerId: string
+  status: RoomStatus // room status at the moment of reconnect — client restores to this
+}
+
 export interface ForfeitPayload {
   forfeitedPlayerId: string
   winnerId: string
@@ -421,6 +427,7 @@ export interface SpectateJoinedPayload {
   players: PlayerInfo[]
   status: RoomStatus
   spectatorCount: number
+  config: RoomConfig
   match: {
     scores: Record<string, number>
     currentRound: number

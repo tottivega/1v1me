@@ -165,7 +165,12 @@ export function handleDisconnect(roomId: string, playerId: string): void {
   player.connected = false
   console.log(`[Room] ${player.nickname} disconnected from room ${roomId}`)
 
-  if (room.status === 'lobby' || room.status === 'ready' || room.status === 'match_end') {
+  if (
+    room.status === 'lobby' ||
+    room.status === 'ready' ||
+    room.status === 'banning' ||
+    room.status === 'match_end'
+  ) {
     // No reconnect window needed: pre-match or match already over
     room.players = room.players.filter((p) => p.id !== playerId)
     broadcast(room, 'PLAYER_DISCONNECTED', { playerId, reconnectWindowMs: 0 })
@@ -204,7 +209,7 @@ export function handleReconnect(
   touch(room)
 
   resumeTimer(room)
-  broadcast(room, 'PLAYER_RECONNECTED', { playerId })
+  broadcast(room, 'PLAYER_RECONNECTED', { playerId, status: room.status })
 
   // Send full current state to the reconnecting player
   send(player.ws, 'ROOM_JOINED', {
@@ -220,9 +225,11 @@ export function handleReconnect(
       round: room.match.currentRound,
       minigameId: room.match.currentMinigame,
       timeoutMs: room.match.timeoutMs,
+      scores: room.match.scores, // restore scoreboard — ROOM_JOINED resets it to {}
     })
     send(player.ws, 'TIMER_TICK', { remainingMs: room.match.remainingMs })
-    send(player.ws, 'GAME_UPDATE', { state: room.match.minigameState })
+    const safeState = room.match.getSafeState?.(room) ?? room.match.minigameState
+    send(player.ws, 'GAME_UPDATE', { state: safeState })
   }
 
   console.log(`[Room] ${player.nickname} reconnected to room ${roomId}`)
@@ -251,21 +258,23 @@ export function joinAsSpectator(
   touch(room)
 
   // Send spectator the current room state so they can pick up mid-match
+  const spectatorMatchState = room.match
+    ? {
+        scores: room.match.scores,
+        currentRound: room.match.currentRound,
+        currentMinigame: room.match.currentMinigame,
+        remainingMs: room.match.remainingMs,
+        timeoutMs: room.match.timeoutMs,
+        minigameState: room.match.getSafeState?.(room) ?? room.match.minigameState,
+      }
+    : null
   send(ws, 'SPECTATE_JOINED', {
     roomId,
     players: toPlayerInfos(room.players),
     status: room.status,
     spectatorCount: room.spectators.length,
-    match: room.match
-      ? {
-          scores: room.match.scores,
-          currentRound: room.match.currentRound,
-          currentMinigame: room.match.currentMinigame,
-          remainingMs: room.match.remainingMs,
-          timeoutMs: room.match.timeoutMs,
-          minigameState: room.match.minigameState,
-        }
-      : null,
+    config: room.config,
+    match: spectatorMatchState,
   })
 
   // Let players know the spectator count changed
