@@ -215,7 +215,11 @@ export function handleReconnect(
   player.connected = true
   touch(room)
 
-  resumeTimer(room)
+  // Only unpause when every player is back — if the other player is still in their
+  // reconnect window the clock must not tick against an absent opponent.
+  if (room.players.every((p) => p.connected)) {
+    resumeTimer(room)
+  }
   broadcast(room, 'PLAYER_RECONNECTED', { playerId, status: room.status })
 
   // Send full current state to the reconnecting player.
@@ -328,6 +332,11 @@ function doRematch(room: Room): void {
     clearTimeout(room.banPhaseTimer)
     room.banPhaseTimer = null
   }
+  // Cancel any pending between-round auto-advance timer
+  if (room.match?.roundReadyTimer) {
+    clearTimeout(room.match.roundReadyTimer)
+    room.match.roundReadyTimer = null
+  }
   room.match = null
   room.status = 'lobby'
   room.rematchVotes.clear()
@@ -352,6 +361,9 @@ function doRematch(room: Room): void {
 }
 
 export function handleRematchVote(room: Room, playerId: string): void {
+  // Rematch is only valid once the match is fully over; ignore stray votes from
+  // earlier states (e.g. a player spamming REMATCH during round_end).
+  if (room.status !== 'match_end') return
   room.rematchVotes.add(playerId)
   const allVoted = room.players.every((p) => room.rematchVotes.has(p.id))
   if (allVoted) {

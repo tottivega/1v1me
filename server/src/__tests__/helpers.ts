@@ -36,6 +36,7 @@ export function makeRoom(roomId = 'test-room'): Room {
     createdAt: Date.now(),
     lastActivityAt: Date.now(),
     cleanupTimer: null,
+    banPhaseTimer: null,
     rematchVotes: new Set(),
     banVotes: {},
     roomMsgCount: 0,
@@ -70,6 +71,7 @@ export function makeMatch(
     onRoundDone: null,
     roundReadyVotes: new Set(),
     roundReadyTimer: null,
+    getSafeState: null,
     ...overrides,
   }
 }

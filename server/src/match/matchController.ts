@@ -251,6 +251,9 @@ export function handleRoundReady(room: Room, playerId: string): void {
 
   room.match.roundReadyVotes.add(playerId)
   if (room.players.every((p) => room.match!.roundReadyVotes.has(p.id))) {
+    // Don't start the round while a player is still in their reconnect window — the
+    // timer would tick against an absent player. The forfeit timer handles the no-show.
+    if (room.players.some((p) => !p.connected)) return
     if (room.match.roundReadyTimer) clearTimeout(room.match.roundReadyTimer)
     room.match.roundReadyTimer = null
     startRound(room)

@@ -43,6 +43,7 @@ vi.mock('../timer/timerController', () => ({
 }))
 
 import { send } from '../sync/broadcast'
+import { resumeTimer } from '../timer/timerController'
 
 const ROOM_ID = 'room-abc'
 
@@ -298,5 +299,44 @@ describe('joinAsSpectator() / removeSpectator()', () => {
     }
     // Room still has exactly 28
     expect(getRoom(ROOM_ID)!.spectators).toHaveLength(28)
+  })
+})
+
+describe('handleReconnect() — state resync', () => {
+  it('sends ROUND_START then ROUND_END (not GAME_UPDATE) when reconnecting during round_end', () => {
+    joinOrCreateRoom(ROOM_ID, 'p1', 'Alice', makeWs())
+    joinOrCreateRoom(ROOM_ID, 'p2', 'Bob', makeWs())
+    const room = getRoom(ROOM_ID)!
+    room.status = 'round_end'
+    room.match = makeMatch('p1', 'p2', {
+      roundHistory: [{ round: 1, minigameId: 'clickspeed', winnerId: 'p1' }],
+    })
+    handleDisconnect(ROOM_ID, 'p1')
+    vi.clearAllMocks()
+
+    handleReconnect(ROOM_ID, 'p1', makeWs())
+
+    const msgTypes = (send as ReturnType<typeof vi.fn>).mock.calls.map(([, type]) => type)
+    expect(msgTypes).toContain('ROUND_START')
+    expect(msgTypes).toContain('ROUND_END')
+    expect(msgTypes).not.toContain('GAME_UPDATE')
+    expect(msgTypes).not.toContain('TIMER_TICK')
+  })
+
+  it('does not call resumeTimer when the other player is still disconnected', () => {
+    joinOrCreateRoom(ROOM_ID, 'p1', 'Alice', makeWs())
+    joinOrCreateRoom(ROOM_ID, 'p2', 'Bob', makeWs())
+    const room = getRoom(ROOM_ID)!
+    room.status = 'playing'
+    room.match = makeMatch('p1', 'p2')
+
+    // Both disconnect; p2's reconnect window is still open when p1 comes back
+    handleDisconnect(ROOM_ID, 'p1')
+    handleDisconnect(ROOM_ID, 'p2')
+    vi.clearAllMocks()
+
+    handleReconnect(ROOM_ID, 'p1', makeWs())
+
+    expect(resumeTimer).not.toHaveBeenCalled()
   })
 })

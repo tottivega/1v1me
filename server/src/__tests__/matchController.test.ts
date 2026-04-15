@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { resolveRound } from '../match/matchController'
+import { resolveRound, forfeitMatch, handleRoundReady } from '../match/matchController'
 import { persistRoundResult } from '../db/index'
+import { broadcast } from '../sync/broadcast'
 import { makeRoom, makeMatch } from './helpers'
 
 // Mock all side effects so resolveRound is isolated to its core logic
@@ -134,5 +135,56 @@ describe('resolveRound()', () => {
     vi.runAllTimers()
 
     expect(room.status).toBe('match_end')
+  })
+})
+
+describe('forfeitMatch()', () => {
+  it('is a no-op when match status is already match_end (prevents double DB write)', () => {
+    const room = makeRoom()
+    room.match = makeMatch('p1', 'p2')
+    room.status = 'match_end'
+
+    forfeitMatch(room, 'p1')
+
+    expect(broadcast).not.toHaveBeenCalledWith(room, 'FORFEIT', expect.anything())
+    expect(broadcast).not.toHaveBeenCalledWith(room, 'MATCH_END', expect.anything())
+  })
+})
+
+describe('roundReadyTimer auto-advance', () => {
+  it('does not call startRound when a player is disconnected at timer fire', () => {
+    const room = makeRoom()
+    room.match = makeMatch('p1', 'p2') // currentRound:1, bestOf:5
+    room.status = 'playing'
+
+    // Mark one player as disconnected before the round resolves
+    room.players[0]!.connected = false
+
+    resolveRound(room, { winnerId: 'p1', reason: 'completed' }) // 1-0, not match end
+    expect(room.match!.roundReadyTimer).not.toBeNull()
+
+    // Fire the 5s auto-advance timer
+    vi.advanceTimersByTime(6000)
+
+    // startRound would flip status to 'playing'; it must stay at 'round_end'
+    expect(room.status).toBe('round_end')
+  })
+})
+
+describe('handleRoundReady()', () => {
+  it('does not start the next round when a player is still disconnected', () => {
+    const room = makeRoom()
+    room.match = makeMatch('p1', 'p2') // mid-match, not won yet
+    room.status = 'round_end'
+    room.match.roundResolved = true
+
+    room.players[0]!.connected = false
+
+    // Both players have "voted" ready (the disconnected one voted before dropping)
+    handleRoundReady(room, 'p1')
+    handleRoundReady(room, 'p2')
+
+    // startRound changes status to 'playing' — must still be 'round_end'
+    expect(room.status).toBe('round_end')
   })
 })
