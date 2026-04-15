@@ -292,6 +292,7 @@ interface GameState {
   handleServerMessage: (msg: ServerMessage) => void
   sendInput: (input: MinigameInput) => void
   setReady: () => void
+  setUnready: () => void
   setNickname: (nickname: string) => void
   spectate: (roomId: string) => void
   reconnectSaved: (roomId: string, playerId: string) => void
@@ -430,6 +431,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
+  setUnready: () => {
+    if (get().wsStatus === 'connected') get().send('UNSET_READY')
+  },
+
   setNickname: (nickname) => set({ myNickname: nickname }),
 
   spectate: (roomId) => {
@@ -544,8 +549,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       case 'PLAYER_READY': {
         const p = msg.payload as PlayerReadyPayload
         set((s) => ({
-          players: s.players.map((pl) => (pl.id === p.playerId ? { ...pl, ready: true } : pl)),
-          roomStatus: p.bothReady ? 'ready' : s.roomStatus,
+          players: p.players,
+          roomStatus: p.bothReady
+            ? 'ready'
+            : p.players.some((pl) => pl.ready)
+              ? s.roomStatus
+              : 'lobby',
         }))
         break
       }

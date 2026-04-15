@@ -135,12 +135,14 @@ export function setPlayerAvatar(room: Room, playerId: string, avatar: string): v
 export function setPlayerReady(room: Room, playerId: string): void {
   const player = room.players.find((p) => p.id === playerId)
   if (!player) return
+  if (player.ready) return // idempotent — ignore duplicate SET_READY
 
   player.ready = true
   touch(room)
 
   const bothReady = room.players.length === 2 && room.players.every((p) => p.ready)
-  broadcast(room, 'PLAYER_READY', { playerId, bothReady })
+  // Broadcast full player state so clients are always authoritative regardless of message order
+  broadcast(room, 'PLAYER_READY', { players: toPlayerInfos(room.players), bothReady })
 
   if (bothReady) {
     room.status = 'ready'
@@ -152,6 +154,18 @@ export function setPlayerReady(room: Room, playerId: string): void {
     }
     startMatch(room)
   }
+}
+
+export function setPlayerUnready(room: Room, playerId: string): void {
+  // Only allowed while still in lobby — once both are ready the match is launching
+  if (room.status !== 'lobby') return
+  const player = room.players.find((p) => p.id === playerId)
+  if (!player || !player.ready) return
+
+  player.ready = false
+  touch(room)
+
+  broadcast(room, 'PLAYER_READY', { players: toPlayerInfos(room.players), bothReady: false })
 }
 
 // ── Disconnect / Reconnect ───────────────────────────────────────────────────

@@ -323,6 +323,7 @@ export type ClientMessageType =
   | 'SET_NICKNAME'
   | 'SET_AVATAR'
   | 'SET_READY'
+  | 'UNSET_READY'
   | 'SET_ROOM_CONFIG'
   | 'SUBMIT_BANS'
   | 'GAME_INPUT'
@@ -361,7 +362,7 @@ export interface RoomConfigPayload {
 }
 
 export interface PlayerReadyPayload {
-  playerId: string
+  players: PlayerInfo[]
   bothReady: boolean
 }
 

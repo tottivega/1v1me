@@ -273,6 +273,7 @@ export default function LobbyView({ roomId }: { roomId: string }) {
     players,
     myPlayerId,
     setReady,
+    setUnready,
     disconnect,
     mockAddOpponent,
     wsStatus,
@@ -512,23 +513,39 @@ export default function LobbyView({ roomId }: { roomId: string }) {
       {/* Ready button — only show when opponent is present */}
       {opponent && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-          <button
-            className={`btn btn-lg ${me?.ready ? 'btn-green' : 'btn-orange'}`}
-            onClick={() => {
-              playReady()
-              setReady()
-            }}
-            disabled={me?.ready}
-          >
-            {me?.ready ? '✅ Ready!' : '⚔️ Ready Up!'}
-          </button>
-          {me?.ready && !opponent.ready && (
-            <div className="subtitle anim-pulse" style={{ opacity: 0.6, fontSize: 15 }}>
-              Waiting for {opponent.nickname}…
-            </div>
-          )}
-          {me?.ready && opponent.ready && (
-            <div className="badge badge-green anim-pulse">Both ready! Starting…</div>
+          {me?.ready ? (
+            <>
+              <button className="btn btn-lg btn-green" disabled>
+                ✅ Ready!
+              </button>
+              {!opponent.ready && (
+                <>
+                  <div className="subtitle anim-pulse" style={{ opacity: 0.6, fontSize: 15 }}>
+                    Waiting for {opponent.nickname}…
+                  </div>
+                  <button
+                    className="btn btn-white btn-sm"
+                    onClick={setUnready}
+                    style={{ opacity: 0.7 }}
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
+              {opponent.ready && (
+                <div className="badge badge-green anim-pulse">Both ready! Starting…</div>
+              )}
+            </>
+          ) : (
+            <button
+              className="btn btn-lg btn-orange"
+              onClick={() => {
+                playReady()
+                setReady()
+              }}
+            >
+              ⚔️ Ready Up!
+            </button>
           )}
         </div>
       )}

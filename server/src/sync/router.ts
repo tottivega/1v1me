@@ -8,6 +8,7 @@ import {
   joinOrCreateRoom,
   setPlayerAvatar,
   setPlayerReady,
+  setPlayerUnready,
   handleDisconnect,
   handleReconnect,
   handleRematchVote,
@@ -212,6 +213,15 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
       const room = getRoom(conn.roomId)
       if (!room) return
       setPlayerReady(room, conn.playerId)
+      break
+    }
+
+    case 'UNSET_READY': {
+      if (conn.role === 'spectator') return
+      if (!conn.roomId) return
+      const room = getRoom(conn.roomId)
+      if (!room) return
+      setPlayerUnready(room, conn.playerId)
       break
     }
 
