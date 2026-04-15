@@ -39,6 +39,10 @@ export default function SpectatePage() {
     return <SpectateWaiting roomId={roomId!} />
   }
 
+  if (roomStatus === 'banning') {
+    return <SpetateBanning roomId={roomId!} />
+  }
+
   if (roomStatus === 'match_end') {
     return <SpectateMatchEnd />
   }
@@ -96,6 +100,54 @@ function SpectateWaiting({ roomId }: { roomId: string }) {
       </div>
 
       <div className="badge badge-yellow anim-pulse">Waiting for match to start…</div>
+    </div>
+  )
+}
+
+// ── Ban phase waiting view ────────────────────────────────────────────────────
+
+function SpetateBanning({ roomId }: { roomId: string }) {
+  const { players } = useGameStore()
+  return (
+    <div className="page">
+      <div style={{ textAlign: 'center' }}>
+        <div
+          style={{
+            fontFamily: 'var(--font-title)',
+            fontSize: 48,
+            color: 'var(--purple)',
+            WebkitTextStroke: '2px var(--black)',
+            textShadow: '3px 3px 0 var(--black)',
+          }}
+        >
+          👁 SPECTATING
+        </div>
+        <div className="subtitle" style={{ opacity: 0.6, marginTop: 8 }}>
+          Room: {roomId}
+        </div>
+      </div>
+
+      <div className="card" style={{ textAlign: 'center', minWidth: 320 }}>
+        <div className="label" style={{ marginBottom: 8 }}>
+          Ban Phase
+        </div>
+        <div className="subtitle" style={{ opacity: 0.6, fontSize: 15, marginBottom: 16 }}>
+          Players are banning games…
+        </div>
+        <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+          {players.map((p) => (
+            <div
+              key={p.id}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}
+            >
+              <div style={{ fontSize: 36 }}>{p.avatar ?? '❓'}</div>
+              <div style={{ fontWeight: 900 }}>{p.nickname}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="badge badge-yellow anim-pulse">Waiting for bans to complete…</div>
     </div>
   )
 }
@@ -169,6 +221,9 @@ function SpectateMatchView() {
 
       {/* Timer */}
       {cfg && cfg.timeoutMs > 0 && <TimerBar />}
+
+      {/* Reconnecting overlay */}
+      {roomStatus === 'reconnecting' && <SpectateReconnectingOverlay />}
 
       {/* Round end overlay */}
       {roomStatus === 'round_end' && <SpectateRoundEndOverlay />}
@@ -327,6 +382,51 @@ function SpectateGameState({
   const Comp = SPECTATOR_COMPONENTS[minigameId]
   if (!Comp) return null
   return <Comp state={state} players={players} />
+}
+
+// ── Reconnecting overlay ──────────────────────────────────────────────────────
+
+function SpectateReconnectingOverlay() {
+  const { players, reconnectCountdown } = useGameStore()
+  const disconnected = players.find((p) => !p.connected)
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 100,
+        background: 'rgba(0,0,0,0.75)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 16,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: 'var(--font-title)',
+          fontSize: 48,
+          color: 'var(--yellow)',
+          textShadow: '4px 4px 0 rgba(0,0,0,0.5)',
+        }}
+        className="anim-pulse"
+      >
+        📡 Reconnecting…
+      </div>
+      {disconnected && (
+        <div style={{ color: 'var(--white)', fontWeight: 700, fontSize: 18 }}>
+          {disconnected.nickname} disconnected
+        </div>
+      )}
+      {reconnectCountdown !== null && (
+        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15 }}>
+          Forfeits in {reconnectCountdown}s
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ── Round end overlay ─────────────────────────────────────────────────────────

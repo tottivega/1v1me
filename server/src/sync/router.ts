@@ -216,6 +216,7 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
     }
 
     case 'GAME_INPUT': {
+      if (conn.role === 'spectator') return
       if (!conn.roomId) return
       const room = getRoom(conn.roomId)
       if (!room) return
@@ -275,6 +276,7 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
     }
 
     case 'ROUND_READY': {
+      if (conn.role === 'spectator') return
       if (!conn.roomId) return
       const room = getRoom(conn.roomId)
       if (!room) return
@@ -283,6 +285,7 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
     }
 
     case 'REMATCH': {
+      if (conn.role === 'spectator') return
       if (!conn.roomId) return
       const room = getRoom(conn.roomId)
       if (!room) return

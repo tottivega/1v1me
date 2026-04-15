@@ -37,10 +37,17 @@ function generate(): Equation {
   return { question: `${a} × ${b}`, answer: a * b }
 }
 
+function safeEquations(equations: Record<string, Equation>): Record<string, { question: string }> {
+  return Object.fromEntries(
+    Object.entries(equations).map(([id, eq]) => [id, { question: eq.question }])
+  )
+}
+
 function broadcastState(room: Room, state: State) {
   broadcast(room, 'GAME_UPDATE', {
     state: {
-      equations: state.equations,
+      // Strip answers — clients only need the question text
+      equations: safeEquations(state.equations),
       correct: state.correct,
     },
   })
@@ -94,6 +101,15 @@ const quickmaths: MinigameModule = {
     if (t1 !== t2) return { winnerId: t1 < t2 ? p1.id : p2.id, reason: 'timeout' }
 
     return { winnerId: randomWinner(p1, p2), reason: 'timeout' }
+  },
+
+  getSafeState(room) {
+    const state = room.match?.minigameState as State | undefined
+    if (!state) return null
+    return {
+      equations: safeEquations(state.equations),
+      correct: state.correct,
+    }
   },
 }
 

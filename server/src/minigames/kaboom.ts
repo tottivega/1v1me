@@ -146,6 +146,14 @@ const kaboom: MinigameModule = {
     const state = room.match?.minigameState as State | undefined
     if (state) state.resolved = true
   },
+
+  getSafeState(room) {
+    const state = room.match?.minigameState as State | undefined
+    if (!state) return null
+     
+    const { bombWire: _secret, ...safe } = state
+    return safe
+  },
 }
 
 export default kaboom

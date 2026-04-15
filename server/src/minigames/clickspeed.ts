@@ -2,7 +2,7 @@ import type { MinigameModule } from '../types'
 import type { MinigameResult } from '@shared/types'
 import { CLICKSPEED_CPS_CAP } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
-import { twoPlayers } from '../utils/gameUtils'
+import { twoPlayers, randomWinner } from '../utils/gameUtils'
 
 const WINDOW_MS = 1000
 
@@ -59,11 +59,11 @@ const clickspeed: MinigameModule = {
     if (c1 > c2) return { winnerId: p1.id, reason: 'timeout' }
     if (c2 > c1) return { winnerId: p2.id, reason: 'timeout' }
 
-    // Tie: whoever hit their shared click count first
+    // Tie: whoever hit their shared click count first; true dead-heat → random
     const tied = c1
     const t1 = (state.firstTimes[p1.id] ?? {})[tied] ?? Infinity
     const t2 = (state.firstTimes[p2.id] ?? {})[tied] ?? Infinity
-    const winnerId = t1 <= t2 ? p1.id : p2.id
+    const winnerId = t1 < t2 ? p1.id : t2 < t1 ? p2.id : randomWinner(p1, p2)
     return { winnerId, reason: 'timeout' }
   },
 }
