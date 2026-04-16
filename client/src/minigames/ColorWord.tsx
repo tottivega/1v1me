@@ -5,25 +5,19 @@ import { type ColorWordColor, type ColorWordState } from '@shared/types'
 
 type Color = ColorWordColor
 
-const COLOR_STYLES: Record<Color, { bg: string; fg: string }> = {
-  red: { bg: '#e63946', fg: '#fff' },
-  blue: { bg: '#1d3fce', fg: '#fff' },
-  green: { bg: '#2dc653', fg: '#fff' },
-  yellow: { bg: '#f7c948', fg: '#000' },
-  orange: { bg: '#ff6b2b', fg: '#fff' },
-  purple: { bg: '#7b2d8b', fg: '#fff' },
+// Exact same hex values as Kaboom wire colors — indices 0-7
+const COLOR_HEX: Record<Color, string> = {
+  red: '#e53935',
+  orange: '#fb8c00',
+  yellow: '#fdd835',
+  green: '#43a047',
+  blue: '#1e88e5',
+  purple: '#8e24aa',
+  pink: '#f06292',
+  white: '#ffffff',
 }
 
-const COLOR_CSS: Record<Color, string> = {
-  red: '#e63946',
-  blue: '#1d3fce',
-  green: '#2dc653',
-  yellow: '#f7c948',
-  orange: '#ff6b2b',
-  purple: '#7b2d8b',
-}
-
-const ALL_COLORS: Color[] = ['red', 'blue', 'green', 'yellow', 'orange', 'purple']
+const ALL_COLORS: Color[] = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'white']
 
 function generatePuzzle(): { word: Color; ink: Color } {
   const word = ALL_COLORS[Math.floor(Math.random() * ALL_COLORS.length)]!
@@ -184,33 +178,26 @@ export default function ColorWord() {
         </div>
         <div
           style={{
-            display: 'flex',
-            flexWrap: 'wrap',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 64px)',
             gap: 10,
-            justifyContent: 'center',
-            maxWidth: 340,
           }}
         >
           {ALL_COLORS.map((color) => (
             <button
               key={color}
+              aria-label={color}
               disabled
               style={{
-                width: 90,
-                height: 52,
+                width: 64,
+                height: 64,
                 borderRadius: 8,
                 border: '3px solid var(--black)',
-                background: COLOR_STYLES[color].bg,
-                color: COLOR_STYLES[color].fg,
-                fontWeight: 900,
-                fontSize: 13,
-                textTransform: 'uppercase',
+                background: COLOR_HEX[color],
                 opacity: 0.3,
                 cursor: 'default',
               }}
-            >
-              {color}
-            </button>
+            />
           ))}
         </div>
       </div>
@@ -268,7 +255,7 @@ export default function ColorWord() {
             style={{
               fontFamily: 'var(--font-title)',
               fontSize: 72,
-              color: COLOR_CSS[inkColor!],
+              color: COLOR_HEX[inkColor!],
               WebkitTextStroke: '2px var(--black)',
               textShadow: '3px 3px 0 var(--black)',
               letterSpacing: 4,
@@ -281,36 +268,30 @@ export default function ColorWord() {
           {/* Color buttons */}
           <div
             style={{
-              display: 'flex',
-              flexWrap: 'wrap',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 64px)',
               gap: 10,
-              justifyContent: 'center',
-              maxWidth: 340,
             }}
           >
             {ALL_COLORS.map((color) => (
               <button
                 key={color}
+                aria-label={color}
                 onClick={() => handlePick(color)}
                 disabled={isLive && !!picked}
                 style={{
-                  width: 90,
-                  height: 52,
+                  width: 64,
+                  height: 64,
                   borderRadius: 8,
                   border: '3px solid var(--black)',
                   boxShadow: picked === color ? 'none' : '3px 3px 0 var(--black)',
-                  background: COLOR_STYLES[color].bg,
-                  color: COLOR_STYLES[color].fg,
-                  fontWeight: 900,
-                  fontSize: 13,
-                  textTransform: 'uppercase',
+                  background: COLOR_HEX[color],
                   cursor: isLive && picked ? 'default' : 'pointer',
                   opacity: isLive && picked && color !== picked ? 0.4 : 1,
-                  transition: 'opacity 0.1s, box-shadow 0.08s',
+                  transform: picked === color ? 'translate(3px, 3px)' : 'none',
+                  transition: 'opacity 0.1s, box-shadow 0.08s, transform 0.06s',
                 }}
-              >
-                {color}
-              </button>
+              />
             ))}
           </div>
         </>

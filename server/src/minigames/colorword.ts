@@ -3,7 +3,7 @@ import type { MinigameResult } from '@shared/types'
 import { broadcast } from '../sync/broadcast'
 import { twoPlayers, randomWinner } from '../utils/gameUtils'
 
-const COLORS = ['red', 'blue', 'green', 'yellow', 'orange', 'purple'] as const
+const COLORS = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'white'] as const
 type Color = (typeof COLORS)[number]
 
 // Minimum ms a player must wait between picks. Human Stroop-task reaction is

@@ -192,7 +192,15 @@ export interface RockPaperScissorsStateReveal {
 }
 export type RockPaperScissorsState = RockPaperScissorsStatePicking | RockPaperScissorsStateReveal
 
-export type ColorWordColor = 'red' | 'blue' | 'green' | 'yellow' | 'orange' | 'purple'
+export type ColorWordColor =
+  | 'red'
+  | 'orange'
+  | 'yellow'
+  | 'green'
+  | 'blue'
+  | 'purple'
+  | 'pink'
+  | 'white'
 export interface ColorWordPlayerPuzzle {
   word: ColorWordColor
   inkColor: ColorWordColor

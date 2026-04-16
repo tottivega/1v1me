@@ -1,12 +1,14 @@
 import { TwoColState, type SpectatorProps, type SpectatorPlayer } from './spectatorHelpers'
 
 const COLOR_CSS: Record<string, string> = {
-  red: '#e53e3e',
-  blue: '#3182ce',
-  green: '#38a169',
-  yellow: '#d69e2e',
-  orange: '#dd6b20',
-  purple: '#805ad5',
+  red: '#e53935',
+  orange: '#fb8c00',
+  yellow: '#fdd835',
+  green: '#43a047',
+  blue: '#1e88e5',
+  purple: '#8e24aa',
+  pink: '#f06292',
+  white: '#ffffff',
 }
 
 type Puzzle = { word?: string; inkColor?: string }

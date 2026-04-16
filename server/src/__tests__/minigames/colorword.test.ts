@@ -16,7 +16,7 @@ describe('pick()', () => {
   })
 
   it('always returns valid colors from the pool', () => {
-    const COLORS = ['red', 'blue', 'green', 'yellow', 'orange', 'purple']
+    const COLORS = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'white']
     for (let i = 0; i < 50; i++) {
       const { word, inkColor } = pick()
       expect(COLORS).toContain(word)
@@ -24,12 +24,12 @@ describe('pick()', () => {
     }
   })
 
-  it('covers all 6 colors as word across many picks', () => {
+  it('covers all 8 colors as word across many picks', () => {
     const seen = new Set<string>()
     for (let i = 0; i < 500; i++) {
       seen.add(pick().word)
     }
-    expect(seen.size).toBe(6)
+    expect(seen.size).toBe(8)
   })
 })
 
