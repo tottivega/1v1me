@@ -16,12 +16,14 @@ export default function ReactionTest() {
   // Track whether we've already sent our reaction this round
   const hasSentReaction = useRef(false)
   const [_localClickedAt, setLocalClickedAt] = useState<number | null>(null)
+  const [localTooEarly, setLocalTooEarly] = useState(false)
 
   // Reset on new round (minigameState resets to null on ROUND_START)
   useEffect(() => {
     if (minigameState === null) {
       hasSentReaction.current = false
       setLocalClickedAt(null)
+      setLocalTooEarly(false)
     }
   }, [minigameState])
 
@@ -29,7 +31,9 @@ export default function ReactionTest() {
     if (hasSentReaction.current) return
     const phase = serverState?.phase
     if (phase === 'waiting') {
-      // Clicked too early — server will handle penalisation
+      // Clicked too early — show feedback immediately, server confirms penalisation
+      setLocalTooEarly(true)
+      playEarly()
       sendInput({ type: 'REACT' })
       hasSentReaction.current = true
     } else if (phase === 'ready') {
@@ -49,7 +53,7 @@ export default function ReactionTest() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverState?.phase, isLive])
 
-  const iAmPenalized = serverState?.penalized?.includes(myPlayerId) ?? false
+  const iAmPenalized = localTooEarly || (serverState?.penalized?.includes(myPlayerId) ?? false)
   const myReactionMs = serverState?.reactions?.[myPlayerId] ?? null
   const oppReactionMs = opponent ? (serverState?.reactions?.[opponent.id] ?? null) : null
   const liveWinnerId = serverState?.winnerId
@@ -147,7 +151,7 @@ export default function ReactionTest() {
           </>
         )}
         {iAmPenalized && (
-          <div className="anim-shake" style={{ textAlign: 'center' }}>
+          <div key="too-early" className="anim-shake" style={{ textAlign: 'center' }}>
             <div
               style={{
                 fontFamily: 'var(--font-title)',

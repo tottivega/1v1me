@@ -254,7 +254,7 @@ cd server && npm test
 cd client && npm test
 ```
 
-Server test files: `quickmaths`, `memorymatch`, `fastesttyper`, `rockpaperscissors`, `colorword`, `higherorlower`, `matchController`, `roomManager`, `roomStore`, `router` (integration with real WS server).
+Server test files: `quickmaths`, `memorymatch`, `fastesttyper`, `rockpaperscissors`, `colorword`, `kaboom`, `matchController`, `roomManager`, `roomStore`, `router` (integration with real WS server).
 
 Client test files: `gameStore`, `ScoreBoard`, `TimerBar`, `HomePage`, `RoomPage`, `BanPhaseView`, `RoundEndOverlay`, `minigames` (smoke tests for all 9 game components).
 
@@ -275,12 +275,12 @@ Client test files: `gameStore`, `ScoreBoard`, `TimerBar`, `HomePage`, `RoomPage`
 | `clickspeed` | skill | 5s | 20 CPS cap server-side |
 | `coinflip` | luck | instant | Pure RNG |
 | `reactiontest` | reflex | 3s window | Early click = disqualified |
-| `quickmaths` | math | 15s | Independent equation streams |
+| `quickmaths` | math | 20s | Independent equation streams |
 | `memorymatch` | strategy | 25s | Server generates 5-symbol sequence |
 | `fastesttyper` | skill | per-phrase | Desktop-only (`platforms: 'desktop-only'`) |
 | `rockpaperscissors` | strategy | 8s/throw | Best-of-3 throws |
 | `colorword` | reflex | 10s | Click ink color, not spelled word |
-| `higherorlower` | luck | 10s | Simultaneous Higher/Lower pick |
+| `kaboom` | luck | 8 rounds | One wire detonates the bomb, pick a safe one per turn |
 
 ---
 
