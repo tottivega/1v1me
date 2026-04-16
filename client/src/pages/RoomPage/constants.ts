@@ -6,6 +6,7 @@ export const CATEGORY_COLORS: Record<MinigameCategory, string> = {
   luck: 'var(--yellow)',
   strategy: 'var(--green)',
   skill: 'var(--red)',
+  memory: 'var(--purple)',
 }
 
 // Dark-tinted backgrounds for the round transition overlay — dark enough to read white text
@@ -15,6 +16,7 @@ export const CATEGORY_OVERLAY_BG: Record<MinigameCategory, string> = {
   luck: 'rgba(130, 110,  0, 0.92)',
   strategy: 'rgba(10,  100, 45, 0.92)',
   skill: 'rgba(180,  20,  40, 0.92)',
+  memory: 'rgba(100,  20, 160, 0.92)',
 }
 
 export const ALL_CATEGORIES: readonly MinigameCategory[] = MINIGAME_CATEGORIES
@@ -27,6 +29,7 @@ export const CATEGORY_LABEL: Record<MinigameCategory, string> = {
   luck: '🎲 Luck',
   strategy: '🧠 Strategy',
   skill: '🎯 Skill',
+  memory: '🧩 Memory',
 }
 
 export const EMOTES = ['😂', '🔥', '💀', '👏']

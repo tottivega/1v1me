@@ -21,7 +21,14 @@ export type RoomStatus =
 //   category    — used for queue balancing and DevPanel filtering
 //   description — one-liner shown in game gallery and tooltips
 
-export const MINIGAME_CATEGORIES = ['reflex', 'math', 'luck', 'strategy', 'skill'] as const
+export const MINIGAME_CATEGORIES = [
+  'reflex',
+  'math',
+  'luck',
+  'strategy',
+  'skill',
+  'memory',
+] as const
 export type MinigameCategory = (typeof MINIGAME_CATEGORIES)[number]
 export type MinigamePlatform = 'all' | 'desktop-only' | 'mobile-only'
 
@@ -62,7 +69,7 @@ export const MINIGAME_CONFIGS = {
     label: 'Memory Match',
     emoji: '🧠',
     timeoutMs: 0,
-    category: 'strategy',
+    category: 'memory',
     description: 'Memorise a growing sequence of symbols across up to 10 rounds.',
     platforms: 'all',
   },
@@ -96,6 +103,14 @@ export const MINIGAME_CONFIGS = {
     timeoutMs: 0,
     category: 'luck',
     description: 'Take turns cutting wires. Cut the bomb wire and you lose!',
+    platforms: 'all',
+  },
+  tapsequence: {
+    label: 'Tap Sequence',
+    emoji: '🟩',
+    timeoutMs: 0,
+    category: 'memory',
+    description: 'Watch the pattern, repeat it. One wrong tap and you lose!',
     platforms: 'all',
   },
 } as const satisfies Record<
@@ -229,6 +244,18 @@ export interface KaboomState {
   winnerId?: string // set when game resolves
 }
 
+export interface TapSequenceState {
+  kind: 'tapsequence'
+  level: number // 1–10
+  seqLen: number // level + 3
+  phase: 'showing' | 'input'
+  sequence: number[] // button indices 0–3
+  progress: Record<string, number> // correct presses so far per player
+  passed: Record<string, boolean> // completed the sequence correctly
+  eliminated: Record<string, boolean> // pressed wrong button or timed out
+  winnerId?: string
+}
+
 /**
  * Maps every MinigameId to its live state type.
  * To add a game: add one entry here — MinigameState is derived automatically.
@@ -244,6 +271,7 @@ export type MinigameStateMap = {
   rockpaperscissors: RockPaperScissorsState
   colorword: ColorWordState
   kaboom: KaboomState
+  tapsequence: TapSequenceState
 }
 
 /**

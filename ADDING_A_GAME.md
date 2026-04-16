@@ -260,12 +260,12 @@ Rules:
 
 **Run `npm run new-game -- <id> [Name]` first — it handles the ✅ items automatically.**
 
-- ✅ `${Name}State` interface stub in `shared/types.ts` — fill in the fields
-- ✅ `${id}: ${Name}State` entry in `MinigameStateMap` (`shared/types.ts`)
-- ✅ Server module created at `server/src/minigames/${id}.ts` — fill in logic
-- ✅ Client component created at `client/src/minigames/${Name}.tsx` — build the UI
-- ✅ Spectator view created at `client/src/minigames/${Name}.spectator.tsx` — wire layout
-- ✅ Base smoke test block appended to `minigames.test.tsx` — expand with real assertions
+- [ ] `${Name}State` interface stub in `shared/types.ts` — fill in the fields
+- [ ] `${id}: ${Name}State` entry in `MinigameStateMap` (`shared/types.ts`)
+- [ ] Server module created at `server/src/minigames/${id}.ts` — fill in logic
+- [ ] Client component created at `client/src/minigames/${Name}.tsx` — build the UI
+- [ ] Spectator view created at `client/src/minigames/${Name}.spectator.tsx` — wire layout
+- [ ] Base smoke test block appended to `minigames.test.tsx` — expand with real assertions
 - [ ] Entry in `MINIGAME_CONFIGS` (`shared/types.ts`) — label, emoji, timeoutMs, category, description, platforms
 - [ ] Ambient sound layers in `client/src/utils/sounds.ts` → `AMBIENT` map
 - [ ] Bot strategy in `tests/e2e/helpers/gameInputs.ts` → `STRATEGIES` map

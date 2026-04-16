@@ -15,6 +15,7 @@ import fastesttyper from './fastesttyper'
 import rockpaperscissors from './rockpaperscissors'
 import colorword from './colorword'
 import kaboom from './kaboom'
+import tapsequence from './tapsequence'
 
 const registry: Record<string, MinigameModule> = {
   clickspeed,
@@ -26,6 +27,7 @@ const registry: Record<string, MinigameModule> = {
   rockpaperscissors,
   colorword,
   kaboom,
+  tapsequence,
 }
 
 // Fail fast at startup if any game in MINIGAME_CONFIGS is missing a server module.

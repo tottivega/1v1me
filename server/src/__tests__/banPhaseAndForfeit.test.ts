@@ -23,7 +23,7 @@ const ALL_GAMES = [
   'fastesttyper',
   'rockpaperscissors',
   'colorword',
-  'higherorlower',
+  'tapsequence',
 ] as const
 
 vi.mock('../minigames/index', () => ({

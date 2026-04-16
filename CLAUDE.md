@@ -21,7 +21,6 @@
 ├── shared/          # types.ts — shared between client and server via @shared alias
 ├── ARCHITECTURE.md  # Technical reference (authoritative)
 ├── DESIGN.md        # Visual/UX philosophy
-├── PROGRESS.md      # What has been built
 ├── TODO.md          # What's next
 └── CLAUDE.md        # This file
 ```

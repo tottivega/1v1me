@@ -28,6 +28,7 @@ const CATEGORY_COLORS: Record<MinigameCategory, string> = {
   luck: '#ffdd00',
   strategy: '#44cc44',
   skill: '#ff2244',
+  memory: '#9933ff',
 }
 
 const BEST_OF_OPTIONS = [3, 5, 7, 9] as const

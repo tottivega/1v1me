@@ -16,6 +16,7 @@ const CATEGORY_COLORS: Record<MinigameCategory, string> = {
   luck: 'var(--yellow)',
   strategy: 'var(--green)',
   skill: 'var(--red)',
+  memory: 'var(--purple)',
 }
 
 const ALL_GAMES = Object.entries(MINIGAME_CONFIGS) as [

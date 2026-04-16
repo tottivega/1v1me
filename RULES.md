@@ -6,8 +6,6 @@ REPO SAFETY
 
 CONTEXT FILES
 [ ] ARCHITECTURE.md
-[ ] TODO.md
-[ ] PROGRESS.md
 [ ] DESIGN.md
 [ ] RULES.md
 [ ] README.md

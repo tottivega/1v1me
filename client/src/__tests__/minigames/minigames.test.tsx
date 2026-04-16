@@ -388,3 +388,71 @@ describe('Kaboom', () => {
     expect(document.body).toBeTruthy()
   })
 })
+
+// ── TapSequence ────────────────────────────────────────────────────────────────
+
+describe('TapSequence', () => {
+  it('renders the 4-button grid', async () => {
+    await renderGame('TapSequence')
+    const buttons = screen.getAllByRole('button')
+    expect(buttons.length).toBe(4)
+  })
+
+  it('clicking a button does not throw during input phase', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: {
+        kind: 'tapsequence',
+        level: 1,
+        seqLen: 4,
+        phase: 'input',
+        sequence: [0, 1, 2, 3],
+        progress: {},
+        passed: {},
+        eliminated: {},
+      },
+    })
+    await renderGame('TapSequence')
+    const buttons = screen.getAllByRole('button')
+    expect(() => fireEvent.click(buttons[0]!)).not.toThrow()
+  })
+
+  it('shows showing phase from server state', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: {
+        kind: 'tapsequence',
+        level: 2,
+        seqLen: 5,
+        phase: 'showing',
+        sequence: [0, 1, 2, 3, 0],
+        progress: {},
+        passed: {},
+        eliminated: {},
+      },
+    })
+    await renderGame('TapSequence')
+    expect(screen.getByText(/watch/i)).toBeInTheDocument()
+  })
+
+  it('shows input phase from server state', async () => {
+    useGameStore.setState({
+      wsStatus: 'connected',
+      isMockMatch: false,
+      minigameState: {
+        kind: 'tapsequence',
+        level: 1,
+        seqLen: 4,
+        phase: 'input',
+        sequence: [0, 1, 2, 3],
+        progress: { [ME]: 2 },
+        passed: {},
+        eliminated: {},
+      },
+    })
+    await renderGame('TapSequence')
+    expect(screen.getByText(/your turn/i)).toBeInTheDocument()
+  })
+})

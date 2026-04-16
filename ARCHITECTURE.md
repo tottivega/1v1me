@@ -275,7 +275,7 @@ Lobby
 
 ## 7. Minigames
 
-**Current pool (9 games):** ClickSpeed, CoinFlip, ReactionTest, QuickMaths, MemoryMatch, FastestTyper, RockPaperScissors, ColorWord, HigherOrLower
+**Current pool (8 games):** ClickSpeed, CoinFlip, ReactionTest, QuickMaths, MemoryMatch, FastestTyper, RockPaperScissors, ColorWord
 
 ### Shared Rules
 - Minigame order is randomized at match start (Fisher-Yates shuffle, category-balanced: no two consecutive same-category).
@@ -320,7 +320,7 @@ Lobby
 | CPS cap | ClickSpeed: max ~20 clicks/second accepted per player |
 | Pre-signal rejection | ReactionTest: input before `REACT_NOW` = disqualification |
 | Single submission | ReactionTest: only first input accepted per round |
-| Answer hiding | RockPaperScissors, ColorWord, HigherOrLower: server withholds opponent picks until both submit or round ends |
+| Answer hiding | RockPaperScissors, ColorWord |
 | Timeout enforcement | All timers are server-side; client cannot extend or skip them |
 
 ---

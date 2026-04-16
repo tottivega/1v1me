@@ -79,10 +79,14 @@ async function colorword(bot: BotPlayer): Promise<void> {
   bot.send('GAME_INPUT', { type: 'PICK_COLOR', color: state.inkColor as string })
 }
 
-async function higherorlower(bot: BotPlayer): Promise<void> {
-  // Only the clue number is sent, not the target — pick 'higher' as a blind guess
-  await bot.waitForGameUpdate((s) => s.phase === 'guessing', 3_000)
-  bot.send('GAME_INPUT', { type: 'PICK_DIRECTION', answer: 'higher' })
+async function tapsequence(bot: BotPlayer): Promise<void> {
+  // Wait for input phase, then send the full correct sequence one button at a time
+  const state = await bot.waitForGameUpdate((s) => s.phase === 'input', 15_000)
+  const sequence = state.sequence as number[]
+  for (const button of sequence) {
+    bot.send('GAME_INPUT', { type: 'PRESS', button })
+    await sleep(120)
+  }
 }
 
 const STRATEGIES: Record<string, (bot: BotPlayer) => Promise<void>> = {
@@ -94,7 +98,7 @@ const STRATEGIES: Record<string, (bot: BotPlayer) => Promise<void>> = {
   fastesttyper,
   rockpaperscissors,
   colorword,
-  higherorlower,
+  tapsequence,
 }
 
 /** Dispatch to the correct per-game strategy, swallowing errors gracefully. */

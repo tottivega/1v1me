@@ -430,19 +430,15 @@ const AMBIENT: Record<string, [number, Ticker]> = {
     },
   ],
 
-  // ── HIGHER OR LOWER ───────────────────────────────────────────────────────────
-  // Sweeping direction: the sound itself goes up then down, aurally representing
-  // the Higher/Lower concept. Smooth sine sweeps, contemplative pace.
-  higherorlower: [
-    880,
+  // ── TAP SEQUENCE ─────────────────────────────────────────────────────────────
+  // Simon Says tension: slow ticking pulse that speeds up as each note is lit.
+  // A warm sine pluck on every beat keeps it focused and game-show-like.
+  tapsequence: [
+    600,
     (mg, phase, vol) => {
-      if (phase % 2 === 0) {
-        aSweep(mg, 300, 560, 0.75, 'sine', vol * 0.6, 0) // rising — "Higher?"
-        aTone(mg, 560, 0.12, 'sine', vol * 0.35, 0.75) // arrival note
-      } else {
-        aSweep(mg, 560, 300, 0.75, 'sine', vol * 0.6, 0) // falling — "Lower?"
-        aTone(mg, 300, 0.12, 'sine', vol * 0.35, 0.75) // arrival note
-      }
+      const pitches = [330, 392, 494, 440] // E4 G4 B4 A4 — Simon's four tones
+      aTone(mg, pitches[phase % 4]!, 0.18, 'sine', vol * 0.55, 0)
+      aTone(mg, pitches[phase % 4]! * 2, 0.08, 'sine', vol * 0.2, 0.06) // soft overtone
     },
   ],
 }
