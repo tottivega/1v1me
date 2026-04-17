@@ -2,76 +2,9 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '../../store/gameStore'
-import { MINIGAME_CONFIGS, AVATARS } from '@shared/types'
+import { AVATARS } from '@shared/types'
 import { playClick, playReady } from '../../utils/sounds'
-import { CATEGORY_COLORS } from './constants'
 import RoomSettings from './RoomSettings'
-
-function LobbyGamePreview() {
-  const { roomConfig } = useGameStore()
-  const enabledCategories = roomConfig.enabledCategories
-  const games = Object.entries(MINIGAME_CONFIGS).filter(
-    ([, cfg]) => enabledCategories.length === 0 || enabledCategories.includes(cfg.category)
-  )
-  return (
-    <div style={{ width: '100%', maxWidth: 460 }}>
-      <div
-        className="label"
-        style={{ textAlign: 'center', marginBottom: 10, fontSize: 12, opacity: 0.6 }}
-      >
-        ⚔️ YOU MIGHT FACE…
-      </div>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
-          gap: 8,
-        }}
-      >
-        {games.map(([id, cfg]) => (
-          <div
-            key={id}
-            className="game-card"
-            style={{
-              borderRadius: 12,
-              padding: '10px 12px',
-              gap: 4,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 22 }}>{cfg.emoji}</span>
-              <span
-                style={{
-                  background: CATEGORY_COLORS[cfg.category],
-                  color: cfg.category === 'luck' ? 'var(--black)' : 'var(--white)',
-                  fontSize: 8,
-                  fontWeight: 900,
-                  padding: '2px 5px',
-                  borderRadius: 4,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.5,
-                  border: '1.5px solid var(--black)',
-                }}
-              >
-                {cfg.category}
-              </span>
-            </div>
-            <div
-              style={{
-                fontFamily: 'var(--font-title)',
-                fontSize: 13,
-                color: 'var(--black)',
-                lineHeight: 1.1,
-              }}
-            >
-              {cfg.label}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 function PlayerSlot({
   player,
@@ -425,16 +358,6 @@ export default function LobbyView({ roomId }: { roomId: string }) {
           >
             {qrOpen ? '✕ QR' : '📱 QR'}
           </button>
-          <button
-            className="btn btn-white btn-sm"
-            onClick={() => {
-              playClick()
-              navigator.clipboard?.writeText(`${window.location.origin}/spectate/${roomId}`)
-            }}
-            title="Copy spectator link"
-          >
-            👁 Spectate
-          </button>
         </div>
         {qrOpen && (
           <div
@@ -560,9 +483,6 @@ export default function LobbyView({ roomId }: { roomId: string }) {
           </button>
         </div>
       )}
-
-      {/* Game preview */}
-      <LobbyGamePreview />
     </div>
   )
 }
