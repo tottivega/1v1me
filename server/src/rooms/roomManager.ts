@@ -70,9 +70,9 @@ export function joinOrCreateRoom(
       createdAt: Date.now(),
       lastActivityAt: Date.now(),
       cleanupTimer: null,
-      banPhaseTimer: null,
+      draftPhaseTimer: null,
       rematchVotes: new Set(),
-      banVotes: {},
+      draftVotes: {},
       roomMsgCount: 0,
       roomWindowStart: Date.now(),
     }
@@ -341,10 +341,9 @@ export function removeSpectator(roomId: string, ws: WebSocket): void {
 
 function doRematch(room: Room): void {
   stopTimer(room)
-  // Cancel the ban-phase safety timer if a rematch is triggered while banning
-  if (room.banPhaseTimer) {
-    clearTimeout(room.banPhaseTimer)
-    room.banPhaseTimer = null
+  if (room.draftPhaseTimer) {
+    clearTimeout(room.draftPhaseTimer)
+    room.draftPhaseTimer = null
   }
   // Cancel any pending between-round auto-advance timer
   if (room.match?.roundReadyTimer) {
@@ -354,7 +353,7 @@ function doRematch(room: Room): void {
   room.match = null
   room.status = 'lobby'
   room.rematchVotes.clear()
-  room.banVotes = {}
+  room.draftVotes = {}
   for (const player of room.players) {
     player.ready = false
   }

@@ -4,7 +4,7 @@ import {
   ALL_CATEGORIES,
   CATEGORY_LABEL,
   BEST_OF_OPTIONS,
-  BAN_COUNT_OPTIONS,
+  DRAFT_COUNT_OPTIONS,
 } from './constants'
 
 export default function RoomSettings({
@@ -25,15 +25,19 @@ export default function RoomSettings({
     onChange({ ...config, bestOf: n })
   }
 
-  function setBanCount(n: 0 | 1 | 2 | 3) {
+  function setDraftMode(mode: 'ban' | 'pick') {
     if (!interactive) return
-    onChange({ ...config, banCount: n })
+    onChange({ ...config, draftMode: mode })
+  }
+
+  function setDraftCount(n: 0 | 1 | 2 | 3) {
+    if (!interactive) return
+    onChange({ ...config, draftCount: n })
   }
 
   function toggleCategory(cat: MinigameCategory) {
     if (!interactive) return
     const enabled = config.enabledCategories.includes(cat)
-    // Must keep at least one category
     if (enabled && config.enabledCategories.length === 1) return
     const next = enabled
       ? config.enabledCategories.filter((c) => c !== cat)
@@ -70,22 +74,43 @@ export default function RoomSettings({
         </div>
       </div>
 
-      {/* Ban count */}
+      {/* Draft mode toggle */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--black)' }}>Draft mode</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {(['ban', 'pick'] as const).map((mode) => (
+            <button
+              key={mode}
+              aria-label={`draft-${mode}`}
+              className={`btn btn-sm ${config.draftMode === mode ? 'btn-orange' : 'btn-white'}`}
+              style={{ flex: 1, opacity: interactive || config.draftMode === mode ? 1 : 0.5 }}
+              onClick={() => setDraftMode(mode)}
+              disabled={!interactive}
+            >
+              {mode === 'ban' ? '🚫 Ban' : '✅ Pick'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Draft count */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--black)' }}>
-          Bans per player
+          {config.draftMode === 'ban' ? 'Bans' : 'Picks'} per player
           <span style={{ fontWeight: 400, fontSize: 11, opacity: 0.5, marginLeft: 6 }}>
-            each player bans N games before the match
+            {config.draftMode === 'ban'
+              ? 'each player bans N games before the match'
+              : 'each player picks N games to include before the match'}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          {BAN_COUNT_OPTIONS.map((n) => (
+          {DRAFT_COUNT_OPTIONS.map((n) => (
             <button
               key={n}
-              aria-label={`bans-${n === 0 ? 'off' : n}`}
-              className={`btn btn-sm ${config.banCount === n ? 'btn-orange' : 'btn-white'}`}
-              style={{ flex: 1, opacity: interactive || config.banCount === n ? 1 : 0.5 }}
-              onClick={() => setBanCount(n)}
+              aria-label={`draft-count-${n === 0 ? 'off' : n}`}
+              className={`btn btn-sm ${config.draftCount === n ? 'btn-orange' : 'btn-white'}`}
+              style={{ flex: 1, opacity: interactive || config.draftCount === n ? 1 : 0.5 }}
+              onClick={() => setDraftCount(n)}
               disabled={!interactive}
             >
               {n === 0 ? 'Off' : n}
@@ -103,7 +128,7 @@ export default function RoomSettings({
             return (
               <button
                 key={cat}
-                className={`btn btn-sm ${on ? 'btn-white' : 'btn-white'}`}
+                className="btn btn-sm btn-white"
                 style={{
                   opacity: interactive ? 1 : on ? 1 : 0.35,
                   background: on ? CATEGORY_COLORS[cat] : 'var(--cream)',

@@ -55,11 +55,10 @@ export interface Room {
   createdAt: number
   lastActivityAt: number
   cleanupTimer: ReturnType<typeof setTimeout> | null
-  /** Stored reference to the BAN_PHASE_TIMEOUT_MS safety timer so it can be cancelled
-   *  when bans are submitted early or the room is reset. */
-  banPhaseTimer: ReturnType<typeof setTimeout> | null
+  /** Safety timer for draft phase (ban or pick) — cancelled when all votes arrive or room resets. */
+  draftPhaseTimer: ReturnType<typeof setTimeout> | null
   rematchVotes: Set<string>
-  banVotes: Record<string, MinigameId[]> // playerId → banned game ids (ban phase)
+  draftVotes: Record<string, MinigameId[]> // playerId → selected game ids (ban or pick phase)
   // Per-room rate limit (120 msg/s across all players)
   roomMsgCount: number
   roomWindowStart: number

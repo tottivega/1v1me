@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useGameStore } from '../../store/gameStore'
 import { MINIGAME_CONFIGS } from '@shared/types'
 import LobbyView from './LobbyView'
-import BanPhaseView from './BanPhaseView'
+import DraftPhaseView from './DraftPhaseView'
 import MatchView from './MatchView'
 import MatchEndView from './MatchEndView'
 
@@ -196,7 +196,7 @@ export default function RoomPage() {
         <LobbyView roomId={roomId!} />
       </>
     )
-  if (roomStatus === 'banning') return <BanPhaseView />
+  if (roomStatus === 'banning' || roomStatus === 'picking') return <DraftPhaseView />
   if (roomStatus === 'match_end') return <MatchEndView />
 
   // Connecting overlay while WS is establishing

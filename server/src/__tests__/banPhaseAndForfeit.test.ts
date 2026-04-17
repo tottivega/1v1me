@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { startMatch, handleBanSubmit, forfeitMatch, resolveRound } from '../match/matchController'
+import { startMatch, handleDraftSubmit, forfeitMatch, resolveRound } from '../match/matchController'
 import { makeRoom, makeMatch } from './helpers'
 import { clearAllRooms } from '../rooms/roomStore'
 
@@ -53,16 +53,16 @@ afterEach(() => {
 // ── Ban phase ─────────────────────────────────────────────────────────────────
 
 describe('ban phase', () => {
-  it('enters banning status when banCount > 0', () => {
+  it('enters banning status when draftCount > 0', () => {
     const room = makeRoom()
-    room.config = { ...room.config, banCount: 1 }
+    room.config = { ...room.config, draftCount: 1 }
     startMatch(room)
     expect(room.status).toBe('banning')
   })
 
-  it('skips ban phase and goes to round_start when banCount === 0', () => {
+  it('skips ban phase and goes to round_start when draftCount === 0', () => {
     const room = makeRoom()
-    room.config = { ...room.config, banCount: 0 }
+    room.config = { ...room.config, draftCount: 0 }
     startMatch(room)
     // launchMatch sets status to round_start synchronously before the 1500ms timeout
     expect(room.status).toBe('round_start')
@@ -70,31 +70,31 @@ describe('ban phase', () => {
 
   it('stays in banning after only one player submits', () => {
     const room = makeRoom()
-    room.config = { ...room.config, banCount: 1 }
+    room.config = { ...room.config, draftCount: 1 }
     startMatch(room)
 
-    handleBanSubmit(room, 'p1', ['clickspeed'])
+    handleDraftSubmit(room, 'p1', ['clickspeed'])
     expect(room.status).toBe('banning')
   })
 
   it('launches match after both players submit bans', () => {
     const room = makeRoom()
-    room.config = { ...room.config, banCount: 1 }
+    room.config = { ...room.config, draftCount: 1 }
     startMatch(room)
 
-    handleBanSubmit(room, 'p1', ['clickspeed'])
-    handleBanSubmit(room, 'p2', ['coinflip'])
+    handleDraftSubmit(room, 'p1', ['clickspeed'])
+    handleDraftSubmit(room, 'p2', ['coinflip'])
 
     expect(room.status).toBe('round_start')
   })
 
   it('merges bans from both players (union)', () => {
     const room = makeRoom()
-    room.config = { ...room.config, banCount: 2 }
+    room.config = { ...room.config, draftCount: 2 }
     startMatch(room)
 
-    handleBanSubmit(room, 'p1', ['clickspeed', 'coinflip'])
-    handleBanSubmit(room, 'p2', ['coinflip', 'reactiontest'])
+    handleDraftSubmit(room, 'p1', ['clickspeed', 'coinflip'])
+    handleDraftSubmit(room, 'p2', ['coinflip', 'reactiontest'])
 
     // clickspeed, coinflip, reactiontest all banned — queue should not contain them
     expect(room.match!.minigameQueue).not.toContain('clickspeed')
@@ -102,14 +102,14 @@ describe('ban phase', () => {
     expect(room.match!.minigameQueue).not.toContain('reactiontest')
   })
 
-  it('clamps ban submissions to configured banCount', () => {
+  it('clamps ban submissions to configured draftCount', () => {
     const room = makeRoom()
-    room.config = { ...room.config, banCount: 1 }
+    room.config = { ...room.config, draftCount: 1 }
     startMatch(room)
 
     // Player tries to submit 2 bans when only 1 is allowed
-    handleBanSubmit(room, 'p1', ['clickspeed', 'coinflip'])
-    handleBanSubmit(room, 'p2', [])
+    handleDraftSubmit(room, 'p1', ['clickspeed', 'coinflip'])
+    handleDraftSubmit(room, 'p2', [])
 
     // Only 1 ban from p1 should be applied
     expect(room.match!.minigameQueue).not.toContain('clickspeed')
@@ -118,11 +118,11 @@ describe('ban phase', () => {
 
   it('auto-launches match after BAN_PHASE_TIMEOUT_MS if a player never submits', () => {
     const room = makeRoom()
-    room.config = { ...room.config, banCount: 1 }
+    room.config = { ...room.config, draftCount: 1 }
     startMatch(room)
 
     // Only p1 submits
-    handleBanSubmit(room, 'p1', ['clickspeed'])
+    handleDraftSubmit(room, 'p1', ['clickspeed'])
     expect(room.status).toBe('banning')
 
     // 30s timeout fires — should auto-launch with p1's ban + empty bans for p2
@@ -134,11 +134,11 @@ describe('ban phase', () => {
 
   it('does not double-launch if both players submit before timeout', async () => {
     const room = makeRoom()
-    room.config = { ...room.config, banCount: 1 }
+    room.config = { ...room.config, draftCount: 1 }
     startMatch(room)
 
-    handleBanSubmit(room, 'p1', ['clickspeed'])
-    handleBanSubmit(room, 'p2', ['coinflip'])
+    handleDraftSubmit(room, 'p1', ['clickspeed'])
+    handleDraftSubmit(room, 'p2', ['coinflip'])
     const queueAfterBothSubmit = [...room.match!.minigameQueue]
 
     // Timeout fires but status is no longer 'banning' — should be a no-op

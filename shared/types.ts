@@ -4,6 +4,7 @@ export type RoomStatus =
   | 'lobby'
   | 'ready'
   | 'banning'
+  | 'picking'
   | 'round_start'
   | 'playing'
   | 'round_end'
@@ -288,13 +289,15 @@ export type MinigameState = MinigameStateMap[MinigameId]
 export interface RoomConfig {
   bestOf: 3 | 5 | 7 | 9
   enabledCategories: MinigameCategory[]
-  banCount: 0 | 1 | 2 | 3
+  draftMode: 'ban' | 'pick'
+  draftCount: 0 | 1 | 2 | 3
 }
 
 export const DEFAULT_ROOM_CONFIG: RoomConfig = {
   bestOf: 5,
-  enabledCategories: ['reflex', 'math', 'luck', 'strategy', 'skill'],
-  banCount: 0,
+  enabledCategories: [...MINIGAME_CATEGORIES],
+  draftMode: 'ban',
+  draftCount: 0,
 }
 
 export interface PlayerInfo {
@@ -339,7 +342,7 @@ export const AVATARS = [
 export type ServerMessageType =
   | 'ROOM_JOINED'
   | 'PLAYER_READY'
-  | 'BAN_PHASE_START'
+  | 'DRAFT_PHASE_START'
   | 'MATCH_START'
   | 'ROUND_START'
   | 'TIMER_TICK'
@@ -364,7 +367,7 @@ export type ClientMessageType =
   | 'SET_READY'
   | 'UNSET_READY'
   | 'SET_ROOM_CONFIG'
-  | 'SUBMIT_BANS'
+  | 'SUBMIT_DRAFT'
   | 'GAME_INPUT'
   | 'RECONNECT'
   | 'REMATCH'
@@ -405,9 +408,9 @@ export interface PlayerReadyPayload {
   bothReady: boolean
 }
 
-export interface BanPhaseStartPayload {
+export interface DraftPhaseStartPayload {
   pool: MinigameId[]
-  banCount: number
+  draftCount: number
 }
 
 export interface MatchStartPayload {

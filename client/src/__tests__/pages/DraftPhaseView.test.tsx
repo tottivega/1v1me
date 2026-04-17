@@ -54,10 +54,10 @@ beforeEach(() => {
     isMockMatch: true,
     roomId: 'TEST-42',
     spectatorCount: 0,
-    roomConfig: { ...DEFAULT_ROOM_CONFIG, banCount: 1 },
-    banPhasePool: [...POOL],
-    banPhaseCount: 1,
-    mockSubmitBans: vi.fn(),
+    roomConfig: { ...DEFAULT_ROOM_CONFIG, draftCount: 1 },
+    draftPhasePool: [...POOL],
+    draftPhaseCount: 1,
+    mockSubmitDraft: vi.fn(),
     ...NO_WS,
   })
 })
@@ -108,8 +108,8 @@ describe('BanPhaseView — selection', () => {
     expect(screen.getByText(/Skip Bans/i)).toBeInTheDocument()
   })
 
-  it('cannot select more games than banCount allows', () => {
-    // banCount is 1, try to select 2 games
+  it('cannot select more games than draftCount allows', () => {
+    // draftCount is 1, try to select 2 games
     renderBanPhase()
     const gameButtons = screen
       .getAllByRole('button')
@@ -123,9 +123,9 @@ describe('BanPhaseView — selection', () => {
 })
 
 describe('BanPhaseView — submit', () => {
-  it('calls mockSubmitBans with selected ids when in mock mode', () => {
-    const mockSubmitBans = vi.fn()
-    useGameStore.setState({ mockSubmitBans })
+  it('calls mockSubmitDraft with selected ids when in mock mode', () => {
+    const mockSubmitDraft = vi.fn()
+    useGameStore.setState({ mockSubmitDraft })
     renderBanPhase()
 
     const gameButtons = screen
@@ -134,17 +134,17 @@ describe('BanPhaseView — submit', () => {
     fireEvent.click(gameButtons[0]!)
     fireEvent.click(screen.getByText(/Ban 1 Game/i))
 
-    expect(mockSubmitBans).toHaveBeenCalledWith(expect.any(Array))
+    expect(mockSubmitDraft).toHaveBeenCalledWith(expect.any(Array))
   })
 
-  it('calls send(SUBMIT_BANS) when connected to server', () => {
+  it('calls send(SUBMIT_DRAFT) when connected to server', () => {
     const send = vi.fn()
     useGameStore.setState({ wsStatus: 'connected', isMockMatch: false, send })
     renderBanPhase()
 
     fireEvent.click(screen.getByText(/Skip Bans/i))
 
-    expect(send).toHaveBeenCalledWith('SUBMIT_BANS', { bannedGameIds: [] })
+    expect(send).toHaveBeenCalledWith('SUBMIT_DRAFT', { gameIds: [] })
   })
 
   it('disables game buttons after submitting', () => {

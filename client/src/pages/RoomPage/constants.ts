@@ -21,7 +21,7 @@ export const CATEGORY_OVERLAY_BG: Record<MinigameCategory, string> = {
 
 export const ALL_CATEGORIES: readonly MinigameCategory[] = MINIGAME_CATEGORIES
 export const BEST_OF_OPTIONS = [3, 5, 7, 9] as const
-export const BAN_COUNT_OPTIONS = [0, 1, 2, 3] as const
+export const DRAFT_COUNT_OPTIONS = [0, 1, 2, 3] as const
 
 export const CATEGORY_LABEL: Record<MinigameCategory, string> = {
   reflex: '⚡ Reflex',

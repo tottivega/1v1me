@@ -18,7 +18,8 @@ beforeEach(() => {
     roomConfig: {
       bestOf: 5,
       enabledCategories: ['reflex', 'math', 'luck', 'strategy', 'skill'],
-      banCount: 0,
+      draftMode: 'ban',
+      draftCount: 0,
     },
   })
 })
@@ -39,7 +40,7 @@ describe('ScoreBoard', () => {
   it('reflects bestOf=7 in round display and wins-needed', () => {
     useGameStore.setState({
       currentRound: 2,
-      roomConfig: { bestOf: 7, enabledCategories: ['reflex'], banCount: 0 },
+      roomConfig: { bestOf: 7, enabledCategories: ['reflex'], draftMode: 'ban', draftCount: 0 },
     })
     render(<ScoreBoard />)
     expect(screen.getByText('2/7')).toBeInTheDocument()

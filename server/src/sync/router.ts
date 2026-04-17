@@ -16,7 +16,7 @@ import {
   removeSpectator,
   touch,
 } from '../rooms/roomManager'
-import { handleGameInput, handleRoundReady, handleBanSubmit } from '../match/matchController'
+import { handleGameInput, handleRoundReady, handleDraftSubmit } from '../match/matchController'
 
 const RATE_LIMIT = 60 // max messages per window per connection
 const RATE_WINDOW_MS = 1000 // sliding window size
@@ -166,7 +166,8 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
       if (room.players[0]?.id !== conn.playerId) return
       if (room.status !== 'lobby' || room.players.some((p) => p.ready)) return
 
-      const { bestOf, enabledCategories, banCount } = msg.payload as Partial<RoomConfig>
+      const { bestOf, enabledCategories, draftMode, draftCount } =
+        msg.payload as Partial<RoomConfig>
       const validBestOf = [3, 5, 7, 9]
       if (!bestOf || !validBestOf.includes(bestOf)) return
       if (
@@ -175,27 +176,30 @@ function handleMessage(ws: WebSocket, msg: ClientMessage): void {
         !enabledCategories.every((c) => (MINIGAME_CATEGORIES as readonly string[]).includes(c))
       )
         return
-      const validBanCount = [0, 1, 2, 3]
-      const resolvedBanCount = validBanCount.includes(banCount ?? -1)
-        ? (banCount as 0 | 1 | 2 | 3)
-        : 0
 
-      room.config = { bestOf, enabledCategories, banCount: resolvedBanCount }
+      room.config = {
+        bestOf,
+        enabledCategories,
+        draftMode: draftMode === 'pick' ? 'pick' : 'ban',
+        draftCount: ([0, 1, 2, 3] as const).includes(draftCount as 0 | 1 | 2 | 3)
+          ? (draftCount as 0 | 1 | 2 | 3)
+          : 0,
+      }
       for (const player of room.players) {
         send(player.ws, 'ROOM_CONFIG', { config: room.config })
       }
       break
     }
 
-    case 'SUBMIT_BANS': {
+    case 'SUBMIT_DRAFT': {
       if (!conn.roomId) return
       const room = getRoom(conn.roomId)
       if (!room) return
-      const { bannedGameIds } = msg.payload as { bannedGameIds?: unknown[] }
-      const ids = Array.isArray(bannedGameIds)
-        ? (bannedGameIds.filter((id) => typeof id === 'string') as string[])
+      const { gameIds } = msg.payload as { gameIds?: unknown[] }
+      const ids = Array.isArray(gameIds)
+        ? (gameIds.filter((id) => typeof id === 'string') as string[])
         : []
-      handleBanSubmit(room, conn.playerId, ids as import('@shared/types').MinigameId[])
+      handleDraftSubmit(room, conn.playerId, ids as import('@shared/types').MinigameId[])
       break
     }
 

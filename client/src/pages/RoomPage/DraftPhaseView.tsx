@@ -1,32 +1,30 @@
 import { useState, useEffect, useRef } from 'react'
 import { useGameStore } from '../../store/gameStore'
-import { MINIGAME_CONFIGS, type MinigamePlatform } from '@shared/types'
+import { MINIGAME_CONFIGS, type MinigameId, type MinigamePlatform } from '@shared/types'
 
-const BAN_TIMEOUT_SECS = 10
+const DRAFT_TIMEOUT_SECS = 10
 const isMobile = window.matchMedia('(pointer: coarse)').matches
 
-export default function BanPhaseView() {
-  const { banPhasePool, banPhaseCount, send, isMockMatch, mockSubmitBans } = useGameStore()
-  const [selected, setSelected] = useState<string[]>([])
+export default function DraftPhaseView() {
+  const { roomStatus, draftPhasePool, draftPhaseCount, send, isMockMatch, mockSubmitDraft } =
+    useGameStore()
+  const [selected, setSelected] = useState<MinigameId[]>([])
   const [submitted, setSubmitted] = useState(false)
-  const [secsLeft, setSecsLeft] = useState(BAN_TIMEOUT_SECS)
+  const [secsLeft, setSecsLeft] = useState(DRAFT_TIMEOUT_SECS)
   const submittedRef = useRef(false)
-  const selectedRef = useRef<string[]>([])
+  const selectedRef = useRef<MinigameId[]>([])
 
-  const rawPool = banPhasePool ?? []
-  // Filter out games that can't run on the current platform
-  const pool = rawPool.filter((id) => {
+  const isBan = roomStatus === 'banning'
+  const pool = (draftPhasePool ?? []).filter((id) => {
     const platforms = MINIGAME_CONFIGS[id].platforms as MinigamePlatform
     return (platforms !== 'desktop-only' || !isMobile) && (platforms !== 'mobile-only' || isMobile)
   })
-  const remaining = banPhaseCount - selected.length
+  const remaining = draftPhaseCount - selected.length
 
-  // Keep refs in sync so the timer callback always sees latest values
   useEffect(() => {
     selectedRef.current = selected
   }, [selected])
 
-  // Countdown timer — auto-submit on expiry
   useEffect(() => {
     const interval = setInterval(() => {
       setSecsLeft((s) => {
@@ -42,30 +40,32 @@ export default function BanPhaseView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  function doSubmit(bannedIds: string[]) {
+  function doSubmit(ids: MinigameId[]) {
     if (submittedRef.current) return
     submittedRef.current = true
     setSubmitted(true)
     if (isMockMatch) {
-      // Mock mode: opponent also "submits" instantly — game starts immediately
-      mockSubmitBans(bannedIds)
+      mockSubmitDraft(ids)
     } else {
-      send('SUBMIT_BANS', { bannedGameIds: bannedIds })
+      send('SUBMIT_DRAFT', { gameIds: ids })
     }
   }
 
-  function toggle(id: string) {
+  function toggle(id: MinigameId) {
     if (submitted) return
     setSelected((prev) =>
       prev.includes(id)
         ? prev.filter((x) => x !== id)
-        : prev.length < banPhaseCount
+        : prev.length < draftPhaseCount
           ? [...prev, id]
           : prev
     )
   }
 
   const urgent = secsLeft <= 5 && !submitted
+  const accentColor = isBan ? 'var(--red)' : 'var(--green)'
+  const n = draftPhaseCount
+  const verb = isBan ? 'Ban' : 'Pick'
 
   return (
     <div className="page" style={{ gap: 20 }}>
@@ -74,21 +74,20 @@ export default function BanPhaseView() {
           style={{
             fontFamily: 'var(--font-title)',
             fontSize: 40,
-            color: 'var(--red)',
+            color: accentColor,
             WebkitTextStroke: '2px var(--black)',
             textShadow: '3px 3px 0 var(--black)',
           }}
         >
-          🚫 BAN PHASE
+          {isBan ? '🚫' : '✅'} {verb.toUpperCase()} PHASE
         </div>
         <div className="subtitle" style={{ opacity: 0.6, marginTop: 6 }}>
           {submitted
-            ? 'Bans submitted — waiting for opponent…'
+            ? `${verb}s submitted — waiting for opponent…`
             : remaining > 0
-              ? `Pick up to ${banPhaseCount} game${banPhaseCount !== 1 ? 's' : ''} to ban · ${remaining} left`
-              : `${banPhaseCount} ban${banPhaseCount !== 1 ? 's' : ''} selected`}
+              ? `${isBan ? 'Pick up to' : 'Pick up to'} ${n} game${n !== 1 ? 's' : ''} to ${verb.toLowerCase()} · ${remaining} left`
+              : `${n} ${verb.toLowerCase()}${n !== 1 ? 's' : ''} selected`}
         </div>
-        {/* Countdown timer */}
         {!submitted && (
           <div
             className={urgent ? 'anim-pulse' : ''}
@@ -116,36 +115,36 @@ export default function BanPhaseView() {
         {pool.map((id) => {
           const cfg = MINIGAME_CONFIGS[id]
           if (!cfg) return null
-          const isBanned = selected.includes(id)
+          const isSelected = selected.includes(id)
           return (
             <button
               key={id}
               onClick={() => toggle(id)}
-              disabled={submitted || (!isBanned && remaining === 0)}
+              disabled={submitted || (!isSelected && remaining === 0)}
               style={{
-                background: isBanned ? 'var(--red)' : 'var(--white)',
-                border: `3px solid ${isBanned ? 'var(--red)' : 'var(--black)'}`,
+                background: isSelected ? accentColor : 'var(--white)',
+                border: `3px solid ${isSelected ? accentColor : 'var(--black)'}`,
                 borderRadius: 12,
                 padding: '10px 8px',
-                cursor: submitted || (!isBanned && remaining === 0) ? 'default' : 'pointer',
-                opacity: submitted && !isBanned ? 0.45 : !isBanned && remaining === 0 ? 0.5 : 1,
+                cursor: submitted || (!isSelected && remaining === 0) ? 'default' : 'pointer',
+                opacity: submitted && !isSelected ? 0.45 : !isSelected && remaining === 0 ? 0.5 : 1,
                 transition: 'background 0.15s, opacity 0.15s',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: 4,
-                boxShadow: isBanned ? 'none' : 'var(--shadow-sm)',
+                boxShadow: isSelected ? 'none' : 'var(--shadow-sm)',
               }}
             >
-              <div style={{ fontSize: 28 }}>{isBanned ? '🚫' : cfg.emoji}</div>
+              <div style={{ fontSize: 28 }}>{isBan && isSelected ? '🚫' : cfg.emoji}</div>
               <div
                 style={{
                   fontSize: 11,
                   fontWeight: 800,
-                  color: isBanned ? 'var(--white)' : 'var(--black)',
+                  color: isSelected ? 'var(--white)' : 'var(--black)',
                   textAlign: 'center',
                   lineHeight: 1.2,
-                  textDecoration: isBanned ? 'line-through' : 'none',
+                  textDecoration: isBan && isSelected ? 'line-through' : 'none',
                 }}
               >
                 {cfg.label}
@@ -162,8 +161,8 @@ export default function BanPhaseView() {
           onClick={() => doSubmit(selected)}
         >
           {selected.length === 0
-            ? 'Skip Bans →'
-            : `Ban ${selected.length} Game${selected.length !== 1 ? 's' : ''} →`}
+            ? `Skip ${verb}s →`
+            : `${verb} ${selected.length} Game${selected.length !== 1 ? 's' : ''} →`}
         </button>
       )}
 

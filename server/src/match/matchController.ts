@@ -10,7 +10,7 @@ import { persistMatchResult, persistRoundResult } from '../db/index'
 import { deleteRoom } from '../rooms/roomStore'
 
 const ROUND_READY_TIMEOUT_MS = 5000 // auto-advance if a player doesn't confirm
-const BAN_PHASE_TIMEOUT_MS = 30_000 // auto-submit empty bans if a player goes idle
+const DRAFT_PHASE_TIMEOUT_MS = 30_000 // auto-submit if a player goes idle during draft
 const POST_MATCH_IDLE_MS = 2 * 60_000 // clean up a finished room after 2 min of inactivity
 const COUNT_IN_MS = 2500 // must be >= client count-in overlay duration (2300ms)
 
@@ -65,37 +65,45 @@ export function startMatch(room: Room): void {
     getSafeState: null,
   }
 
-  if (room.config.banCount > 0) {
-    // Enter ban phase — MATCH_START is sent after both players submit bans
-    room.status = 'banning'
-    room.banVotes = {}
+  const { draftMode, draftCount } = room.config
+  if (draftCount > 0) {
+    room.status = draftMode === 'pick' ? 'picking' : 'banning'
+    room.draftVotes = {}
     const pool = buildPool(room)
-    broadcast(room, 'BAN_PHASE_START', { pool, banCount: room.config.banCount })
+    broadcast(room, 'DRAFT_PHASE_START', { pool, draftCount })
 
-    // Safety timeout: auto-submit empty bans for any player who goes idle.
-    // Reference is stored so launchMatch / doRematch can cancel it.
-    room.banPhaseTimer = setTimeout(() => {
-      room.banPhaseTimer = null
-      if (room.status !== 'banning' || !room.match) return
-      if (room.players.length < 2) return // player left during ban phase — can't start
+    room.draftPhaseTimer = setTimeout(() => {
+      room.draftPhaseTimer = null
+      if (room.status !== 'banning' && room.status !== 'picking') return
+      if (!room.match || room.players.length < 2) return
       for (const p of room.players) {
-        if (!(p.id in room.banVotes)) room.banVotes[p.id] = []
+        if (!(p.id in room.draftVotes)) room.draftVotes[p.id] = []
       }
-      const merged = Array.from(new Set(Object.values(room.banVotes).flat())) as MinigameId[]
-      launchMatch(room, merged)
-    }, BAN_PHASE_TIMEOUT_MS)
+      launchMatch(room, resolveDraft(room))
+    }, DRAFT_PHASE_TIMEOUT_MS)
   } else {
     launchMatch(room, [])
   }
 }
 
-/** Called once ban votes are resolved (or immediately if banCount === 0). */
+/** Converts draftVotes into a bannedIds list, respecting the current draftMode. */
+function resolveDraft(room: Room): MinigameId[] {
+  const votes = Object.values(room.draftVotes).flat()
+  const unique = Array.from(new Set(votes)) as MinigameId[]
+  if (room.config.draftMode === 'pick') {
+    // Pick mode: banned = everything nobody picked
+    const pool = buildPool(room)
+    return unique.length > 0 ? pool.filter((id) => !unique.includes(id)) : []
+  }
+  // Ban mode: banned = union of all bans
+  return unique
+}
+
 function launchMatch(room: Room, bannedIds: MinigameId[]): void {
   if (!room.match) return
-  // Cancel the safety timeout — bans were resolved (either submitted or timed out)
-  if (room.banPhaseTimer) {
-    clearTimeout(room.banPhaseTimer)
-    room.banPhaseTimer = null
+  if (room.draftPhaseTimer) {
+    clearTimeout(room.draftPhaseTimer)
+    room.draftPhaseTimer = null
   }
   const { bestOf, enabledCategories } = room.config
   const excludePlatforms = platformExcludes(room)
@@ -109,28 +117,19 @@ function launchMatch(room: Room, bannedIds: MinigameId[]): void {
   setTimeout(() => startRound(room), 1500)
 }
 
-/**
- * Handle a SUBMIT_BANS message from a player.
- * Once both players have submitted, bans are merged, duplicates removed,
- * and the match launches.
- */
-export function handleBanSubmit(room: Room, playerId: string, bannedIds: MinigameId[]): void {
-  if (room.status !== 'banning' || !room.match) return
+export function handleDraftSubmit(room: Room, playerId: string, gameIds: MinigameId[]): void {
+  if (room.status !== 'banning' && room.status !== 'picking') return
+  if (!room.match) return
 
-  // Clamp to configured banCount, validate ids
   const validIds = (Object.keys(MINIGAME_CONFIGS) as MinigameId[]).filter((id) =>
-    bannedIds.includes(id)
+    gameIds.includes(id)
   )
-  room.banVotes[playerId] = validIds.slice(0, room.config.banCount)
+  room.draftVotes[playerId] = validIds.slice(0, room.config.draftCount)
 
-  // Check if both players have submitted
-  const allSubmitted = room.players.every((p) => p.id in room.banVotes)
-  if (!allSubmitted) return
-  if (room.players.length < 2) return // player left during ban phase — can't start
+  const allSubmitted = room.players.every((p) => p.id in room.draftVotes)
+  if (!allSubmitted || room.players.length < 2) return
 
-  // Merge all bans (union) — a game banned by either player is removed
-  const merged = Array.from(new Set(Object.values(room.banVotes).flat())) as MinigameId[]
-  launchMatch(room, merged)
+  launchMatch(room, resolveDraft(room))
 }
 
 function startRound(room: Room): void {

@@ -24,7 +24,7 @@ import {
   type EmotePayload,
   type RoomConfig,
   type RoomConfigPayload,
-  type BanPhaseStartPayload,
+  type DraftPhaseStartPayload,
   type MinigamePlatform,
   type MinigameState,
 } from '@shared/types'
@@ -276,9 +276,9 @@ interface GameState {
   // Room configuration (best-of, enabled categories, ban count)
   roomConfig: RoomConfig
 
-  // Ban phase state
-  banPhasePool: MinigameId[] | null
-  banPhaseCount: number
+  // Draft phase state (ban or pick)
+  draftPhasePool: MinigameId[] | null
+  draftPhaseCount: number
 
   // True when the current match was started via DevPanel mock flow (not a real server match)
   isMockMatch: boolean
@@ -310,7 +310,7 @@ interface GameState {
   mockSetRound: (round: number) => void
   mockSetWinner: (playerId: string | null) => void
   mockSetRemainingMs: (ms: number) => void
-  mockSubmitBans: (bannedIds: string[]) => void
+  mockSubmitDraft: (gameIds: string[]) => void
   mockNextRound: () => void
   mockForceRoundEnd: (winnerId: string) => void
   mockSetBestOf: (n: 3 | 5 | 7 | 9) => void
@@ -350,8 +350,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   myColor: 'var(--blue)',
   oppColor: 'var(--orange)',
   roomConfig: { ...DEFAULT_ROOM_CONFIG },
-  banPhasePool: null,
-  banPhaseCount: 0,
+  draftPhasePool: null,
+  draftPhaseCount: 0,
   isMockMatch: false,
   mockSandboxGame: null,
 
@@ -559,9 +559,14 @@ export const useGameStore = create<GameState>((set, get) => ({
         break
       }
 
-      case 'BAN_PHASE_START': {
-        const p = msg.payload as BanPhaseStartPayload
-        set({ roomStatus: 'banning', banPhasePool: p.pool, banPhaseCount: p.banCount })
+      case 'DRAFT_PHASE_START': {
+        const p = msg.payload as DraftPhaseStartPayload
+        const mode = get().roomConfig.draftMode
+        set({
+          roomStatus: mode === 'pick' ? 'picking' : 'banning',
+          draftPhasePool: p.pool,
+          draftPhaseCount: p.draftCount,
+        })
         break
       }
 
@@ -579,8 +584,8 @@ export const useGameStore = create<GameState>((set, get) => ({
           myColor,
           oppColor,
           matchStartedAt: Date.now(),
-          banPhasePool: null,
-          banPhaseCount: 0,
+          draftPhasePool: null,
+          draftPhaseCount: 0,
           isMockMatch: false,
           mockSandboxGame: null,
         })
@@ -821,14 +826,16 @@ export const useGameStore = create<GameState>((set, get) => ({
       updates.currentMinigame = 'clickspeed'
     }
     if (status === 'match_end') updates.matchWinnerId = 'player-1'
-    if (['round_start', 'playing', 'round_end', 'match_end', 'banning'].includes(status)) {
+    if (
+      ['round_start', 'playing', 'round_end', 'match_end', 'banning', 'picking'].includes(status)
+    ) {
       if (get().players.length < 2) updates.players = [get().players[0]!, MOCK_OPP]
     }
-    if (status === 'banning') {
+    if (status === 'banning' || status === 'picking') {
       const { roomConfig } = get()
       updates.isMockMatch = true
-      updates.banPhasePool = buildMockPool(roomConfig.enabledCategories)
-      updates.banPhaseCount = roomConfig.banCount > 0 ? roomConfig.banCount : 1
+      updates.draftPhasePool = buildMockPool(roomConfig.enabledCategories)
+      updates.draftPhaseCount = roomConfig.draftCount > 0 ? roomConfig.draftCount : 1
     }
     set(updates)
   },
@@ -861,11 +868,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       set({ roomStatus: 'ready', isMockMatch: true })
       setTimeout(() => {
         const { roomConfig } = get()
-        if (roomConfig.banCount > 0) {
+        if (roomConfig.draftCount > 0) {
           set({
-            roomStatus: 'banning',
-            banPhasePool: buildMockPool(roomConfig.enabledCategories),
-            banPhaseCount: roomConfig.banCount,
+            roomStatus: roomConfig.draftMode === 'pick' ? 'picking' : 'banning',
+            draftPhasePool: buildMockPool(roomConfig.enabledCategories),
+            draftPhaseCount: roomConfig.draftCount,
           })
         } else {
           const ids = Object.keys(MINIGAME_CONFIGS) as MinigameId[]
@@ -876,13 +883,18 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
-  mockSubmitBans: (bannedIds) => {
-    const pool = get().banPhasePool ?? (Object.keys(MINIGAME_CONFIGS) as MinigameId[])
-    const remaining = pool.filter((id) => !bannedIds.includes(id)) as MinigameId[]
-    const eligible =
-      remaining.length > 0 ? remaining : (Object.keys(MINIGAME_CONFIGS) as MinigameId[])
-    const id = eligible[Math.floor(Math.random() * eligible.length)]!
-    get().mockSetMinigame(id)
+  mockSubmitDraft: (gameIds) => {
+    const { draftPhasePool, roomConfig } = get()
+    const pool = (draftPhasePool ?? Object.keys(MINIGAME_CONFIGS)) as MinigameId[]
+    let eligible: MinigameId[]
+    if (roomConfig.draftMode === 'pick') {
+      const picked = pool.filter((id) => gameIds.includes(id))
+      eligible = picked.length > 0 ? picked : pool
+    } else {
+      const remaining = pool.filter((id) => !gameIds.includes(id))
+      eligible = remaining.length > 0 ? remaining : pool
+    }
+    get().mockSetMinigame(eligible[Math.floor(Math.random() * eligible.length)]!)
   },
 
   mockSetScore: (playerId, score) => set({ scores: { ...get().scores, [playerId]: score } }),
@@ -951,8 +963,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       lastRoundWinnerId: null,
       roundHistory: [],
       minigameState: null,
-      banPhasePool: null,
-      banPhaseCount: 0,
+      draftPhasePool: null,
+      draftPhaseCount: 0,
       mockSandboxGame: null,
       players: players.map((p) => ({ ...p, ready: false })),
     })
